@@ -155,7 +155,9 @@ public sealed class StorageService : IStorageService {
     }
 
     public SavedCapture SaveNewCapture(CaptureDocument document, BitmapSource original) {
-        DateTime time = document.CapturedAt.LocalDateTime;
+        // Uhrzeit so, wie sie bei der Aufnahme auf der Uhr stand (mit dem gespeicherten Offset), unabhängig von der
+        // Zeitzone des Rechners, der die Datei gerade anlegt
+        DateTime time = document.CapturedAt.DateTime;
         string folder = Path.Combine(RootFolder, time.ToString("yyyy", CultureInfo.InvariantCulture), time.ToString("MM", CultureInfo.InvariantCulture));
         Directory.CreateDirectory(folder);
         string baseName = GetUniqueBaseName(folder, FormatFileName(settings.Settings.FileNamePattern, time));
