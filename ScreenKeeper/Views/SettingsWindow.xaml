@@ -142,16 +142,31 @@
                         </TextBlock>
 
                         <TextBlock Style="{StaticResource Section}" Text="{loc:Str SettingsRetention}" />
-                        <StackPanel Orientation="Horizontal">
+                        <WrapPanel>
+                            <TextBlock Margin="0,0,8,0" VerticalAlignment="Center" Text="{loc:Str SettingsRetentionPrefix}" />
                             <TextBox Width="70" VerticalContentAlignment="Center" Padding="3,2" Text="{Binding RetentionDaysText, UpdateSourceTrigger=PropertyChanged}" />
                             <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" Text="{loc:Str SettingsRetentionUnit}" />
-                        </StackPanel>
+                        </WrapPanel>
                         <TextBlock Style="{StaticResource Error}" Text="{Binding RetentionError}" />
                         <TextBlock Style="{StaticResource Info}" Text="{Binding RetentionInfo}" />
 
                         <TextBlock Style="{StaticResource Section}" Text="{loc:Str SettingsProgram}" />
                         <CheckBox Content="{loc:Str SettingsAutostart}" IsChecked="{Binding Autostart}" />
                         <CheckBox Content="{loc:Str SettingsNotifyOnSaveOnly}" IsChecked="{Binding NotifyOnSaveOnly}" />
+
+                        <TextBlock Style="{StaticResource Section}" Text="{loc:Str SettingsUpdates}" />
+                        <CheckBox Content="{loc:Str SettingsCheckForUpdates}" IsChecked="{Binding CheckForUpdates}" />
+                        <DockPanel Margin="0,4,0,0">
+                            <Button DockPanel.Dock="Left" Style="{StaticResource SmallButton}" Margin="0,2,10,2" Content="{loc:Str SettingsCheckNow}" Command="{Binding Update.CheckCommand}" />
+                            <TextBlock DockPanel.Dock="Right" Margin="10,0,0,0" VerticalAlignment="Center" Visibility="{Binding Update.ShowLink, Converter={StaticResource BoolToVisibility}, FallbackValue=Collapsed}">
+                                <Hyperlink Command="{Binding Update.InstallCommand}"><Run Text="{loc:Str SettingsInstallUpdate}" /></Hyperlink>
+                            </TextBlock>
+                            <TextBlock VerticalAlignment="Center" TextWrapping="Wrap" Text="{Binding Update.CheckResultText}" />
+                        </DockPanel>
+                        <TextBlock Style="{StaticResource Info}" Text="{Binding Update.StatusText}" Visibility="{Binding Update.HasStatus, Converter={StaticResource BoolToVisibility}, FallbackValue=Collapsed}" />
+                        <TextBlock Style="{StaticResource Info}">
+                            <Run Text="{Binding Update.CurrentVersionText, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding Update.LastCheckText, Mode=OneWay}" />
+                        </TextBlock>
                         <TextBlock Style="{StaticResource Info}" Margin="0,10,0,0">
                             <Run Text="{loc:Str SettingsFileLocation}" /> <Run Text="{Binding SettingsFilePath, Mode=OneWay}" />
                         </TextBlock>

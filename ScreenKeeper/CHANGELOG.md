@@ -2,6 +2,9 @@
 
 ## 0.7.0
 
+- Einstellungen: neues Feld `settingsVersion`. Dateien aus 0.6.x ohne dieses Feld werden einmalig umgestellt: eine
+  Aufbewahrung von 0 (damals Standard „aus“) wird zu 30 Tagen; andere bewusst gesetzte Werte bleiben. Ab 0.7.0 bleibt
+  eine bewusst gesetzte 0 (aus) erhalten.
 - **Linienenden:** Linie, Pfeil und Freihand haben in der Werkzeugleiste die Optionen „Anfang“ und „Ende“ mit den
   Symbolen ohne, Pfeil, Punkt, Quadrat und Dreieck (Menü mit Symbol und Text). Die Symbole sind gefüllt in der
   Strichfarbe, wachsen mit der Strichstärke wie die bisherige Pfeilspitze und folgen der Richtung des Linienendes
@@ -29,6 +32,45 @@
 - Neue Tests: Serialisierung (neue Felder, alte Dateien ohne Felder, `fill` als bool), Geometrie und Treffertest der
   Endsymbole, Pixeltests (Endsymbole in Strichfarbe, Füllfarbe innen, Rahmenfarbe außen), Editor (Option wirkt auf
   das ausgewählte Objekt als ein Rückgängig-Schritt und wird je Typ als Standard gemerkt).
+- **Kopie anlegen:** dieselbe Aufnahme mehrfach mit unterschiedlichem Bereich und unterschiedlichen Zeichnungen. In der
+  History Knopf, Kontextmenü und Strg+D: PNG, JSON und Vorschaubild werden unter dem nächsten freien Namen (`…_2`,
+  `…_3`; die Kopie einer Kopie hängt nicht `_2_2` an) im selben Ordner angelegt, alle Zeichenobjekte bekommen neue Ids
+  (auch unbekannte Typen), die Kopie ist nicht permanent; sie erscheint direkt über dem Original und ist ausgewählt.
+  Laufende Hintergrund-Schreibvorgänge des Originals werden abgewartet; schlägt etwas fehl, bleibt keine halbe Kopie
+  liegen. Im Editor speichert der Knopf „Kopie anlegen“ den aktuellen Stand als Kopie, schließt das Original mit
+  genau diesem Stand und bearbeitet die Kopie im selben Modus weiter (Bild aus dem Speicher, kein erneutes Laden).
+- **Permanent:** Aufnahmen lassen sich als permanent markieren – in der History per Stern in der Zeile, Knopf,
+  Kontextmenü oder Taste P (bei Mehrfachauswahl: alle permanent bzw., wenn schon alle permanent sind, alle nicht
+  mehr), im Editor mit dem Umschaltknopf „Permanent“ (wird beim Schließen mitgespeichert, kein Rückgängig-Schritt).
+  Kennzeichen „permanent“ in der Zeile und Filter-Schalter „Permanent“. Fehlt die JSON, wird sie angelegt; ist die
+  Aufnahme gerade im Editor offen, übernimmt der Editor den Wert.
+- **Aufräumen:** Standard für `retentionDays` ist jetzt 30 Tage (bisher 0 = aus); eine settings.json ohne das Feld
+  bekommt den neuen Standard, ein ausdrücklich gespeichertes 0 bleibt aus. Permanente Aufnahmen und solche mit
+  unlesbarer JSON werden übersprungen (ohne JSON = nicht permanent); das Protokoll nennt verschobene und behaltene.
+  Text im Einstellungsfenster: „Aufnahmen nach X Tagen in den Papierkorb verschieben, außer permanente (0 = aus)“.
+- **Programm im Vordergrund:** Bei der Aufnahme wird das aktive Fenster (`GetForegroundWindow`) mit Titel und
+  Prozessname festgehalten. Die History zeigt es unter der Uhrzeit (Titel gekürzt, Tooltip vollständig); die Suche
+  findet zusätzlich Prozessname und Fenstertitel. Die JSON wird dafür je Eintrag nur einmal im Hintergrund gelesen
+  und mit ihrer Änderungszeit zwischengespeichert (Kennzeichen „bearbeitet“, „permanent“ und Programm teilen sich
+  diesen Lesevorgang).
+- **Updates ohne Dialoge:** `UpdateService` fragt 30 s nach dem Start und danach höchstens einmal je 24 h
+  `api.github.com/repos/boehla/ScreenKeeper/releases/latest` ab (Timeout 10 s, Fehler nur im Protokoll; Zeitpunkt und
+  gefundene Version in `%APPDATA%\ScreenKeeper\update.json`). Ist eine neuere Version da: Link „Version x verfügbar –
+  installieren“ in der History-Statusleiste, Eintrag „Update auf x installieren“ im Tray-Menü, „· Update verfügbar“ im
+  Tooltip, Ergebniszeile mit „Jetzt prüfen“ in den Einstellungen. Installieren lädt das passende ZIP (Single-File mit
+  Laufzeit → `…-win-x64.zip`, sonst `…-win-x64-framework-dependent.zip`) nach `%LOCALAPPDATA%\ScreenKeeper\update\<v>\`,
+  entpackt und prüft es, speichert einen offenen Editor, wartet auf Schreibvorgänge, startet ein verstecktes
+  PowerShell-Skript (wartet auf das Prozessende, ersetzt die EXE mit Wiederholung bis 30 s, startet neu, löscht sich)
+  und beendet ScreenKeeper. Entwicklungs-Builds öffnen nur die Release-Seite. Einstellung `checkForUpdates`
+  (Standard an).
+- Datenformat: neu `foreground` (`title`, `process`; null/fehlend = unbekannt), `windows[].foreground` (nur `true`
+  wird geschrieben) und `permanent` (nur `true` wird geschrieben, fehlend = false).
+- Testhilfen: `--history --folder <Ordner> --test-duplicate <Name>`, `--test-permanent <Name>`, `--retention --folder
+  <Ordner> [--days n] [--dry-run]`; `--test-history` misst zusätzlich die Suche über Programm/Titel.
+- Neue Tests (20): Kopie (Dateien, neue Ids, Original unverändert, Namen, ohne JSON, History-Einfügen), Permanent
+  (Rundreise, JSON anlegen, Filter), Aufräumen (überspringt permanente und unlesbare, Standard 30), Vordergrund
+  (Serialisierung, Anzeige, Suche, einmaliges Lesen), Update (Versionsvergleich, Asset-Wahl aus einer gespeicherten
+  GitHub-Antwort, „kein Update“, gemerkter Zustand, Entpacken, Skript).
 
 ## 0.6.1
 

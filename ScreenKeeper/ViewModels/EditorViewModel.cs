@@ -51,6 +51,11 @@ public sealed partial class EditorViewModel : ViewModelBase {
         UndoCommand = new RelayCommand(() => Undo(), () => UndoStack.CanUndo);
         RedoCommand = new RelayCommand(() => Redo(), () => UndoStack.CanRedo);
         CancelCommand = new RelayCommand(host.CloseEditor);
+        DuplicateCommand = new RelayCommand(() => {
+            CancelGesture();
+            DuplicateRequested?.Invoke(this, EventArgs.Empty);
+        });
+        TogglePermanentCommand = new RelayCommand(() => IsPermanent = !IsPermanent);
         SelectToolCommand = new RelayCommand(p => {
             if(p is ToolItem item) SelectTool(item.Tool);
         });
@@ -111,6 +116,27 @@ public sealed partial class EditorViewModel : ViewModelBase {
     public ICommand RedoCommand { get; }
 
     public ICommand CancelCommand { get; }
+
+    /// <summary>„Kopie anlegen“: aktuellen Stand als neue Aufnahme speichern und dort weiterarbeiten (macht das Fenster).</summary>
+    public ICommand DuplicateCommand { get; }
+
+    public ICommand TogglePermanentCommand { get; }
+
+    /// <summary>
+    /// Permanent markiert (wird beim automatischen Aufräumen nie gelöscht). Eigenschaft der Datei, kein Rückgängig-Schritt;
+    /// gespeichert wird sie mit dem Dokument beim Schließen.
+    /// </summary>
+    public bool IsPermanent {
+        get => Document.Permanent;
+        set {
+            if(Document.Permanent == value) return;
+            Document.Permanent = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>Der Knopf „Kopie anlegen“ wurde gedrückt (ein laufender Vorgang ist bereits abgeschlossen).</summary>
+    public event EventHandler? DuplicateRequested;
 
     public ICommand SelectToolCommand { get; }
 

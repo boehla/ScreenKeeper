@@ -15,6 +15,7 @@ public sealed class AppSettings {
     public const int MinMagnifierSize = 64;
     public const int MaxMagnifierSize = 600;
     public const int MaxRetentionDays = 36500;
+    public const int DefaultRetentionDays = 30;
 
     /// <summary>Ablageordner; leer = Bilder\ScreenKeeper.</summary>
     public string StorageFolder { get; set; } = "";
@@ -104,8 +105,23 @@ public sealed class AppSettings {
     /// <summary>Mit Windows starten (Wahrheit liegt in der Registry, siehe AutostartService).</summary>
     public bool Autostart { get; set; }
 
-    /// <summary>Aufnahmen älter als X Tage in den Papierkorb verschieben; 0 = aus.</summary>
-    public int RetentionDays { get; set; }
+    /// <summary>
+    /// Aufnahmen älter als X Tage in den Papierkorb verschieben (außer permanent markierte); 0 = aus.
+    /// Fehlt das Feld in der Datei, gilt der Standard <see cref="DefaultRetentionDays"/>.
+    /// </summary>
+    public int RetentionDays { get; set; } = DefaultRetentionDays;
+
+    /// <summary>Stand des Dateiformats dieser Einstellungen; aktuell <see cref="CurrentSettingsVersion"/>.</summary>
+    public const int CurrentSettingsVersion = 1;
+
+    /// <summary>
+    /// Version des Einstellungsformats. Fehlt das Feld (Dateien bis 0.6.x), hat <see cref="Normalize"/> einmalige
+    /// Umstellungen vorzunehmen (z. B. Aufbewahrung 0 → 30 Tage, weil 0 damals der Standard „aus“ war).
+    /// </summary>
+    public int? SettingsVersion { get; set; }
+
+    /// <summary>Einmal täglich im Hintergrund nach einer neuen Version suchen (GitHub-Releases).</summary>
+    public bool CheckForUpdates { get; set; } = true;
 
     /// <summary>Tray-Benachrichtigung bei „nur speichern“.</summary>
     public bool NotifyOnSaveOnly { get; set; } = true;
@@ -149,6 +165,10 @@ public sealed class AppSettings {
         DefaultFreehandStartCap = LineCaps.Normalize(DefaultFreehandStartCap, defaults.DefaultFreehandStartCap);
         DefaultFreehandEndCap = LineCaps.Normalize(DefaultFreehandEndCap, defaults.DefaultFreehandEndCap);
         if(RetentionDays < 0) RetentionDays = 0;
+        // Einmalige Umstellung alter Dateien (ohne settingsVersion): Aufbewahrung war standardmäßig aus (0) und wurde
+        // immer geschrieben – ab 0.7.0 gilt 30 Tage als Standard, bewusst gesetzte andere Werte bleiben erhalten
+        if((SettingsVersion ?? 0) < 1 && RetentionDays == 0) RetentionDays = DefaultRetentionDays;
+        SettingsVersion = CurrentSettingsVersion;
         if(RetentionDays > MaxRetentionDays) RetentionDays = MaxRetentionDays;
         if(HistoryWindow != null && !HistoryWindow.IsValid) HistoryWindow = null;
     }

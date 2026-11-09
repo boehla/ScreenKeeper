@@ -22,6 +22,44 @@
             <Setter Property="MinWidth" Value="0" />
         </Style>
 
+        <!-- Stern in der Zeile: Umschalter „permanent“ (gefüllt = permanent) -->
+        <Style x:Key="PinButton" TargetType="Button">
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Width" Value="30" />
+            <Setter Property="Height" Value="30" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="background" Background="Transparent" CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="background" Property="Background" Value="#20000000" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="PinStar" TargetType="Path">
+            <Setter Property="Width" Value="20" />
+            <Setter Property="Height" Value="20" />
+            <Setter Property="Stretch" Value="None" />
+            <Setter Property="StrokeThickness" Value="1.4" />
+            <Setter Property="StrokeLineJoin" Value="Round" />
+            <Setter Property="Stroke" Value="#FFAAAAAA" />
+            <Setter Property="Fill" Value="Transparent" />
+            <Setter Property="Data" Value="M10,2.5 L12.3,7.3 L17.5,7.9 L13.6,11.5 L14.7,16.7 L10,14.1 L5.3,16.7 L6.4,11.5 L2.5,7.9 L7.7,7.3 Z" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsPermanent}" Value="True">
+                    <Setter Property="Stroke" Value="#FFF9A825" />
+                    <Setter Property="Fill" Value="#FFFFC107" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
         <Style x:Key="Badge" TargetType="Border">
             <Setter Property="CornerRadius" Value="3" />
             <Setter Property="Padding" Value="6,1" />
@@ -42,13 +80,20 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <Border Width="196" Height="112" Background="#FFEDEDED" BorderBrush="#FFCCCCCC" BorderThickness="1">
                     <Image Source="{Binding Thumbnail}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" />
                 </Border>
                 <StackPanel Grid.Column="1" Margin="14,4,4,4" VerticalAlignment="Center">
                     <TextBlock FontSize="17" FontWeight="SemiBold" Text="{Binding TimeText}" />
+                    <TextBlock Margin="0,2,0,0" Foreground="#FF555555" TextTrimming="CharacterEllipsis"
+                               Text="{Binding ForegroundText}" ToolTip="{Binding ForegroundToolTip}"
+                               Visibility="{Binding HasForeground, Converter={StaticResource BoolToVisibility}}" />
                     <StackPanel Margin="0,6,0,0" Orientation="Horizontal">
+                        <Border Style="{StaticResource Badge}" Background="#FFF9A825" Visibility="{Binding IsPermanent, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Foreground="White" Text="{loc:Str HistoryBadgePermanent}" />
+                        </Border>
                         <Border Style="{StaticResource Badge}" Background="#FF1E88E5" Visibility="{Binding IsEdited, Converter={StaticResource BoolToVisibility}}">
                             <TextBlock Foreground="White" Text="{loc:Str HistoryBadgeEdited}" />
                         </Border>
@@ -63,6 +108,11 @@
                         <Run Text="{Binding Name, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding SizeText, Mode=OneWay}" />
                     </TextBlock>
                 </StackPanel>
+                <Button Grid.Column="2" Margin="4,2,6,0" VerticalAlignment="Top" Style="{StaticResource PinButton}"
+                        Command="{Binding DataContext.TogglePermanentCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" CommandParameter="{Binding}"
+                        ToolTip="{loc:Str HistoryPermanentTooltip}">
+                    <Path Style="{StaticResource PinStar}" />
+                </Button>
             </Grid>
         </DataTemplate>
 
@@ -81,6 +131,8 @@
         <ContextMenu x:Key="ItemMenu">
             <MenuItem Header="{loc:Str HistoryEdit}" Command="{Binding EditCommand}" InputGestureText="Enter" FontWeight="Bold" />
             <MenuItem Header="{loc:Str HistoryCopy}" Command="{Binding CopyCommand}" InputGestureText="Strg+C" />
+            <MenuItem Header="{loc:Str HistoryDuplicate}" Command="{Binding DuplicateCommand}" InputGestureText="Strg+D" />
+            <MenuItem Header="{loc:Str HistoryPermanent}" Command="{Binding TogglePermanentCommand}" InputGestureText="P" />
             <MenuItem Header="{loc:Str HistoryShowInExplorer}" Command="{Binding ShowInExplorerCommand}" />
             <Separator />
             <MenuItem Header="{loc:Str HistoryDelete}" Command="{Binding DeleteCommand}" InputGestureText="Entf" />
@@ -105,6 +157,8 @@
                 <WrapPanel>
                     <Button Style="{StaticResource ToolButton}" Content="{loc:Str HistoryEdit}" Command="{Binding EditCommand}" ToolTip="{loc:Str HistoryEditTooltip}" FontWeight="SemiBold" />
                     <Button Style="{StaticResource ToolButton}" Content="{loc:Str HistoryCopy}" Command="{Binding CopyCommand}" ToolTip="{loc:Str HistoryCopyTooltip}" />
+                    <Button Style="{StaticResource ToolButton}" Content="{loc:Str HistoryDuplicate}" Command="{Binding DuplicateCommand}" ToolTip="{loc:Str HistoryDuplicateTooltip}" />
+                    <Button Style="{StaticResource ToolButton}" Content="{loc:Str HistoryPermanent}" Command="{Binding TogglePermanentCommand}" ToolTip="{loc:Str HistoryPermanentTooltip}" />
                     <Button Style="{StaticResource ToolButton}" Content="{loc:Str HistoryShowInExplorer}" Command="{Binding ShowInExplorerCommand}" />
                     <Button Style="{StaticResource ToolButton}" Content="{loc:Str HistoryDelete}" Command="{Binding DeleteCommand}" ToolTip="{loc:Str HistoryDeleteTooltip}" />
                 </WrapPanel>
@@ -121,7 +175,8 @@
                 <Button Style="{StaticResource QuickButton}" Margin="0,2,4,2" Content="{loc:Str HistoryQuickToday}" Command="{Binding QuickRangeCommand}" CommandParameter="Today" />
                 <Button Style="{StaticResource QuickButton}" Margin="0,2,4,2" Content="{loc:Str HistoryQuick7Days}" Command="{Binding QuickRangeCommand}" CommandParameter="Last7Days" />
                 <Button Style="{StaticResource QuickButton}" Margin="0,2,4,2" Content="{loc:Str HistoryQuick30Days}" Command="{Binding QuickRangeCommand}" CommandParameter="Last30Days" />
-                <Button Style="{StaticResource QuickButton}" Margin="0,2,14,2" Content="{loc:Str HistoryQuickAll}" Command="{Binding QuickRangeCommand}" CommandParameter="All" />
+                <Button Style="{StaticResource QuickButton}" Margin="0,2,4,2" Content="{loc:Str HistoryQuickAll}" Command="{Binding QuickRangeCommand}" CommandParameter="All" />
+                <ToggleButton Margin="0,2,14,2" Padding="10,4" Content="{loc:Str HistoryFilterPermanent}" IsChecked="{Binding FilterPermanent}" ToolTip="{loc:Str HistoryFilterPermanentTooltip}" />
                 <Grid Width="200" Margin="0,2">
                     <TextBox x:Name="searchBox" VerticalContentAlignment="Center" Padding="4,2" Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged, Delay=300}" />
                     <TextBlock Margin="8,0" VerticalAlignment="Center" Foreground="Gray" IsHitTestVisible="False" Text="{loc:Str HistorySearchPlaceholder}">
@@ -144,6 +199,12 @@
         <Border DockPanel.Dock="Bottom" Padding="10,4" Background="#FFF5F5F5" BorderBrush="#FFDDDDDD" BorderThickness="0,1,0,0">
             <DockPanel>
                 <ProgressBar DockPanel.Dock="Right" Width="80" Height="10" IsIndeterminate="True" Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}" />
+                <!-- Update: unaufdringlicher Link bzw. Fortschritt/Fehler, keine Dialoge -->
+                <TextBlock DockPanel.Dock="Right" Margin="0,0,12,0" Visibility="{Binding Update.ShowLink, Converter={StaticResource BoolToVisibility}, FallbackValue=Collapsed}">
+                    <Hyperlink Command="{Binding Update.InstallCommand}"><Run Text="{Binding Update.LinkText, Mode=OneWay}" /></Hyperlink>
+                </TextBlock>
+                <TextBlock DockPanel.Dock="Right" Margin="0,0,12,0" Foreground="#FF555555" Text="{Binding Update.StatusText}"
+                           Visibility="{Binding Update.HasStatus, Converter={StaticResource BoolToVisibility}, FallbackValue=Collapsed}" />
                 <TextBlock DockPanel.Dock="Right" Margin="0,0,12,0" Foreground="#FF2E7D32" Text="{Binding Message}" TextTrimming="CharacterEllipsis" />
                 <TextBlock Text="{Binding StatusText}" TextTrimming="CharacterEllipsis" />
             </DockPanel>
@@ -173,6 +234,8 @@
                 <ListBox.InputBindings>
                     <KeyBinding Key="Enter" Command="{Binding EditCommand}" />
                     <KeyBinding Key="C" Modifiers="Control" Command="{Binding CopyCommand}" />
+                    <KeyBinding Key="D" Modifiers="Control" Command="{Binding DuplicateCommand}" />
+                    <KeyBinding Key="P" Command="{Binding TogglePermanentCommand}" />
                     <KeyBinding Key="Delete" Command="{Binding DeleteCommand}" />
                 </ListBox.InputBindings>
             </ListBox>

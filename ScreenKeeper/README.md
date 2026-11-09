@@ -21,7 +21,8 @@ Das Programm läuft aus jedem beliebigen Ordner und schreibt nichts neben die EX
 
 ScreenKeeper läuft im Hintergrund mit einem Symbol im Infobereich der Taskleiste.
 
-- **Rechtsklick** auf das Symbol: *Aufnahme*, *History öffnen*, *Einstellungen*, *Beenden*
+- **Rechtsklick** auf das Symbol: *Aufnahme*, *History öffnen*, *Einstellungen*, *Beenden* – und nur wenn eine neue
+  Version bereitsteht *Update auf x installieren*
 - **Doppelklick** auf das Symbol: History öffnen
 - Ein zweiter Programmstart öffnet die History der laufenden Instanz.
 
@@ -42,20 +43,28 @@ Alle Hotkeys lassen sich in den Einstellungen ändern oder abschalten.
 ### History
 
 Die History ist das Hauptfenster. Sie zeigt alle Aufnahmen, neueste zuerst, nach Tagen gruppiert (Heute, Gestern,
-Datum) – mit Vorschaubild, Uhrzeit und dem Kennzeichen **bearbeitet**, wenn ein Bereich oder Zeichnungen gespeichert
-sind. Weitere Einträge werden beim Scrollen nachgeladen, auch Tausende Aufnahmen bleiben flüssig. Schließen versteckt
+Datum) – mit Vorschaubild, Uhrzeit, darunter dem **Programm im Vordergrund** bei der Aufnahme (Prozessname und gekürzter
+Fenstertitel, der Tooltip zeigt ihn ganz), dem Kennzeichen **bearbeitet**, wenn ein Bereich oder Zeichnungen gespeichert
+sind, und **permanent** (Stern rechts in der Zeile, gefüllt = permanent). Weitere Einträge werden beim Scrollen nachgeladen, auch Tausende Aufnahmen bleiben flüssig. Schließen versteckt
 das Fenster nur; ScreenKeeper läuft im Infobereich weiter.
 
 | Aktion | Bedienung |
 |---|---|
 | Bearbeiten | Doppelklick, Enter, Knopf oder Kontextmenü |
 | In Zwischenablage | Strg+C – der gespeicherte Bereich (ohne Bereich das ganze Bild) mit Zeichnungen und Maus |
+| Kopie anlegen | Strg+D, Knopf oder Kontextmenü – dieselbe Aufnahme noch einmal mit eigenem Bereich und eigenen Zeichnungen |
+| Permanent | P, Stern in der Zeile, Knopf oder Kontextmenü – umschalten; permanente Aufnahmen löscht das Aufräumen nie |
 | Im Explorer anzeigen | Knopf oder Kontextmenü |
 | Löschen | Entf (mit Rückfrage, Mehrfachauswahl möglich) – Bild, JSON und Vorschaubild kommen in den Papierkorb |
 | Aktualisieren | F5 |
 | Ordner öffnen | öffnet den Ablageordner |
 
-- **Filter:** Von/Bis-Datum, Schnellwahl *Heute*, *7 Tage*, *30 Tage*, *Alle* und Suche im Dateinamen.
+- **Filter:** Von/Bis-Datum, Schnellwahl *Heute*, *7 Tage*, *30 Tage*, *Alle*, zusätzlich der Schalter *Permanent*
+  (nur permanente Aufnahmen) und die Suche – sie findet Text im Dateinamen, im Programmnamen und im Fenstertitel des
+  Vordergrundprogramms. Dafür werden die JSON-Dateien im Hintergrund einmal gelesen und danach im Speicher gehalten.
+- **Kopie anlegen** legt PNG, JSON und Vorschaubild unter dem nächsten freien Namen (`…_2`, `…_3`) im selben Ordner an.
+  Die Kopie übernimmt Bereich und Zeichnungen (mit neuen Kennungen), ist aber nicht permanent; sie erscheint direkt über
+  dem Original und ist ausgewählt. So lässt sich dieselbe Aufnahme mehrfach unterschiedlich bearbeiten.
 - **Bearbeiten** öffnet denselben Editor wie bei einer neuen Aufnahme, mit Bereich, Zeichnungen und Maus wie
   gespeichert. Passt die Monitor-Anordnung nicht mehr, öffnet er im Fenster-Modus (siehe unten).
 - PNGs ohne JSON (z. B. von Hand in den Ablageordner gelegt) erscheinen ebenfalls (*nur Bild*); beim ersten Bearbeiten
@@ -67,7 +76,7 @@ Tray-Menü → *Einstellungen*. Alle Änderungen wirken sofort nach **OK** bzw. 
 
 - **Allgemein:** Ablageordner (leer = `Bilder\ScreenKeeper`), Dateinamen-Muster mit den Platzhaltern
   `{yyyy} {MM} {dd} {HH} {mm} {ss}` und Vorschau, Exportordner (leer = `<Ablageordner>\Export`),
-  Aufbewahrung, Autostart, Benachrichtigung bei „nur speichern“.
+  Aufbewahrung, Autostart, Benachrichtigung bei „nur speichern“, Updates.
 - **Hotkeys:** Feld anklicken und die Tastenkombination drücken (Esc bricht ab, Entf schaltet den Hotkey aus).
   Beim Speichern wird geprüft, ob zwei Hotkeys gleich sind (Fehler) und ob ein anderes Programm die Kombination belegt
   (Hinweis; bei der Druck-Taste übernimmt dann der Tastatur-Hook). Die Seite zeigt außerdem, wie die Druck-Taste
@@ -78,8 +87,22 @@ Tray-Menü → *Einstellungen*. Alle Änderungen wirken sofort nach **OK** bzw. 
 **Autostart:** Die Einstellung *Mit Windows starten* trägt ScreenKeeper unter
 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` ein bzw. entfernt den Eintrag wieder.
 
-**Aufbewahrung:** Mit einem Wert größer 0 verschiebt ScreenKeeper Aufnahmen, die älter als so viele Tage sind, beim
-Start und danach einmal täglich in den Papierkorb (Bild, JSON und Vorschaubild). Standard ist 0 = aus.
+**Aufbewahrung (Aufräumen):** „Aufnahmen nach X Tagen in den Papierkorb verschieben, außer permanente“. ScreenKeeper
+verschiebt Aufnahmen, die älter als so viele Tage sind, beim Start und danach einmal täglich in den Papierkorb (Bild,
+JSON und Vorschaubild) und schreibt die Anzahl ins Protokoll. **Permanent** markierte Aufnahmen bleiben immer erhalten,
+ebenso Aufnahmen, deren JSON nicht lesbar ist; Aufnahmen ganz ohne JSON zählen als nicht permanent. Standard sind
+30 Tage, 0 schaltet das Aufräumen aus. Eine vorhandene Einstellungsdatei ohne diesen Wert bekommt den Standard; wer
+bisher ausdrücklich 0 eingestellt hatte, behält 0.
+
+**Updates:** Mit *Einmal täglich im Hintergrund nach Updates suchen* (Standard: an) fragt ScreenKeeper 30 s nach dem
+Start und danach höchstens einmal je 24 Stunden bei GitHub nach der neuesten Version (Zeitpunkt in
+`%APPDATA%\ScreenKeeper\update.json`). Es erscheinen keine Dialoge und keine Benachrichtigungen: Gibt es eine neue
+Version, steht unten in der History „Version x verfügbar – installieren“, im Tray-Menü *Update auf x installieren*,
+im Tooltip „· Update verfügbar“ und auf der Einstellungsseite das Ergebnis (dort prüft *Jetzt prüfen* sofort).
+Ein Klick auf *installieren* lädt das passende ZIP (mit bzw. ohne .NET-Laufzeit, je nachdem welche Variante läuft) nach
+`%LOCALAPPDATA%\ScreenKeeper\update\<Version>\` (Fortschritt in der Statuszeile), entpackt es, speichert einen offenen
+Editor, beendet ScreenKeeper, ersetzt die EXE und startet neu. Fehler stehen nur im Statustext. Ein selbst gebauter
+Entwicklungsstand (aus `bin\`) öffnet stattdessen die Release-Seite im Browser.
 
 ### Bearbeiten
 
@@ -145,6 +168,8 @@ Objekts. Alle Zeichnungen bleiben einzelne Objekte und lassen sich jederzeit aus
 | Bereich speichern unter … | Strg+Shift+S | freier Pfad, PNG oder JPG |
 | Ganzer Bildschirm → Zwischenablage | Strg+Shift+C | alle Monitore |
 | Aktueller Monitor → Zwischenablage | – | Monitor, auf dem die Maus steht |
+| Kopie anlegen | – | speichert den aktuellen Stand als neue Aufnahme (`…_2`) und bearbeitet die Kopie weiter; das Original behält den Stand von jetzt |
+| Permanent (Stern) | – | Umschalter, aktiv = blau; wird beim Schließen mitgespeichert |
 | Rückgängig / Wiederholen | Strg+Z / Strg+Y | Bereich, Zeichnungen und Maus |
 | Abbrechen | Esc | kein Export (bricht zuerst ein laufendes Aufziehen ab) |
 
@@ -168,6 +193,10 @@ Start- bzw. Endpunkt.
    2026-11-09_14-32-05.thumb.jpg  Vorschaubild (max. 320 px breit)
 ```
 
+Die JSON enthält seit 0.7 zusätzlich `foreground` (`title`, `process` des Programms im Vordergrund, fehlt bei älteren
+Aufnahmen), beim passenden Fenster in `windows` `"foreground": true` und bei permanenten Aufnahmen `"permanent": true`.
+
 - Standard-Ablageordner: `Bilder\ScreenKeeper`
 - Einstellungen: `%APPDATA%\ScreenKeeper\settings.json`
+- Update-Prüfung: `%APPDATA%\ScreenKeeper\update.json`, heruntergeladene Updates in `%LOCALAPPDATA%\ScreenKeeper\update`
 - Protokoll: `%APPDATA%\ScreenKeeper\log.txt`

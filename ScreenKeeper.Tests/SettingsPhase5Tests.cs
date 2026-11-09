@@ -159,6 +159,7 @@ public class SettingsPhase5Tests {
             s.CursorVisible = false;
             s.Autostart = true;
             s.RetentionDays = 90;
+            s.CheckForUpdates = false;
             s.NotifyOnSaveOnly = false;
             s.HistoryWindow = new WindowPlacement { Left = -1200, Top = 40, Width = 900, Height = 700, Maximized = true };
             service.Save();

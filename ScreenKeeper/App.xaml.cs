@@ -47,6 +47,7 @@ public partial class App : Application {
         try {
             if(AppServices.IsInitialized) AppServices.Workflow.WaitForPendingWrites(TimeSpan.FromSeconds(15));
             retention?.Dispose();
+            if(AppServices.IsInitialized) AppServices.Updates.Dispose();
             hotkeys?.Dispose();
             tray?.Dispose();
             singleInstance?.Dispose();
@@ -103,6 +104,7 @@ public partial class App : Application {
         tray.HistoryRequested += (s, e) => ShowHistory();
         tray.SettingsRequested += (s, e) => ShowSettings();
         tray.ExitRequested += (s, e) => exit();
+        tray.UpdateRequested += onTrayUpdate;
 
         hotkeys = new HotkeyService();
         AppServices.Hotkeys = hotkeys;
@@ -119,7 +121,37 @@ public partial class App : Application {
         retention = new RetentionService(AppServices.Storage, AppServices.Settings);
         retention.Completed += (s, result) => historyWindow?.Reload();
         retention.Start();
+        startUpdates();
         Dispatcher.BeginInvoke(new Action(warmUpEditor), DispatcherPriority.ApplicationIdle);
+    }
+
+    /// <summary>
+    /// Update-Prüfung im Hintergrund (verzögert, höchstens einmal je 24 h). Ein Update zeigt nur das Tray-Menü, der
+    /// Tooltip, die History-Statusleiste und das Einstellungsfenster an – keine Dialoge, keine Benachrichtigungen.
+    /// </summary>
+    private void startUpdates() {
+        UpdateService updates = AppServices.Updates;
+        updates.PrepareExit = prepareUpdateExit;
+        updates.Exit = exit;
+        updates.Changed += (s, e) => tray?.SetUpdate(updates.Available?.Version);
+        tray?.SetUpdate(updates.Available?.Version);
+        updates.Start();
+    }
+
+    /// <summary>
+    /// Vor dem Beenden für ein Update: offenen Editor normal schließen (speichert den Stand), Schreibvorgänge abwarten.
+    /// </summary>
+    private void prepareUpdateExit() {
+        AppServices.Workflow.OpenEditor?.Close();
+        AppServices.Workflow.WaitForPendingWrites(TimeSpan.FromSeconds(15));
+    }
+
+    private async void onTrayUpdate(object? sender, EventArgs e) {
+        try {
+            await AppServices.Updates.InstallAsync();
+        } catch(Exception ex) {
+            Log.Error(ex, "Update aus dem Tray-Menü fehlgeschlagen");
+        }
     }
 
     /// <summary>
@@ -153,6 +185,7 @@ public partial class App : Application {
             if(problems.Count > 0) tray?.ShowBalloon(Strings.HintTitle, string.Join(Environment.NewLine, problems), true);
         }
         retention?.Reevaluate();
+        AppServices.Updates.Reevaluate();
     }
 
     private void exit() {

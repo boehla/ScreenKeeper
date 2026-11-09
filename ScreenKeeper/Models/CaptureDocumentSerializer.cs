@@ -51,6 +51,10 @@ public static class CaptureDocumentSerializer {
             window.Title ??= "";
             window.Process ??= "";
         }
+        if(document.Foreground != null) {
+            document.Foreground.Title ??= "";
+            document.Foreground.Process ??= "";
+        }
     }
 
     private static JsonSerializerOptions createOptions() {

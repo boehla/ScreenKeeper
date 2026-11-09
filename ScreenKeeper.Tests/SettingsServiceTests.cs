@@ -17,7 +17,8 @@ public class SettingsServiceTests {
             Assert.Equal(8, settings.MagnifierZoom);
             Assert.True(settings.CursorVisible);
             Assert.False(settings.Autostart);
-            Assert.Equal(0, settings.RetentionDays);
+            Assert.Equal(30, settings.RetentionDays);
+            Assert.True(settings.CheckForUpdates);
             Assert.True(settings.NotifyOnSaveOnly);
         }
     }
@@ -45,6 +46,8 @@ public class SettingsServiceTests {
             Assert.Equal(AppSettings.DefaultFileNamePattern, settings.FileNamePattern);
             Assert.False(settings.NotifyOnSaveOnly);
             Assert.True(settings.CursorVisible);
+            // Feld fehlt (Dateien bis 0.6 ohne Eintrag) → neuer Standard 30 Tage
+            Assert.Equal(AppSettings.DefaultRetentionDays, settings.RetentionDays);
 
             service.Save();
             string written = File.ReadAllText(path);
@@ -57,7 +60,7 @@ public class SettingsServiceTests {
     public void OutOfRangeValues_AreNormalized() {
         using (TempFolder temp = new TempFolder()) {
             string path = Path.Combine(temp.Path, "settings.json");
-            File.WriteAllText(path, """{ "magnifierZoom": 99, "retentionDays": -5, "defaultThickness": 0 }""");
+            File.WriteAllText(path, """{ "settingsVersion": 1, "magnifierZoom": 99, "retentionDays": -5, "defaultThickness": 0 }""");
             SettingsService service = new SettingsService(path);
             service.Load();
             Assert.Equal(AppSettings.MaxMagnifierZoom, service.Settings.MagnifierZoom);
@@ -85,13 +88,36 @@ public class SettingsServiceTests {
             service.Load();
             int raised = 0;
             service.Changed += (s, e) => raised++;
-            service.Settings.RetentionDays = 30;
+            service.Settings.RetentionDays = 45;
             service.Save();
             Assert.Equal(1, raised);
 
             SettingsService reloaded = new SettingsService(service.FilePath);
             reloaded.Load();
-            Assert.Equal(30, reloaded.Settings.RetentionDays);
+            Assert.Equal(45, reloaded.Settings.RetentionDays);
+        }
+    }
+
+    [Fact]
+    public void OldSettingsFile_WithoutVersion_MigratesRetentionZeroTo30() {
+        using (TempFolder temp = new TempFolder()) {
+            string path = Path.Combine(temp.Path, "settings.json");
+            // Datei aus 0.6.x: kein settingsVersion, retentionDays 0 war der damalige Standard „aus“
+            File.WriteAllText(path, "{ \"retentionDays\": 0, \"magnifierZoom\": 8 }");
+            SettingsService service = new SettingsService(path);
+            service.Load();
+            Assert.Equal(30, service.Settings.RetentionDays);
+            Assert.Equal(AppSettings.CurrentSettingsVersion, service.Settings.SettingsVersion);
+
+            // Datei ab 0.7.0 mit bewusst abgeschalteter Aufbewahrung bleibt aus
+            File.WriteAllText(path, "{ \"settingsVersion\": 1, \"retentionDays\": 0 }");
+            service.Load();
+            Assert.Equal(0, service.Settings.RetentionDays);
+
+            // Alte Datei mit bewusst gesetztem anderen Wert bleibt erhalten
+            File.WriteAllText(path, "{ \"retentionDays\": 90 }");
+            service.Load();
+            Assert.Equal(90, service.Settings.RetentionDays);
         }
     }
 }

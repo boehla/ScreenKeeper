@@ -27,6 +27,9 @@ public sealed class CaptureWorkflow {
     /// <summary>Ein Editor wurde geschlossen (Bearbeitungsstand und Vorschaubild sind gespeichert); Argument = JSON-Pfad.</summary>
     public event EventHandler<string>? EditorClosed;
 
+    /// <summary>Aus dem Editor wurde eine Kopie angelegt (Original, Kopie); im UI-Thread.</summary>
+    public event EventHandler<(CaptureFiles Original, CaptureFiles Copy)>? CaptureCopied;
+
     /// <summary>
     /// Aufnahme machen und sofort speichern. Ergänzt den aufgenommenen Zeiger als virtuelle Maus.
     /// </summary>
@@ -93,6 +96,26 @@ public sealed class CaptureWorkflow {
         editor.Show();
         editor.Activate();
         return editor;
+    }
+
+    /// <summary>
+    /// „Kopie anlegen“ im Editor: aktuellen Stand speichern (JSON und Vorschaubild), Kopie anlegen, den Editor des Originals
+    /// schließen und die Kopie im selben Modus weiter bearbeiten (Bild aus dem Speicher, kein erneutes Laden).
+    /// Wirft bei Fehlern, bevor etwas geschlossen wurde – der Editor bleibt dann offen.
+    /// </summary>
+    public EditorWindow DuplicateAndContinue(EditorWindow editor) {
+        editor.ViewModel.CancelGesture();
+        string originalJson = editor.JsonPath;
+        AppServices.Storage.SaveDocument(editor.Document, originalJson);
+        AppServices.Storage.UpdateThumbnail(editor.Document, editor.Original, originalJson);
+        CaptureFiles copy = AppServices.Storage.DuplicateCapture(originalJson);
+        CaptureDocument document = AppServices.Storage.LoadDocument(copy.JsonPath);
+        BitmapSource original = editor.Original;
+        EditorMode mode = editor.Mode;
+        editor.Close();
+        CaptureCopied?.Invoke(this, (CaptureFiles.FromJson(Path.GetFullPath(originalJson)), copy));
+        Log.Info($"Editor: Kopie angelegt, weiter mit {copy.JsonPath}");
+        return ShowEditor(document, original, copy.JsonPath, mode);
     }
 
     /// <summary>

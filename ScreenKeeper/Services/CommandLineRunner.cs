@@ -18,7 +18,7 @@ namespace ScreenKeeper.Services;
 /// </summary>
 public sealed class CommandLineRunner {
     private const int captureTimingRuns = 3;
-    private static readonly string[] switches = { "--capture", "--render", "--open", "--history", "--settings", "--version" };
+    private static readonly string[] switches = { "--capture", "--render", "--open", "--history", "--settings", "--retention", "--check-update", "--version" };
 
     public static bool IsCommandLine(string[] args) {
         return args.Any(a => switches.Contains(a, StringComparer.OrdinalIgnoreCase));
@@ -38,6 +38,8 @@ public sealed class CommandLineRunner {
                 case "--open": return await runOpen(args);
                 case "--history": return await runHistory(args);
                 case "--settings": return await runSettings(args);
+                case "--retention": return await runRetention(args);
+                case "--check-update": return await runCheckUpdate();
             }
             writeError(Strings.CliUsage);
             return 1;
@@ -164,13 +166,15 @@ public sealed class CommandLineRunner {
         bool testHistory = hasFlag(args, "--test-history");
         string? editName = getOption(args, "--test-edit");
         string? deleteName = getOption(args, "--test-delete");
+        string? duplicateName = getOption(args, "--test-duplicate");
+        string? permanentName = getOption(args, "--test-permanent");
         AppServices.Initialize(folder);
         BindingErrorListener? bindingErrors = testHistory ? BindingErrorListener.Attach() : null;
         HistoryWindow window = new HistoryWindow(false);
-        if(testHistory || editName != null || deleteName != null) {
+        if(testHistory || editName != null || deleteName != null || duplicateName != null || permanentName != null) {
             window.ShowActivated = false;
             window.Show();
-            int result = await window.RunTestAsync(watch, testHistory, editName, deleteName);
+            int result = await window.RunTestAsync(watch, testHistory, editName, deleteName, duplicateName, permanentName);
             if(bindingErrors != null) reportBindingErrors(bindingErrors);
             return result;
         }
@@ -204,6 +208,43 @@ public sealed class CommandLineRunner {
         window.Close();
         await closed;
         if(bindingErrors != null) reportBindingErrors(bindingErrors);
+        return 0;
+    }
+
+    /// <summary>
+    /// <c>--retention --folder &lt;Ablageordner&gt; [--days &lt;n&gt;] [--dry-run]</c> (nur für Tests): ein Aufräum-Lauf wie im
+    /// Tray-Betrieb (Standard: Tage aus den Einstellungen), Ergebnis auf stdout.
+    /// </summary>
+    private static async Task<int> runRetention(string[] args) {
+        string? folder = getOption(args, "--folder");
+        if(folder == null) throw new ArgumentException(Strings.Format(Strings.CliMissingArgument, "--folder"));
+        string? daysText = getOption(args, "--days");
+        bool dryRun = hasFlag(args, "--dry-run");
+        AppServices.Initialize(folder);
+        int days = AppServices.Settings.Settings.RetentionDays;
+        if(daysText != null && !int.TryParse(daysText, NumberStyles.Integer, CultureInfo.InvariantCulture, out days)) throw new ArgumentException(Strings.Format(Strings.CliMissingArgument, "--days"));
+        RetentionService retention = new RetentionService(AppServices.Storage, AppServices.Settings);
+        RetentionResult result = await StaTask.Run(() => retention.Run(DateTime.Now, days, dryRun));
+        int left = result.Expired.Count(e => File.Exists(e.Files.PngPath) || File.Exists(e.Files.JsonPath) || File.Exists(e.Files.ThumbPath));
+        Console.Out.WriteLine($"days={result.Days} cutoff={result.Cutoff:yyyy-MM-dd HH:mm} expired={result.Expired.Count} keptPermanent={result.Kept} dryRun={result.DryRun} filesLeft={left}");
+        Console.Out.Flush();
+        return 0;
+    }
+
+    /// <summary>
+    /// <c>--check-update</c> (nur für Tests): Update-Prüfung ohne Merken, Ausgabe
+    /// <c>current=&lt;v&gt; latest=&lt;v&gt; asset=&lt;name|none&gt;</c> und <c>update=&lt;v|none&gt;</c>.
+    /// </summary>
+    private static async Task<int> runCheckUpdate() {
+        AppServices.Initialize(null);
+        UpdateCheckResult? result = await AppServices.Updates.CheckAsync(false);
+        if(result == null) {
+            writeError(AppServices.Updates.CheckResultText);
+            return 1;
+        }
+        Console.Out.WriteLine($"current={result.CurrentVersion} latest={result.Latest.Version} asset={result.Latest.AssetName ?? "none"}");
+        Console.Out.WriteLine($"update={(result.IsNewer ? result.Latest.Version : "none")} singleFile={UpdateService.IsSingleFile} selfContained={UpdateService.IsSelfContained}");
+        Console.Out.Flush();
         return 0;
     }
 

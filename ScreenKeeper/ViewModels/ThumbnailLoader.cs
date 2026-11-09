@@ -1,6 +1,5 @@
 ﻿using System.Windows.Media;
 using System.Windows.Threading;
-using ScreenKeeper.Models;
 using ScreenKeeper.Services;
 
 namespace ScreenKeeper.ViewModels;
@@ -83,25 +82,16 @@ public sealed class ThumbnailLoader : IThumbnailSource {
                 pending.RemoveLast();
             }
             CaptureEntry entry = next.Item.Entry;
-            (ImageSource? image, bool edited, bool broken) = load(entry);
-            dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() => complete(next.Item, next.Version, image, edited, broken)));
+            ImageSource? image = load(entry);
+            dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() => complete(next.Item, next.Version, image)));
         }
     }
 
-    private (ImageSource? Image, bool Edited, bool Broken) load(CaptureEntry entry) {
+    /// <summary>Vorschaubild laden; die Kennzeichen landen dabei in <see cref="CaptureEntry.Metadata"/> (einmal je Eintrag).</summary>
+    private ImageSource? load(CaptureEntry entry) {
         ImageSource? image = loadThumbnail(entry);
-        bool edited = false;
-        bool broken = false;
-        if(entry.HasJson) {
-            try {
-                CaptureDocument document = storage.LoadDocument(entry.Files.JsonPath);
-                edited = document.IsEdited;
-            } catch(Exception ex) {
-                Log.Warn($"Dokument {entry.Files.JsonPath} nicht lesbar: {ex.Message}");
-                broken = true;
-            }
-        }
-        return (image, edited, broken);
+        storage.GetMetadata(entry);
+        return image;
     }
 
     private ImageSource? loadThumbnail(CaptureEntry entry) {
@@ -119,8 +109,8 @@ public sealed class ThumbnailLoader : IThumbnailSource {
         }
     }
 
-    private void complete(HistoryItem item, int version, ImageSource? image, bool edited, bool broken) {
-        if(!item.SetLoaded(version, image, edited, broken)) return;
+    private void complete(HistoryItem item, int version, ImageSource? image) {
+        if(!item.SetLoaded(version, image)) return;
         loadedCount++;
         Forget(item);
         if(image == null) return;

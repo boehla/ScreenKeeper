@@ -1,6 +1,9 @@
 ﻿using System.Collections.Concurrent;
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -60,6 +63,15 @@ public sealed record SavedCapture(CaptureFiles Files, Task PngTask, Task Thumbna
 public sealed record CaptureEntry(CaptureFiles Files, DateTime Time, long Size = 0, bool HasJson = true, bool HasThumbnail = true) {
     /// <summary>Basisname ohne Endung, z. B. <c>2026-11-09_14-32-05</c>.</summary>
     public string Name => CaptureFiles.GetBaseName(Files.PngPath);
+
+    /// <summary>Änderungszeit (UTC) der JSON-Datei beim Aufzählen; <see cref="DateTime.MinValue"/> = unbekannt.</summary>
+    public DateTime JsonWriteTimeUtc { get; init; }
+
+    /// <summary>
+    /// Aus der JSON gelesene Kennzeichen (bearbeitet, permanent, Programm im Vordergrund); null = noch nicht gelesen.
+    /// Wird von <see cref="IStorageService.GetMetadata"/> gesetzt, damit die JSON je Eintrag nur einmal gelesen wird.
+    /// </summary>
+    public CaptureMetadata? Metadata { get; set; }
 }
 
 /// <summary>
@@ -107,6 +119,23 @@ public interface IStorageService {
     /// <summary>Erzeugt das Vorschaubild aus dem PNG, falls es fehlt. True, wenn es danach vorhanden ist.</summary>
     bool EnsureThumbnail(CaptureFiles files);
 
+    /// <summary>
+    /// Kennzeichen aus der JSON des Eintrags (einmal gelesen, danach aus <see cref="CaptureEntry.Metadata"/> bzw. einem
+    /// Zwischenspeicher, solange sich die Datei nicht ändert). Ohne JSON: <see cref="CaptureMetadata.None"/>. Threadsicher.
+    /// </summary>
+    CaptureMetadata GetMetadata(CaptureEntry entry);
+
+    /// <summary>
+    /// Legt eine Kopie der Aufnahme (PNG, JSON, Vorschaubild) im selben Ordner an: Basisname mit Suffix <c>_2</c>,
+    /// <c>_3</c> …, neue Ids für alle Zeichenobjekte, nicht permanent. Liefert die Dateien der Kopie.
+    /// </summary>
+    CaptureFiles DuplicateCapture(string pngOrJsonPath);
+
+    /// <summary>
+    /// Markierung „permanent“ setzen und die JSON speichern (fehlt sie, wird sie wie beim Bearbeiten angelegt).
+    /// </summary>
+    CaptureDocument SetPermanent(string pngOrJsonPath, bool permanent);
+
     void DeleteToRecycleBin(CaptureFiles files);
 
     /// <summary>Verschiebt alle Dateien mehrerer Aufnahmen in einem Vorgang in den Papierkorb.</summary>
@@ -125,6 +154,8 @@ public sealed class StorageService : IStorageService {
     private readonly IRenderService render;
     // Laufende Hintergrund-Schreibvorgänge je Datei (voller Pfad), damit spätere Schreib- oder Löschvorgänge darauf warten
     private readonly ConcurrentDictionary<string, Task> pendingWrites = new ConcurrentDictionary<string, Task>(StringComparer.OrdinalIgnoreCase);
+    // Gelesene Kennzeichen je JSON-Datei mit deren Änderungszeit (UTC), damit Filter und History sie nicht erneut lesen
+    private readonly ConcurrentDictionary<string, (DateTime Stamp, CaptureMetadata Metadata)> metadataCache = new ConcurrentDictionary<string, (DateTime Stamp, CaptureMetadata Metadata)>(StringComparer.OrdinalIgnoreCase);
 
     public StorageService(ISettingsService settings, IRenderService render) {
         this.settings = settings;
@@ -242,18 +273,26 @@ public sealed class StorageService : IStorageService {
     /// </summary>
     public static List<CaptureEntry> ReadFolder(string folder, string pattern) {
         HashSet<string> names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, FileInfo> jsons = new Dictionary<string, FileInfo>(StringComparer.OrdinalIgnoreCase);
         List<FileInfo> pngs = new List<FileInfo>();
         foreach(FileInfo file in new DirectoryInfo(folder).EnumerateFiles()) {
             names.Add(file.Name);
-            if(file.Name.EndsWith(CaptureFiles.PngExtension, StringComparison.OrdinalIgnoreCase)) pngs.Add(file);
+            if(file.Name.EndsWith(CaptureFiles.PngExtension, StringComparison.OrdinalIgnoreCase)) {
+                pngs.Add(file);
+            } else if(file.Name.EndsWith(CaptureFiles.JsonExtension, StringComparison.OrdinalIgnoreCase)) {
+                jsons[file.Name] = file;
+            }
         }
         List<CaptureEntry> entries = new List<CaptureEntry>(pngs.Count);
         foreach(FileInfo png in pngs) {
             string baseName = png.Name.Substring(0, png.Name.Length - CaptureFiles.PngExtension.Length);
             DateTime time = GetCaptureTime(baseName, pattern, png.LastWriteTime);
-            bool hasJson = names.Contains(baseName + CaptureFiles.JsonExtension);
+            bool hasJson = jsons.TryGetValue(baseName + CaptureFiles.JsonExtension, out FileInfo? json);
             bool hasThumb = names.Contains(baseName + CaptureFiles.ThumbExtension);
-            entries.Add(new CaptureEntry(CaptureFiles.FromPng(png.FullName), time, png.Length, hasJson, hasThumb));
+            entries.Add(new CaptureEntry(CaptureFiles.FromPng(png.FullName), time, png.Length, hasJson, hasThumb) {
+                // Zeit aus demselben Verzeichnisdurchlauf, ohne zusätzlichen Dateizugriff
+                JsonWriteTimeUtc = json != null ? json.LastWriteTimeUtc : DateTime.MinValue
+            });
         }
         entries.Sort(CompareNewestFirst);
         return entries;
@@ -278,12 +317,127 @@ public sealed class StorageService : IStorageService {
         FileInfo png = new FileInfo(files.PngPath);
         if(!png.Exists) return null;
         DateTime time = GetCaptureTime(CaptureFiles.GetBaseName(files.PngPath), settings.Settings.FileNamePattern, png.LastWriteTime);
-        return new CaptureEntry(files, time, png.Length, File.Exists(files.JsonPath), File.Exists(files.ThumbPath));
+        FileInfo json = new FileInfo(files.JsonPath);
+        return new CaptureEntry(files, time, png.Length, json.Exists, File.Exists(files.ThumbPath)) {
+            JsonWriteTimeUtc = json.Exists ? json.LastWriteTimeUtc : DateTime.MinValue
+        };
+    }
+
+    public CaptureMetadata GetMetadata(CaptureEntry entry) {
+        CaptureMetadata? known = entry.Metadata;
+        if(known != null) return known;
+        CaptureMetadata metadata = CaptureMetadata.None;
+        if(entry.HasJson) {
+            string key = Path.GetFullPath(entry.Files.JsonPath);
+            DateTime stamp = entry.JsonWriteTimeUtc != DateTime.MinValue ? entry.JsonWriteTimeUtc : File.GetLastWriteTimeUtc(key);
+            if(metadataCache.TryGetValue(key, out (DateTime Stamp, CaptureMetadata Metadata) cached) && cached.Stamp == stamp) {
+                metadata = cached.Metadata;
+            } else {
+                try {
+                    metadata = CaptureMetadata.FromDocument(LoadDocument(key));
+                } catch(Exception ex) {
+                    Log.Warn($"Dokument {key} nicht lesbar: {ex.Message}");
+                    metadata = CaptureMetadata.Broken;
+                }
+                metadataCache[key] = (stamp, metadata);
+            }
+        }
+        entry.Metadata = metadata;
+        return metadata;
+    }
+
+    public CaptureFiles DuplicateCapture(string pngOrJsonPath) {
+        CaptureFiles source = filesFor(pngOrJsonPath);
+        // Ein laufendes Hintergrund-Schreiben (neue Aufnahme) zuerst abschließen, sonst würde eine halbe Datei kopiert
+        foreach(string path in new[] { source.PngPath, source.JsonPath, source.ThumbPath }) waitForPendingWrite(path);
+        string pattern = settings.Settings.FileNamePattern;
+        CaptureDocument document;
+        string pngPath = source.PngPath;
+        if(File.Exists(source.JsonPath)) {
+            document = LoadDocument(source.JsonPath);
+            pngPath = ResolveImagePath(document, source.JsonPath);
+        } else {
+            if(!File.Exists(pngPath)) throw new FileNotFoundException(Strings.Format(Strings.ErrorImageNotFound, pngPath), pngPath);
+            document = CreateDocumentForImage(pngPath, pattern);
+        }
+        if(!File.Exists(pngPath)) throw new FileNotFoundException(Strings.Format(Strings.ErrorImageNotFound, pngPath), pngPath);
+
+        string folder = Path.GetDirectoryName(source.JsonPath) ?? "";
+        string baseName = GetUniqueBaseName(folder, GetCopyStem(CaptureFiles.GetBaseName(source.JsonPath), pattern));
+        CaptureFiles copy = CaptureFiles.FromBase(folder, baseName);
+        PrepareCopy(document, Path.GetFileName(copy.PngPath));
+        List<string> created = new List<string>();
+        try {
+            File.Copy(pngPath, copy.PngPath, false);
+            created.Add(copy.PngPath);
+            if(File.Exists(source.ThumbPath)) {
+                File.Copy(source.ThumbPath, copy.ThumbPath, false);
+                created.Add(copy.ThumbPath);
+            }
+            SaveDocument(document, copy.JsonPath);
+            created.Add(copy.JsonPath);
+        } catch(Exception ex) {
+            // keine halbe Kopie liegen lassen
+            Log.Error(ex, $"Kopie von {source.JsonPath} fehlgeschlagen");
+            foreach(string path in created) deleteQuietly(path);
+            throw;
+        }
+        if(!File.Exists(copy.ThumbPath)) {
+            try {
+                EnsureThumbnail(copy);
+            } catch(Exception ex) {
+                Log.Error(ex, $"Vorschaubild für {copy.PngPath} konnte nicht erzeugt werden");
+            }
+        }
+        Log.Info($"Kopie angelegt: {source.JsonPath} → {copy.JsonPath} ({document.Annotations.Count} Zeichenobjekt(e))");
+        return copy;
+    }
+
+    /// <summary>
+    /// Dokument für eine Kopie vorbereiten: Bildname der Kopie, neue Ids für alle Zeichenobjekte (auch unbekannte Typen),
+    /// nicht permanent.
+    /// </summary>
+    public static void PrepareCopy(CaptureDocument document, string imageName) {
+        document.Image = imageName;
+        document.Permanent = false;
+        for(int i = 0; i < document.Annotations.Count; i++) {
+            Annotation annotation = document.Annotations[i];
+            string id = Guid.NewGuid().ToString("N");
+            if(annotation is UnknownAnnotation unknown) {
+                if(unknown.Raw.ValueKind != JsonValueKind.Object) continue;
+                JsonObject? raw = JsonNode.Parse(unknown.Raw.GetRawText()) as JsonObject;
+                if(raw == null) continue;
+                raw["id"] = id;
+                document.Annotations[i] = new UnknownAnnotation(JsonSerializer.SerializeToElement(raw));
+                continue;
+            }
+            annotation.Id = id;
+        }
+    }
+
+    /// <summary>
+    /// Basisname, an den die Kopie ihr Suffix hängt: ein vorhandenes Kollisionssuffix (<c>_2</c>) wird entfernt, wenn der
+    /// Rest ein Aufnahme-Name ist – so heißt die Kopie von <c>…_05_2</c> <c>…_05_3</c> statt <c>…_05_2_2</c>.
+    /// </summary>
+    public static string GetCopyStem(string baseName, string pattern) {
+        Match suffix = Regex.Match(baseName, @"^(.+)_\d+$");
+        if(!suffix.Success) return baseName;
+        string stem = suffix.Groups[1].Value;
+        return GetCaptureTime(stem, pattern, DateTime.MinValue) != DateTime.MinValue ? stem : baseName;
+    }
+
+    public CaptureDocument SetPermanent(string pngOrJsonPath, bool permanent) {
+        OpenedCapture opened = OpenOrCreate(pngOrJsonPath);
+        if(opened.Document.Permanent != permanent) {
+            opened.Document.Permanent = permanent;
+            SaveDocument(opened.Document, opened.JsonPath);
+        }
+        Log.Info($"Aufnahme {opened.JsonPath} {(permanent ? "als permanent markiert" : "nicht mehr permanent")}");
+        return opened.Document;
     }
 
     public OpenedCapture OpenOrCreate(string pngOrJsonPath) {
-        string fullPath = Path.GetFullPath(pngOrJsonPath);
-        CaptureFiles files = fullPath.EndsWith(CaptureFiles.JsonExtension, StringComparison.OrdinalIgnoreCase) ? CaptureFiles.FromJson(fullPath) : CaptureFiles.FromPng(fullPath);
+        CaptureFiles files = filesFor(pngOrJsonPath);
         if(File.Exists(files.JsonPath)) {
             try {
                 return new OpenedCapture(LoadDocument(files.JsonPath), files.JsonPath, false);
@@ -427,6 +581,19 @@ public sealed class StorageService : IStorageService {
             if(!task.Wait(pendingWriteTimeout)) Log.Warn($"Hintergrund-Schreiben von {path} dauert zu lange");
         } catch(AggregateException ex) {
             Log.Warn($"Hintergrund-Schreiben von {path} war fehlgeschlagen: {ex.GetBaseException().Message}");
+        }
+    }
+
+    private static CaptureFiles filesFor(string pngOrJsonPath) {
+        string fullPath = Path.GetFullPath(pngOrJsonPath);
+        return fullPath.EndsWith(CaptureFiles.JsonExtension, StringComparison.OrdinalIgnoreCase) ? CaptureFiles.FromJson(fullPath) : CaptureFiles.FromPng(fullPath);
+    }
+
+    private static void deleteQuietly(string path) {
+        try {
+            File.Delete(path);
+        } catch(Exception ex) {
+            Log.Warn($"{path} konnte nicht entfernt werden: {ex.Message}");
         }
     }
 

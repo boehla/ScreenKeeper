@@ -44,6 +44,7 @@ public sealed class SettingsViewModel : ViewModelBase {
     private string retentionDaysText = "0";
     private bool autostartEnabled;
     private bool notifyOnSaveOnly;
+    private bool checkForUpdates;
     private string hotkeyCaptureEdit = "";
     private string hotkeyCaptureSave = "";
     private string hotkeyHistory = "";
@@ -247,6 +248,15 @@ public sealed class SettingsViewModel : ViewModelBase {
         set => SetProperty(ref notifyOnSaveOnly, value);
     }
 
+    /// <summary>Einmal täglich im Hintergrund nach Updates suchen.</summary>
+    public bool CheckForUpdates {
+        get => checkForUpdates;
+        set => SetProperty(ref checkForUpdates, value);
+    }
+
+    /// <summary>Update-Anzeige mit „Jetzt prüfen“ (vom Fenster gesetzt; null = keine).</summary>
+    public UpdateViewModel? Update { get; set; }
+
     // Hotkeys
 
     public string HotkeyCaptureEdit {
@@ -434,6 +444,7 @@ public sealed class SettingsViewModel : ViewModelBase {
         target.Autostart = autostartEnabled;
         target.RetentionDays = retentionDays;
         target.NotifyOnSaveOnly = notifyOnSaveOnly;
+        target.CheckForUpdates = checkForUpdates;
 
         try {
             if(autostart.IsEnabled != autostartEnabled) {
@@ -492,6 +503,7 @@ public sealed class SettingsViewModel : ViewModelBase {
         exportFolder = source.ExportFolder;
         retentionDaysText = source.RetentionDays.ToString(CultureInfo.CurrentCulture);
         notifyOnSaveOnly = source.NotifyOnSaveOnly;
+        checkForUpdates = source.CheckForUpdates;
         hotkeyCaptureEdit = source.HotkeyCaptureEdit;
         hotkeyCaptureSave = source.HotkeyCaptureSave;
         hotkeyHistory = source.HotkeyHistory;

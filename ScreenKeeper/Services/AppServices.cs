@@ -12,6 +12,7 @@ public static class AppServices {
     private static IAutostartService? autostart;
     private static IEnvironmentCheckService? environmentCheck;
     private static CaptureWorkflow? workflow;
+    private static UpdateService? updates;
 
     public static ISettingsService Settings => settings ?? throw notInitialized();
 
@@ -28,6 +29,9 @@ public static class AppServices {
     public static IEnvironmentCheckService EnvironmentCheck => environmentCheck ?? throw notInitialized();
 
     public static CaptureWorkflow Workflow => workflow ?? throw notInitialized();
+
+    /// <summary>Update-Prüfung (der Timer läuft nur im Tray-Modus, siehe <see cref="UpdateService.Start"/>).</summary>
+    public static UpdateService Updates => updates ?? throw notInitialized();
 
     /// <summary>Nur im Tray-Modus vorhanden (im Kommandozeilen-Modus null).</summary>
     public static IHotkeyService? Hotkeys { get; set; }
@@ -48,6 +52,7 @@ public static class AppServices {
         autostart = new AutostartService();
         environmentCheck = new EnvironmentCheckService();
         workflow = new CaptureWorkflow();
+        updates = new UpdateService(settingsService);
     }
 
     private static InvalidOperationException notInitialized() {

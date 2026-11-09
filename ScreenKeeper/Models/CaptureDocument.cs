@@ -24,7 +24,17 @@ public sealed class CaptureDocument {
 
     public List<WindowInfo> Windows { get; set; } = new List<WindowInfo>();
 
+    /// <summary>Programm im Vordergrund bei der Aufnahme; null = unbekannt (z. B. ältere Dateien).</summary>
+    public ForegroundInfo? Foreground { get; set; }
+
     public CursorInfo? Cursor { get; set; }
+
+    /// <summary>
+    /// Permanent markiert: wird beim automatischen Aufräumen nie gelöscht. Geschrieben nur, wenn true
+    /// (fehlendes Feld = false).
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool Permanent { get; set; }
 
     /// <summary>Gewählter Bereich; null = noch kein Bereich gewählt.</summary>
     public PixelRect? Selection { get; set; }

@@ -32,7 +32,9 @@ Fertige Builds liegen unter [Releases](https://github.com/boehla/ScreenKeeper/re
 | `ScreenKeeper-<Version>-win-x64.zip` | Einzelne EXE, enthält die .NET-Laufzeit (keine Installation nötig) |
 | `ScreenKeeper-<Version>-win-x64-framework-dependent.zip` | Kleiner, benötigt die installierte [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) |
 
-Entpacken, `ScreenKeeper.exe` starten. Das Programm läuft aus jedem Ordner und schreibt nichts neben die EXE. Einstellungen
+Entpacken, `ScreenKeeper.exe` starten. Das Programm läuft aus jedem Ordner und schreibt nichts neben die EXE.
+ScreenKeeper sucht einmal täglich im Hintergrund nach einer neuen Version und zeigt sie unaufdringlich in der History,
+im Tray-Menü und in den Einstellungen an; ein Klick installiert sie (ZIP laden, EXE ersetzen, Neustart). Einstellungen
 liegen in `%APPDATA%\ScreenKeeper\settings.json`, Aufnahmen im Bilder-Ordner unter `ScreenKeeper` (konfigurierbar).
 
 ## Selbst bauen
@@ -72,6 +74,14 @@ Koordinaten in Bildpixeln. Details in [SPEC.md](SPEC.md), Abschnitt 4.
 Ein Push auf `main` mit geänderter `<Version>` in `ScreenKeeper/ScreenKeeper.csproj` baut, testet und veröffentlicht
 automatisch ein GitHub-Release `v<Version>` mit beiden ZIP-Dateien und den Notizen aus dem CHANGELOG
 (siehe [.github/workflows/release.yml](.github/workflows/release.yml)).
+
+## Offene Punkte
+
+- **History- und Einstellungsfenster überarbeiten:** Beide Fenster sind funktional, aber noch im WPF-Standardlook.
+  Geplant ist eine Oberfläche im Stil der Editor-Werkzeugleiste (schwebend, reduziert, klare Symbole), mit der sich das
+  Zeichnen bereits gut anfühlt.
+- Schriftart beim Text-Werkzeug ist fest Segoe UI.
+- Ausbaustufen laut [SPEC.md](SPEC.md) Abschnitt 8: OCR, Einrasten auf Fenster, gemischte DPI-Skalierung, englische Oberfläche.
 
 ## Lizenz
 

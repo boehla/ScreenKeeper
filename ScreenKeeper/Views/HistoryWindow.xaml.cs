@@ -20,6 +20,7 @@ public partial class HistoryWindow : Window, IHistoryHost {
 
     private readonly HistoryViewModel viewModel;
     private readonly ThumbnailLoader thumbnails;
+    private readonly UpdateViewModel update;
     private readonly bool hideOnClose;
     private ScrollViewer? scrollViewer;
     private bool allowClose;
@@ -30,12 +31,15 @@ public partial class HistoryWindow : Window, IHistoryHost {
         InitializeComponent();
         this.hideOnClose = hideOnClose;
         thumbnails = new ThumbnailLoader(AppServices.Storage, Dispatcher);
-        viewModel = new HistoryViewModel(AppServices.Storage, thumbnails) { Host = this };
+        update = new UpdateViewModel(AppServices.Updates);
+        viewModel = new HistoryViewModel(AppServices.Storage, thumbnails) { Host = this, Update = update };
         DataContext = viewModel;
         if(hideOnClose) restorePlacement();
 
         viewModel.BlockLoaded += onBlockLoaded;
+        viewModel.SelectRequested += onSelectRequested;
         AppServices.Workflow.CaptureStored += onCaptureStored;
+        AppServices.Workflow.CaptureCopied += onCaptureCopied;
         AppServices.Workflow.EditorClosed += onEditorClosed;
         AppServices.Settings.Changed += onSettingsChanged;
         Loaded += onLoaded;
@@ -120,6 +124,22 @@ public partial class HistoryWindow : Window, IHistoryHost {
         viewModel.OnEditorClosed(jsonPath);
     }
 
+    private void onCaptureCopied(object? sender, (CaptureFiles Original, CaptureFiles Copy) copied) {
+        CaptureEntry? entry = AppServices.Storage.GetEntry(copied.Copy);
+        if(entry != null) viewModel.InsertCopy(copied.Original.PngPath, entry);
+    }
+
+    /// <summary>Eintrag allein auswählen, sichtbar machen und den Fokus auf ihn setzen (z. B. eine neue Kopie).</summary>
+    private void onSelectRequested(object? sender, HistoryItem item) {
+        list.SelectedItems.Clear();
+        list.SelectedItem = item;
+        list.ScrollIntoView(item);
+        if(!IsVisible) return;
+        Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() => {
+            if(list.ItemContainerGenerator.ContainerFromItem(item) is ListBoxItem container) container.Focus();
+        }));
+    }
+
     private void onSettingsChanged(object? sender, EventArgs e) {
         viewModel.OnStorageMaybeChanged();
     }
@@ -134,8 +154,11 @@ public partial class HistoryWindow : Window, IHistoryHost {
 
     private void onClosed(object? sender, EventArgs e) {
         viewModel.BlockLoaded -= onBlockLoaded;
+        viewModel.SelectRequested -= onSelectRequested;
         AppServices.Workflow.CaptureStored -= onCaptureStored;
+        AppServices.Workflow.CaptureCopied -= onCaptureCopied;
         AppServices.Workflow.EditorClosed -= onEditorClosed;
+        update.Detach();
         AppServices.Settings.Changed -= onSettingsChanged;
         thumbnails.Clear();
     }

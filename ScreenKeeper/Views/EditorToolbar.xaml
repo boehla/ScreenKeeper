@@ -383,6 +383,14 @@
                 <Path Style="{StaticResource Icon}" Data="M2,3 H18 V13 H2 Z M10,13 V16 M6,17 H14" />
             </Button>
             <Rectangle Style="{StaticResource Separator}" />
+            <!-- Aufnahme: Kopie anlegen, permanent -->
+            <Button Style="{StaticResource ToolbarButton}" Command="{Binding DuplicateCommand}" ToolTip="{loc:Str ToolbarDuplicate}">
+                <Path Style="{StaticResource Icon}" Data="M6,6 H17 V17 H6 Z M3,13 V3 H13 M11.5,9 V14 M9,11.5 H14" />
+            </Button>
+            <Button Style="{StaticResource StateButton}" Tag="{Binding IsPermanent}" Command="{Binding TogglePermanentCommand}" ToolTip="{loc:Str ToolbarPermanent}">
+                <Path Style="{StaticResource Icon}" Data="M10,2.5 L12.3,7.3 L17.5,7.9 L13.6,11.5 L14.7,16.7 L10,14.1 L5.3,16.7 L6.4,11.5 L2.5,7.9 L7.7,7.3 Z" />
+            </Button>
+            <Rectangle Style="{StaticResource Separator}" />
             <Button Style="{StaticResource ToolbarButton}" Command="{Binding UndoCommand}" ToolTip="{loc:Str ToolbarUndo}">
                 <Path Style="{StaticResource Icon}" Data="M7,3 L3,7 L7,11 M3,7 H12 A5,5 0 0 1 12,17 H8" />
             </Button>

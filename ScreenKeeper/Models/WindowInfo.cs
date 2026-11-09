@@ -18,6 +18,10 @@ public sealed class WindowInfo {
     /// <summary>Z-Reihenfolge: 0 = oberstes Fenster.</summary>
     public int Z { get; set; }
 
+    /// <summary>Dieses Fenster war bei der Aufnahme im Vordergrund (geschrieben nur, wenn true).</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool Foreground { get; set; }
+
     /// <summary>Unbekannte Felder (z. B. aus neueren Versionen) bleiben beim Speichern erhalten.</summary>
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? ExtensionData { get; set; }

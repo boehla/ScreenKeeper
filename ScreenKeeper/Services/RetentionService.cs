@@ -3,13 +3,14 @@
 namespace ScreenKeeper.Services;
 
 /// <summary>
-/// Ergebnis eines Aufbewahrungs-Laufs: die (im Probelauf nur gefundenen) abgelaufenen Aufnahmen.
+/// Ergebnis eines Aufbewahrungs-Laufs: die (im Probelauf nur gefundenen) abgelaufenen Aufnahmen und die Zahl der
+/// abgelaufenen, aber behaltenen (permanent markiert oder JSON nicht lesbar).
 /// </summary>
-public sealed record RetentionResult(IReadOnlyList<CaptureEntry> Expired, int Days, DateTime Cutoff, bool DryRun);
+public sealed record RetentionResult(IReadOnlyList<CaptureEntry> Expired, int Days, DateTime Cutoff, bool DryRun, int Kept = 0);
 
 /// <summary>
-/// Aufbewahrung: Aufnahmen älter als <see cref="AppSettings.RetentionDays"/> Tage (alle drei Dateien) in den Papierkorb.
-/// Läuft beim Start und danach einmal täglich (stündliche Prüfung per Timer); 0 Tage = aus.
+/// Aufbewahrung: Aufnahmen älter als <see cref="AppSettings.RetentionDays"/> Tage (alle drei Dateien) in den Papierkorb,
+/// außer permanent markierte. Läuft beim Start und danach einmal täglich (stündliche Prüfung per Timer); 0 Tage = aus.
 /// </summary>
 public sealed class RetentionService : IDisposable {
     private static readonly TimeSpan checkInterval = TimeSpan.FromHours(1);
@@ -49,17 +50,27 @@ public sealed class RetentionService : IDisposable {
     }
 
     /// <summary>
+    /// Bleibt die Aufnahme trotz Ablauf erhalten? Ja, wenn sie permanent markiert ist – und vorsichtshalber auch, wenn ihre
+    /// JSON nicht lesbar ist (die Markierung lässt sich dann nicht prüfen). Ohne JSON: nicht permanent.
+    /// </summary>
+    public static bool IsKept(CaptureMetadata metadata) {
+        return metadata.Permanent || metadata.IsBroken;
+    }
+
+    /// <summary>
     /// Ein Lauf (blockierend). Im Probelauf (<paramref name="dryRun"/>) wird nur ermittelt, nichts gelöscht.
     /// </summary>
     public RetentionResult Run(DateTime now, int days, bool dryRun) {
         DateTime cutoff = GetCutoff(now, days);
         if(days <= 0) return new RetentionResult(Array.Empty<CaptureEntry>(), days, cutoff, dryRun);
-        // Monatsordner nach dem Stichtag gar nicht erst lesen
-        List<CaptureEntry> expired = FindExpired(storage.EnumerateCaptures(null, cutoff), now, days);
+        // Monatsordner nach dem Stichtag gar nicht erst lesen; JSON nur bei abgelaufenen Aufnahmen lesen
+        List<CaptureEntry> candidates = FindExpired(storage.EnumerateCaptures(null, cutoff), now, days);
+        List<CaptureEntry> expired = candidates.Where(e => !IsKept(storage.GetMetadata(e))).ToList();
+        int kept = candidates.Count - expired.Count;
         if(!dryRun && expired.Count > 0) storage.DeleteToRecycleBin(expired.Select(e => e.Files));
         string action = dryRun ? "gefunden (Probelauf, nichts gelöscht)" : "in den Papierkorb verschoben";
-        Log.Info($"Aufbewahrung {days} Tage (Stichtag {cutoff:yyyy-MM-dd HH:mm}): {expired.Count} Aufnahme(n) {action}");
-        return new RetentionResult(expired, days, cutoff, dryRun);
+        Log.Info($"Aufbewahrung {days} Tage (Stichtag {cutoff:yyyy-MM-dd HH:mm}): {expired.Count} Aufnahme(n) {action}, {kept} permanente bzw. nicht lesbare behalten");
+        return new RetentionResult(expired, days, cutoff, dryRun, kept);
     }
 
     /// <summary>

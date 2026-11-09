@@ -49,6 +49,9 @@ Testordner (`<Ordner>`) am besten unter `%TEMP%` anlegen, damit nichts im echten
 | `--history --folder <Ordner> --test-history` | History öffnen, alle Einträge nachladen, Kennzahlen ausgeben, schließen | `entries=60 … firstBlockMs=…`, `total=… allMs=…`, `bindingErrors=0` |
 | `--history --folder <Ordner> --test-edit <Name>` | Bearbeiten-Befehl der History, Editor nach 1 s schließen, Eintrag aktualisiert? | `edited=<Name> mode=… editorActive=True … hasJson=True reloaded=True` |
 | `--history --folder <Ordner> --test-delete <Name>` | Aufnahme über den Löschen-Befehl der History in den Papierkorb | `deleted=<Name> before=… remaining=… filesLeft=0` |
+| `--history --folder <Ordner> --test-duplicate <Name>` | Kopie über den Befehl der History anlegen | `duplicated=<Name> copy=<Name>_2 newFiles=3 … newIds=True originalUnchanged=True adjacent=True selected=True` |
+| `--history --folder <Ordner> --test-permanent <Name>` | „Permanent“ umschalten, JSON prüfen, zurückschalten | `permanent=<Name> … json=True … restored=True ok=True` |
+| `--retention --folder <Ordner> [--days <n>] [--dry-run]` | ein Aufräum-Lauf wie im Tray-Betrieb (Papierkorb) | `days=… expired=… keptPermanent=… filesLeft=0` |
 | `--settings --test-settings` | alle Seiten des Einstellungsfensters laden, Kennzahlen, schließen ohne Speichern | `tabs=3 storage=… export=… preview=…`, `hotkeys=… status=… autostart=…`, `bindingErrors=0` |
 
 Hinweise:

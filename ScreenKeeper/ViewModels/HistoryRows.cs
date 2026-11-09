@@ -51,16 +51,18 @@ public interface IThumbnailSource {
 }
 
 /// <summary>
-/// Eine Aufnahme in der History. Vorschaubild und Kennzeichen „bearbeitet“ werden erst geladen, wenn die Zeile
-/// angezeigt wird (erster Zugriff auf <see cref="Thumbnail"/>).
+/// Eine Aufnahme in der History. Vorschaubild und Kennzeichen aus der JSON (bearbeitet, permanent, Programm im
+/// Vordergrund) werden erst geladen, wenn die Zeile angezeigt wird (erster Zugriff auf <see cref="Thumbnail"/>) – es sei
+/// denn, der Filter hat sie schon gebraucht (<see cref="CaptureEntry.Metadata"/>).
 /// </summary>
 public sealed class HistoryItem : HistoryRow {
+    /// <summary>Höchstlänge des Fenstertitels in der Zeile (der Tooltip zeigt ihn ganz).</summary>
+    public const int MaxTitleLength = 60;
+
     private readonly IThumbnailSource? thumbnails;
     private CaptureEntry entry;
     private ImageSource? thumbnail;
     private bool thumbnailRequested;
-    private bool isEdited;
-    private bool isBroken;
     private int version;
 
     public HistoryItem(CaptureEntry entry, IThumbnailSource? thumbnails) {
@@ -99,11 +101,25 @@ public sealed class HistoryItem : HistoryRow {
 
     public bool IsThumbnailLoaded => thumbnail != null;
 
+    /// <summary>Kennzeichen aus der JSON; null = noch nicht geladen.</summary>
+    public CaptureMetadata? Metadata => entry.Metadata;
+
     /// <summary>Bereich oder Zeichnungen vorhanden (aus der JSON, nachgeladen).</summary>
-    public bool IsEdited => isEdited;
+    public bool IsEdited => entry.Metadata?.IsEdited ?? false;
 
     /// <summary>JSON vorhanden, aber nicht lesbar.</summary>
-    public bool IsBroken => isBroken;
+    public bool IsBroken => entry.Metadata?.IsBroken ?? false;
+
+    /// <summary>Permanent markiert (wird beim Aufräumen nie gelöscht).</summary>
+    public bool IsPermanent => entry.Metadata?.Permanent ?? false;
+
+    public bool HasForeground => entry.Metadata?.HasForeground ?? false;
+
+    /// <summary>Programm im Vordergrund bei der Aufnahme, z. B. „chrome · Neuer Tab“ (Titel gekürzt).</summary>
+    public string ForegroundText => FormatForeground(entry.Metadata?.ForegroundProcess ?? "", entry.Metadata?.ForegroundTitle ?? "", MaxTitleLength);
+
+    /// <summary>Programm und vollständiger Fenstertitel (Tooltip).</summary>
+    public string ForegroundToolTip => HasForeground ? Strings.Format(Strings.HistoryForegroundTooltip, entry.Metadata!.ForegroundProcess, entry.Metadata.ForegroundTitle) : "";
 
     /// <summary>Kein JSON: beim ersten Bearbeiten wird eines angelegt.</summary>
     public bool IsImageOnly => !entry.HasJson;
@@ -115,16 +131,38 @@ public sealed class HistoryItem : HistoryRow {
         return Strings.Format(Strings.SizeKilobytes, Math.Max(1, (bytes + 1023) / 1024).ToString(CultureInfo.CurrentCulture));
     }
 
-    /// <summary>Ergebnis des Nachladens übernehmen (im UI-Thread); veraltete Ergebnisse werden ignoriert.</summary>
-    public bool SetLoaded(int loadedVersion, ImageSource? image, bool edited, bool broken) {
+    /// <summary>„Prozess · Titel“; der Titel wird auf <paramref name="maxTitleLength"/> Zeichen gekürzt (…).</summary>
+    public static string FormatForeground(string process, string title, int maxTitleLength) {
+        string shortTitle = title.Trim();
+        if(shortTitle.Length > maxTitleLength) shortTitle = shortTitle.Substring(0, Math.Max(1, maxTitleLength - 1)).TrimEnd() + "…";
+        if(process.Length == 0) return shortTitle;
+        if(shortTitle.Length == 0) return process;
+        return $"{process} · {shortTitle}";
+    }
+
+    /// <summary>
+    /// Ergebnis des Nachladens übernehmen (im UI-Thread); veraltete Ergebnisse werden ignoriert. Die Kennzeichen hat der
+    /// Lader bereits in <see cref="CaptureEntry.Metadata"/> abgelegt.
+    /// </summary>
+    public bool SetLoaded(int loadedVersion, ImageSource? image) {
         if(loadedVersion != version) return false;
         thumbnail = image;
-        isEdited = edited;
-        isBroken = broken;
         OnPropertyChanged(nameof(Thumbnail));
-        OnPropertyChanged(nameof(IsEdited));
-        OnPropertyChanged(nameof(IsBroken));
+        notifyMetadata();
         return true;
+    }
+
+    /// <summary>
+    /// Nur die Kennzeichen haben sich geändert (z. B. „permanent“ umgeschaltet): Eintrag ersetzen, Vorschaubild behalten.
+    /// </summary>
+    public void UpdateEntry(CaptureEntry updated) {
+        entry = updated;
+        OnPropertyChanged(nameof(Entry));
+        OnPropertyChanged(nameof(HasJson));
+        OnPropertyChanged(nameof(IsImageOnly));
+        OnPropertyChanged(nameof(SizeText));
+        OnPropertyChanged(nameof(ToolTipText));
+        notifyMetadata();
     }
 
     /// <summary>Anfrage verworfen (Warteschlange voll): beim nächsten Anzeigen erneut anfragen.</summary>
@@ -155,5 +193,16 @@ public sealed class HistoryItem : HistoryRow {
         OnPropertyChanged(nameof(SizeText));
         OnPropertyChanged(nameof(ToolTipText));
         OnPropertyChanged(nameof(Thumbnail));
+        notifyMetadata();
+    }
+
+    private void notifyMetadata() {
+        OnPropertyChanged(nameof(Metadata));
+        OnPropertyChanged(nameof(IsEdited));
+        OnPropertyChanged(nameof(IsBroken));
+        OnPropertyChanged(nameof(IsPermanent));
+        OnPropertyChanged(nameof(HasForeground));
+        OnPropertyChanged(nameof(ForegroundText));
+        OnPropertyChanged(nameof(ForegroundToolTip));
     }
 }

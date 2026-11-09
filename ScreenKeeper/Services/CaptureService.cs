@@ -42,13 +42,16 @@ public sealed class CaptureService : ICaptureService {
         PixelRect virtualScreen = GetVirtualScreen();
         Stopwatch watch = Stopwatch.StartNew();
 
-        // Zeiger zuerst: Zustand im Moment des Tastendrucks
+        // Zeiger und Vordergrundfenster zuerst: Zustand im Moment des Tastendrucks
+        IntPtr foregroundWindow = User32.GetForegroundWindow();
         CursorInfo? cursor = captureCursor(virtualScreen);
         long cursorMs = watch.ElapsedMilliseconds;
         BitmapSource bitmap = captureScreen(virtualScreen);
         long screenMs = watch.ElapsedMilliseconds;
         List<MonitorInfo> monitors = GetMonitors(virtualScreen);
-        List<WindowInfo> windows = captureWindows(virtualScreen);
+        Dictionary<uint, string> processNames = new Dictionary<uint, string>();
+        List<WindowInfo> windows = captureWindows(virtualScreen, foregroundWindow, processNames);
+        ForegroundInfo? foreground = captureForeground(foregroundWindow, processNames);
         long windowsMs = watch.ElapsedMilliseconds;
 
         CaptureDocument document = new CaptureDocument {
@@ -56,6 +59,7 @@ public sealed class CaptureService : ICaptureService {
             VirtualScreen = virtualScreen,
             Monitors = monitors,
             Windows = windows,
+            Foreground = foreground,
             Cursor = cursor
         };
         return new CaptureResult(bitmap, document) {
@@ -162,9 +166,25 @@ public sealed class CaptureService : ICaptureService {
         }
     }
 
-    private static List<WindowInfo> captureWindows(PixelRect virtualScreen) {
+    /// <summary>
+    /// Titel und Prozess des Vordergrundfensters; null, wenn keins aktiv ist (z. B. gesperrter Bildschirm).
+    /// </summary>
+    private static ForegroundInfo? captureForeground(IntPtr hwnd, Dictionary<uint, string> processNames) {
+        if(hwnd == IntPtr.Zero) return null;
+        try {
+            User32.GetWindowThreadProcessId(hwnd, out uint processId);
+            return new ForegroundInfo {
+                Title = getWindowTitle(hwnd),
+                Process = processId != 0 ? getProcessName(processId, processNames) : ""
+            };
+        } catch(Exception ex) {
+            Log.Error(ex, "Vordergrundfenster konnte nicht gelesen werden");
+            return null;
+        }
+    }
+
+    private static List<WindowInfo> captureWindows(PixelRect virtualScreen, IntPtr foregroundWindow, Dictionary<uint, string> processNames) {
         List<WindowInfo> windows = new List<WindowInfo>();
-        Dictionary<uint, string> processNames = new Dictionary<uint, string>();
         uint ownProcessId = (uint)Environment.ProcessId;
         int rectSize = Marshal.SizeOf<RECT>();
         User32.EnumWindowsProc callback = (IntPtr hwnd, IntPtr data) => {
@@ -188,7 +208,8 @@ public sealed class CaptureService : ICaptureService {
                     Title = getWindowTitle(hwnd),
                     Process = getProcessName(processId, processNames),
                     Bounds = bounds,
-                    Z = windows.Count
+                    Z = windows.Count,
+                    Foreground = hwnd == foregroundWindow
                 });
             } catch(Exception ex) {
                 Log.Error(ex, "Fensterdaten konnten nicht gelesen werden");

@@ -396,7 +396,7 @@ Ordner: {2}</value>
     <value>Alle</value>
   </data>
   <data name="HistorySearchPlaceholder" xml:space="preserve">
-    <value>Suche im Dateinamen</value>
+    <value>Suche: Name, Programm, Fenstertitel</value>
   </data>
   <data name="HistoryStatusLoading" xml:space="preserve">
     <value>Aufnahmen werden geladen …</value>
@@ -405,7 +405,7 @@ Ordner: {2}</value>
     <value>Noch keine Aufnahmen vorhanden.</value>
   </data>
   <data name="HistoryStatusNoMatch" xml:space="preserve">
-    <value>Keine Aufnahmen im gewählten Zeitraum bzw. zum Suchtext.</value>
+    <value>Keine Aufnahmen zum gewählten Filter.</value>
   </data>
   <data name="HistoryStatusCount" xml:space="preserve">
     <value>{0} Aufnahme(n)</value>
@@ -501,7 +501,7 @@ Ordner: {2}</value>
     <value>Aufbewahrung</value>
   </data>
   <data name="SettingsRetentionUnit" xml:space="preserve">
-    <value>Tage (0 = aus)</value>
+    <value>Tagen in den Papierkorb verschieben, außer permanente (0 = aus)</value>
   </data>
   <data name="SettingsRetentionInvalid" xml:space="preserve">
     <value>Bitte eine ganze Zahl von 0 bis {0} eingeben.</value>
@@ -510,7 +510,7 @@ Ordner: {2}</value>
     <value>Aufnahmen werden nicht automatisch gelöscht.</value>
   </data>
   <data name="SettingsRetentionOn" xml:space="preserve">
-    <value>Aufnahmen älter als {0} Tage werden beim Start und einmal täglich in den Papierkorb verschoben.</value>
+    <value>Aufnahmen älter als {0} Tage werden beim Start und einmal täglich in den Papierkorb verschoben. Permanent markierte Aufnahmen bleiben erhalten.</value>
   </data>
   <data name="SettingsProgram" xml:space="preserve">
     <value>Programm</value>
@@ -639,5 +639,126 @@ Trotzdem speichern?</value>
   </data>
   <data name="HotkeyWarningSnipping" xml:space="preserve">
     <value>{0}: Windows öffnet mit der Druck-Taste das Bildschirmausschnitt-Tool. ScreenKeeper fängt die Taste ab; abschalten lässt sich das unter Einstellungen › Barrierefreiheit › Tastatur.</value>
+  </data>
+  <data name="TrayUpdateSuffix" xml:space="preserve">
+    <value> · Update verfügbar</value>
+  </data>
+  <data name="MenuInstallUpdate" xml:space="preserve">
+    <value>Update auf {0} installieren</value>
+  </data>
+  <data name="DuplicateFailed" xml:space="preserve">
+    <value>Die Kopie konnte nicht angelegt werden: {0}</value>
+  </data>
+  <data name="ToolbarDuplicate" xml:space="preserve">
+    <value>Kopie anlegen: aktuellen Stand als neue Aufnahme speichern und in der Kopie weiterarbeiten (das Original bleibt wie jetzt)</value>
+  </data>
+  <data name="ToolbarPermanent" xml:space="preserve">
+    <value>Permanent: wird beim automatischen Aufräumen nie gelöscht</value>
+  </data>
+  <data name="HistoryDuplicate" xml:space="preserve">
+    <value>Kopie anlegen</value>
+  </data>
+  <data name="HistoryDuplicateTooltip" xml:space="preserve">
+    <value>Kopie mit eigenem Bereich und eigenen Zeichnungen anlegen (Strg+D)</value>
+  </data>
+  <data name="HistoryDuplicated" xml:space="preserve">
+    <value>Kopie {0} angelegt.</value>
+  </data>
+  <data name="HistoryPermanent" xml:space="preserve">
+    <value>Permanent</value>
+  </data>
+  <data name="HistoryPermanentTooltip" xml:space="preserve">
+    <value>Permanent markieren bzw. Markierung aufheben – wird beim automatischen Aufräumen nie gelöscht (P)</value>
+  </data>
+  <data name="HistoryBadgePermanent" xml:space="preserve">
+    <value>permanent</value>
+  </data>
+  <data name="HistoryPermanentOn" xml:space="preserve">
+    <value>{0} Aufnahme(n) als permanent markiert.</value>
+  </data>
+  <data name="HistoryPermanentOff" xml:space="preserve">
+    <value>Markierung „permanent“ bei {0} Aufnahme(n) aufgehoben.</value>
+  </data>
+  <data name="HistoryPermanentFailed" xml:space="preserve">
+    <value>Die Markierung „permanent“ konnte nicht gespeichert werden: {0}</value>
+  </data>
+  <data name="HistoryFilterPermanent" xml:space="preserve">
+    <value>Permanent</value>
+  </data>
+  <data name="HistoryFilterPermanentTooltip" xml:space="preserve">
+    <value>Nur permanent markierte Aufnahmen anzeigen</value>
+  </data>
+  <data name="HistoryForegroundTooltip" xml:space="preserve">
+    <value>Programm im Vordergrund: {0}
+{1}</value>
+  </data>
+  <data name="SettingsRetentionPrefix" xml:space="preserve">
+    <value>Aufnahmen nach</value>
+  </data>
+  <data name="SettingsUpdates" xml:space="preserve">
+    <value>Updates</value>
+  </data>
+  <data name="SettingsCheckForUpdates" xml:space="preserve">
+    <value>Einmal täglich im Hintergrund nach Updates suchen</value>
+  </data>
+  <data name="SettingsCheckNow" xml:space="preserve">
+    <value>Jetzt prüfen</value>
+  </data>
+  <data name="SettingsInstallUpdate" xml:space="preserve">
+    <value>Installieren</value>
+  </data>
+  <data name="UpdateAvailableLink" xml:space="preserve">
+    <value>Version {0} verfügbar – installieren</value>
+  </data>
+  <data name="UpdateChecking" xml:space="preserve">
+    <value>Suche nach Updates …</value>
+  </data>
+  <data name="UpdateAvailable" xml:space="preserve">
+    <value>Version {0} verfügbar (installiert: {1}).</value>
+  </data>
+  <data name="UpdateUpToDate" xml:space="preserve">
+    <value>ScreenKeeper {0} ist aktuell.</value>
+  </data>
+  <data name="UpdateCheckFailed" xml:space="preserve">
+    <value>Update-Prüfung fehlgeschlagen: {0}</value>
+  </data>
+  <data name="UpdateTimeout" xml:space="preserve">
+    <value>keine Antwort innerhalb von {0} s</value>
+  </data>
+  <data name="UpdateInvalidRelease" xml:space="preserve">
+    <value>Unbekannte Versionsangabe „{0}“ im Release.</value>
+  </data>
+  <data name="UpdateNeverChecked" xml:space="preserve">
+    <value>Noch nicht geprüft</value>
+  </data>
+  <data name="UpdateLastCheck" xml:space="preserve">
+    <value>Zuletzt geprüft: {0}</value>
+  </data>
+  <data name="UpdateInstalledVersion" xml:space="preserve">
+    <value>Installiert: {0}</value>
+  </data>
+  <data name="UpdateDownloading" xml:space="preserve">
+    <value>Update {0} lädt … {1} %</value>
+  </data>
+  <data name="UpdateExtracting" xml:space="preserve">
+    <value>Update wird entpackt …</value>
+  </data>
+  <data name="UpdateRestarting" xml:space="preserve">
+    <value>Update {0} wird installiert, ScreenKeeper startet neu …</value>
+  </data>
+  <data name="UpdateInstallFailed" xml:space="preserve">
+    <value>Update fehlgeschlagen: {0}</value>
+  </data>
+  <data name="UpdateNoExe" xml:space="preserve">
+    <value>Das Update-Paket enthält keine ScreenKeeper.exe.</value>
+  </data>
+  <data name="UpdateNoProcessPath" xml:space="preserve">
+    <value>Der Pfad der laufenden ScreenKeeper.exe ist nicht bekannt.</value>
+  </data>
+  <data name="UpdateScriptFailed" xml:space="preserve">
+    <value>Das Installationsskript konnte nicht gestartet werden.</value>
+  </data>
+  <data name="UpdateFolderNotWritable" xml:space="preserve">
+    <value>Der Programmordner {0} ist nicht beschreibbar – bitte das Update von der Release-Seite selbst entpacken.</value>
   </data>
 </root>

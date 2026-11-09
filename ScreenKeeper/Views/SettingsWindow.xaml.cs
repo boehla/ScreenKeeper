@@ -14,14 +14,19 @@ namespace ScreenKeeper.Views;
 /// </summary>
 public partial class SettingsWindow : Window, ISettingsHost {
     private readonly SettingsViewModel viewModel;
+    private readonly UpdateViewModel update;
     private bool hotkeysSuspended;
 
     public SettingsWindow() {
         InitializeComponent();
-        viewModel = new SettingsViewModel(AppServices.Settings, AppServices.Autostart, AppServices.Hotkeys, EnvironmentCheckService.IsSnippingKeyEnabled) { Host = this };
+        update = new UpdateViewModel(AppServices.Updates);
+        viewModel = new SettingsViewModel(AppServices.Settings, AppServices.Autostart, AppServices.Hotkeys, EnvironmentCheckService.IsSnippingKeyEnabled) { Host = this, Update = update };
         viewModel.CloseRequested += (s, e) => Close();
         DataContext = viewModel;
-        Closed += (s, e) => resumeHotkeys();
+        Closed += (s, e) => {
+            resumeHotkeys();
+            update.Detach();
+        };
     }
 
     public SettingsViewModel ViewModel => viewModel;

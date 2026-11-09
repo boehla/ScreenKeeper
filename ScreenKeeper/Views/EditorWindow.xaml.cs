@@ -86,6 +86,7 @@ public partial class EditorWindow : Window, IEditorHost {
         root.SizeChanged += onRootSizeChanged;
         viewModel.OverlayChanged += (s, e) => updateOverlay();
         viewModel.DocumentChanged += onDocumentChanged;
+        viewModel.DuplicateRequested += onDuplicateRequested;
         attachInput();
         attachTextEditor();
     }
@@ -237,6 +238,16 @@ public partial class EditorWindow : Window, IEditorHost {
 
     private void onDocumentChanged(object? sender, DocumentChangeKind kind) {
         if((kind & DocumentChangeKind.Annotations) != 0) RefreshAnnotations();
+    }
+
+    private void onDuplicateRequested(object? sender, EventArgs e) {
+        if(warmUp || closed) return;
+        try {
+            AppServices.Workflow.DuplicateAndContinue(this);
+        } catch(Exception ex) {
+            Log.Error(ex, $"Kopie von {jsonPath} fehlgeschlagen");
+            ((IEditorHost)this).ShowError(Strings.Format(Strings.DuplicateFailed, ex.Message));
+        }
     }
 
     private void onClosing(object? sender, CancelEventArgs e) {

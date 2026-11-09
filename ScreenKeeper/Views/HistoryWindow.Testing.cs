@@ -1,5 +1,7 @@
 ﻿using System.Diagnostics;
+using System.Security.Cryptography;
 using System.Windows.Threading;
+using ScreenKeeper.Models;
 using ScreenKeeper.Services;
 using ScreenKeeper.ViewModels;
 
@@ -8,12 +10,13 @@ namespace ScreenKeeper.Views;
 /// <summary>
 /// Nur für automatisierte Tests (<c>--history --folder &lt;Ordner&gt; --test-history [--test-delete &lt;Name&gt;]</c>):
 /// misst den ersten Ladeblock, scrollt bis zum Ende, filtert auf „Heute“ und löscht optional eine Aufnahme über den
-/// Befehl des ViewModels. Ausgaben auf stdout.
+/// Befehl des ViewModels; außerdem Kopie anlegen (<c>--test-duplicate</c>) und „permanent“ umschalten
+/// (<c>--test-permanent</c>). Ausgaben auf stdout.
 /// </summary>
 public partial class HistoryWindow {
     private static readonly TimeSpan testTimeout = TimeSpan.FromSeconds(120);
 
-    public async Task<int> RunTestAsync(Stopwatch watch, bool metrics, string? editName, string? deleteName) {
+    public async Task<int> RunTestAsync(Stopwatch watch, bool metrics, string? editName, string? deleteName, string? duplicateName = null, string? permanentName = null) {
         testMode = true;
         await RefreshTask;
         await waitIdle();
@@ -46,7 +49,28 @@ public partial class HistoryWindow {
             await viewModel.ApplyQuickRangeAsync(HistoryQuickRange.Today);
             await viewModel.LoadAllAsync();
             Console.Out.WriteLine($"today={viewModel.ItemCount} todayMs={todayWatch.ElapsedMilliseconds}");
+
+            // Textfilter über Programm und Fenstertitel: liest die JSON aller Einträge (im Hintergrund, einmal je Eintrag)
+            await viewModel.ApplyQuickRangeAsync(HistoryQuickRange.All);
+            Stopwatch searchWatch = Stopwatch.StartNew();
+            viewModel.FilterText = "zzq-kein-treffer";
+            await viewModel.LoadAllAsync();
+            long firstSearchMs = searchWatch.ElapsedMilliseconds;
+            searchWatch.Restart();
+            viewModel.FilterText = "zzq-kein-treffer2";
+            await viewModel.LoadAllAsync();
+            Console.Out.WriteLine($"searchMatches={viewModel.ItemCount} searchMs={firstSearchMs} searchCachedMs={searchWatch.ElapsedMilliseconds}");
+            viewModel.FilterText = "";
+            await viewModel.LoadAllAsync();
             Console.Out.Flush();
+        }
+        if(duplicateName != null) {
+            int result = await runDuplicateTest(duplicateName);
+            if(result != 0) return result;
+        }
+        if(permanentName != null) {
+            int result = await runPermanentTest(permanentName);
+            if(result != 0) return result;
         }
         if(editName != null) {
             int result = await runEditTest(editName);
@@ -124,6 +148,79 @@ public partial class HistoryWindow {
         Console.Out.WriteLine($"deleted={name} before={before} remaining={viewModel.ItemCount} filesLeft={left}");
         Console.Out.Flush();
         return left == 0 ? 0 : 1;
+    }
+
+    /// <summary>
+    /// Kopie über den Befehl der History: drei neue Dateien, neue Ids, Original unverändert, Kopie neben dem Original und
+    /// ausgewählt.
+    /// </summary>
+    private async Task<int> runDuplicateTest(string name) {
+        HistoryItem? item = await findTestItem(name);
+        if(item == null) return 1;
+        CaptureFiles files = item.Files;
+        string folder = Path.GetDirectoryName(files.PngPath) ?? "";
+        HashSet<string> before = new HashSet<string>(Directory.GetFiles(folder), StringComparer.OrdinalIgnoreCase);
+        string originalHash = hashFiles(files);
+        List<string> originalIds = File.Exists(files.JsonPath) ? CaptureDocumentSerializer.Load(files.JsonPath).Annotations.Select(a => a.Id).ToList() : new List<string>();
+        list.SelectedItems.Clear();
+        list.SelectedItems.Add(item);
+        HistoryItem? copy = await viewModel.DuplicateAsync(null);
+        await waitIdle();
+        if(copy == null) {
+            Console.Error.WriteLine("Kopie wurde nicht angelegt");
+            return 1;
+        }
+        List<string> created = Directory.GetFiles(folder).Where(f => !before.Contains(f)).ToList();
+        CaptureDocument copied = CaptureDocumentSerializer.Load(copy.Files.JsonPath);
+        List<string> copyIds = copied.Annotations.Select(a => a.Id).ToList();
+        bool newIds = copyIds.Count == originalIds.Count && !copyIds.Intersect(originalIds).Any() && copyIds.Distinct().Count() == copyIds.Count;
+        bool unchanged = hashFiles(files) == originalHash;
+        int index = viewModel.Rows.IndexOf(copy);
+        bool adjacent = index >= 0 && index + 1 < viewModel.Rows.Count && ReferenceEquals(viewModel.Rows[index + 1], item);
+        bool selected = list.SelectedItems.Count == 1 && ReferenceEquals(list.SelectedItem, copy);
+        bool imageOk = copied.Image == Path.GetFileName(copy.Files.PngPath) && !copied.Permanent;
+        Console.Out.WriteLine($"duplicated={name} copy={copy.Name} newFiles={created.Count} annotations={copyIds.Count} newIds={newIds} originalUnchanged={unchanged} adjacent={adjacent} selected={selected} imageOk={imageOk}");
+        Console.Out.Flush();
+        return created.Count == 3 && newIds && unchanged && adjacent && selected && imageOk ? 0 : 1;
+    }
+
+    /// <summary>
+    /// „Permanent“ über den Befehl der History umschalten, JSON prüfen, zurückschalten und erneut prüfen.
+    /// </summary>
+    private async Task<int> runPermanentTest(string name) {
+        HistoryItem? item = await findTestItem(name);
+        if(item == null) return 1;
+        bool before = File.Exists(item.Files.JsonPath) && CaptureDocumentSerializer.Load(item.Files.JsonPath).Permanent;
+        bool? first = await viewModel.TogglePermanentAsync(item);
+        bool jsonFirst = readPermanent(item.Files.JsonPath);
+        bool itemFirst = item.IsPermanent;
+        bool? second = await viewModel.TogglePermanentAsync(item);
+        bool jsonSecond = readPermanent(item.Files.JsonPath);
+        bool ok = first == !before && jsonFirst == !before && itemFirst == !before && second == before && jsonSecond == before && item.IsPermanent == before;
+        Console.Out.WriteLine($"permanent={name} before={before} toggled={first} json={jsonFirst} item={itemFirst} restored={jsonSecond == before} ok={ok}");
+        Console.Out.Flush();
+        return ok ? 0 : 1;
+    }
+
+    private async Task<HistoryItem?> findTestItem(string name) {
+        await viewModel.ApplyQuickRangeAsync(HistoryQuickRange.All);
+        await viewModel.LoadAllAsync();
+        HistoryItem? item = viewModel.Items.FirstOrDefault(i => string.Equals(i.Name, name, StringComparison.OrdinalIgnoreCase));
+        if(item == null) Console.Error.WriteLine($"Aufnahme {name} nicht gefunden");
+        return item;
+    }
+
+    private static bool readPermanent(string jsonPath) {
+        if(!File.Exists(jsonPath)) return false;
+        string json = File.ReadAllText(jsonPath);
+        return CaptureDocumentSerializer.Deserialize(json).Permanent && json.Contains("\"permanent\": true", StringComparison.Ordinal);
+    }
+
+    /// <summary>SHA-256 der drei Dateien einer Aufnahme (fehlende zählen als „-“).</summary>
+    private static string hashFiles(CaptureFiles files) {
+        IEnumerable<string> hashes = new[] { files.PngPath, files.JsonPath, files.ThumbPath }
+            .Select(path => File.Exists(path) ? Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path))) : "-");
+        return string.Join("|", hashes);
     }
 
     private async Task waitIdle() {

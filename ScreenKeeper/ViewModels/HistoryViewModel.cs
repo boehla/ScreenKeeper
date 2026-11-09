@@ -19,8 +19,8 @@ public interface IHistoryHost {
 
 /// <summary>
 /// History: Aufnahmen neueste zuerst, nach Tagen gruppiert (flache Liste aus Überschriften und Einträgen, damit die
-/// Liste virtualisiert bleibt), blockweise nachgeladen; Datums- und Textfilter; Aktionen Bearbeiten, Zwischenablage,
-/// Explorer, Löschen (Papierkorb), Aktualisieren, Ordner öffnen.
+/// Liste virtualisiert bleibt), blockweise nachgeladen; Datums-, Text- und Permanent-Filter; Aktionen Bearbeiten,
+/// Zwischenablage, Kopie anlegen, Permanent, Explorer, Löschen (Papierkorb), Aktualisieren, Ordner öffnen.
 /// </summary>
 public sealed class HistoryViewModel : ViewModelBase {
     public const int BlockSize = 60;
@@ -41,6 +41,7 @@ public sealed class HistoryViewModel : ViewModelBase {
     private DateTime? filterFrom;
     private DateTime? filterTo;
     private string filterText = "";
+    private bool filterPermanent;
     private HistoryQuickRange? quickRange = HistoryQuickRange.All;
     private DateTime labelsDay;
     private string loadedRoot = "";
@@ -55,6 +56,8 @@ public sealed class HistoryViewModel : ViewModelBase {
         EditCommand = new RelayCommand(p => Edit(p as HistoryItem), p => p is HistoryItem || selection.Count > 0);
         CopyCommand = new RelayCommand(p => _ = CopyAsync(p as HistoryItem), p => p is HistoryItem || selection.Count > 0);
         ShowInExplorerCommand = new RelayCommand(p => ShowInExplorer(p as HistoryItem), p => p is HistoryItem || selection.Count > 0);
+        DuplicateCommand = new RelayCommand(p => _ = DuplicateAsync(p as HistoryItem), p => p is HistoryItem || selection.Count > 0);
+        TogglePermanentCommand = new RelayCommand(p => _ = TogglePermanentAsync(p as HistoryItem), p => p is HistoryItem || selection.Count > 0);
         DeleteCommand = new RelayCommand(() => _ = DeleteSelectedAsync(), () => selection.Count > 0);
         RefreshCommand = new RelayCommand(() => _ = RefreshAsync());
         OpenFolderCommand = new RelayCommand(OpenFolder);
@@ -69,17 +72,29 @@ public sealed class HistoryViewModel : ViewModelBase {
 
     public IHistoryHost? Host { get; set; }
 
+    /// <summary>Update-Hinweis für die Statusleiste; null = keiner (Tests).</summary>
+    public UpdateViewModel? Update { get; set; }
+
     /// <summary>Überschriften und Einträge in Anzeigereihenfolge.</summary>
     public ObservableCollection<HistoryRow> Rows { get; }
 
     /// <summary>Nach jedem geladenen Block (im Thread des Aufrufers, normalerweise UI-Thread).</summary>
     public event EventHandler? BlockLoaded;
 
+    /// <summary>Ein Eintrag soll ausgewählt und sichtbar gemacht werden (z. B. eine neue Kopie).</summary>
+    public event EventHandler<HistoryItem>? SelectRequested;
+
     public ICommand EditCommand { get; }
 
     public ICommand CopyCommand { get; }
 
     public ICommand ShowInExplorerCommand { get; }
+
+    /// <summary>Kopie der Aufnahme anlegen (Strg+D); Parameter = Eintrag, sonst der erste ausgewählte.</summary>
+    public ICommand DuplicateCommand { get; }
+
+    /// <summary>Permanent markieren bzw. Markierung aufheben (P); Parameter = Eintrag, sonst die Auswahl.</summary>
+    public ICommand TogglePermanentCommand { get; }
 
     public ICommand DeleteCommand { get; }
 
@@ -156,6 +171,15 @@ public sealed class HistoryViewModel : ViewModelBase {
         }
     }
 
+    /// <summary>Nur permanent markierte Aufnahmen zeigen (zusätzlich zum Zeitraum).</summary>
+    public bool FilterPermanent {
+        get => filterPermanent;
+        set {
+            if(!SetProperty(ref filterPermanent, value)) return;
+            _ = RefreshAsync();
+        }
+    }
+
     public HistoryQuickRange? QuickRange => quickRange;
 
     public bool IsQuickAll => quickRange == HistoryQuickRange.All;
@@ -166,7 +190,7 @@ public sealed class HistoryViewModel : ViewModelBase {
 
     public bool IsQuick30Days => quickRange == HistoryQuickRange.Last30Days;
 
-    public HistoryFilter CurrentFilter => new HistoryFilter(filterFrom, filterTo, filterText);
+    public HistoryFilter CurrentFilter => new HistoryFilter(filterFrom, filterTo, filterText, filterPermanent);
 
     /// <summary>
     /// Liste neu aufbauen und den ersten Block laden. Die Aufgabe ist fertig, sobald der erste Block angezeigt wird.
@@ -186,7 +210,7 @@ public sealed class HistoryViewModel : ViewModelBase {
         OnPropertyChanged(nameof(RootFolder));
         labelsDay = clock().Date;
         HistoryFilter filter = CurrentFilter;
-        pager = new HistoryPager(storage.EnumerateCaptures(filter.From, filter.To), filter);
+        pager = new HistoryPager(storage.EnumerateCaptures(filter.From, filter.To), filter, storage.GetMetadata);
         isLoading = false;
         IsComplete = false;
         OnPropertyChanged(nameof(IsEmpty));
@@ -211,7 +235,7 @@ public sealed class HistoryViewModel : ViewModelBase {
     }
 
     public Task ApplyQuickRangeAsync(HistoryQuickRange range) {
-        HistoryFilter filter = HistoryFilter.ForQuickRange(range, clock(), filterText);
+        HistoryFilter filter = HistoryFilter.ForQuickRange(range, clock(), filterText, filterPermanent);
         filterFrom = filter.From;
         filterTo = filter.To;
         OnPropertyChanged(nameof(FilterFrom));
@@ -271,6 +295,85 @@ public sealed class HistoryViewModel : ViewModelBase {
         ItemCount++;
         OnPropertyChanged(nameof(IsEmpty));
         updateStatus();
+    }
+
+    /// <summary>
+    /// Kopie direkt über dem Original einfügen (gleiche Aufnahmezeit, der Name mit Suffix sortiert davor) und auswählen.
+    /// Ist das Original nicht geladen, erscheint die Kopie erst beim nächsten Laden. Liefert den Eintrag der Kopie.
+    /// </summary>
+    public HistoryItem? InsertCopy(string originalPath, CaptureEntry copy) {
+        HistoryItem? original = FindItem(Path.GetFullPath(originalPath));
+        if(original == null) return null;
+        HistoryItem? existing = FindItem(copy.Files.PngPath);
+        if(existing != null) {
+            SelectRequested?.Invoke(this, existing);
+            return existing;
+        }
+        int index = Rows.IndexOf(original);
+        int headerIndex = index - 1;
+        while(headerIndex >= 0 && Rows[headerIndex] is not HistoryHeaderRow) headerIndex--;
+        HistoryItem item = new HistoryItem(copy, thumbnails);
+        loadedPaths.Add(copy.Files.PngPath);
+        Rows.Insert(index, item);
+        if(headerIndex >= 0 && Rows[headerIndex] is HistoryHeaderRow header) header.Count++;
+        ItemCount++;
+        OnPropertyChanged(nameof(IsEmpty));
+        updateStatus();
+        SelectRequested?.Invoke(this, item);
+        return item;
+    }
+
+    /// <summary>
+    /// Kopie anlegen (PNG, JSON mit neuen Ids, Vorschaubild) und neben dem Original einfügen und auswählen.
+    /// </summary>
+    public async Task<HistoryItem?> DuplicateAsync(HistoryItem? item) {
+        item ??= selection.FirstOrDefault();
+        if(item == null) return null;
+        CaptureFiles source = item.Files;
+        try {
+            CaptureFiles copy = await Task.Run(() => storage.DuplicateCapture(source.PngPath));
+            CaptureEntry? entry = storage.GetEntry(copy);
+            if(entry == null) return null;
+            Message = Strings.Format(Strings.HistoryDuplicated, entry.Name);
+            return InsertCopy(source.PngPath, entry);
+        } catch(Exception ex) {
+            Log.Error(ex, $"Kopie von {source.PngPath} fehlgeschlagen");
+            Host?.ShowError(Strings.Format(Strings.DuplicateFailed, ex.Message));
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Permanent umschalten: sind alle betroffenen Einträge permanent, wird die Markierung aufgehoben, sonst gesetzt.
+    /// Schreibt die JSON (fehlt sie, wird sie angelegt); ein offener Editor derselben Aufnahme übernimmt den Wert.
+    /// Liefert den neuen Wert (null, wenn nichts geändert wurde).
+    /// </summary>
+    public async Task<bool?> TogglePermanentAsync(HistoryItem? item) {
+        List<HistoryItem> items = item != null ? new List<HistoryItem> { item } : selection.ToList();
+        if(items.Count == 0) return null;
+        List<CaptureEntry> entries = items.Select(i => i.Entry).ToList();
+        int changed = 0;
+        bool value = false;
+        try {
+            value = !await Task.Run(() => entries.All(e => storage.GetMetadata(e).Permanent));
+            foreach(HistoryItem target in items) {
+                CaptureFiles files = target.Files;
+                await Task.Run(() => storage.SetPermanent(files.PngPath, value));
+                applyToOpenEditor(files.JsonPath, value);
+                CaptureEntry? updated = storage.GetEntry(files);
+                if(updated != null) {
+                    storage.GetMetadata(updated);
+                    target.UpdateEntry(updated);
+                }
+                changed++;
+            }
+        } catch(Exception ex) {
+            Log.Error(ex, "Markierung „permanent“ konnte nicht gespeichert werden");
+            Host?.ShowError(Strings.Format(Strings.HistoryPermanentFailed, ex.Message));
+        }
+        if(changed == 0) return null;
+        Message = value ? Strings.Format(Strings.HistoryPermanentOn, changed) : Strings.Format(Strings.HistoryPermanentOff, changed);
+        return value;
     }
 
     /// <summary>
@@ -470,6 +573,14 @@ public sealed class HistoryViewModel : ViewModelBase {
         if(selection.Count == 0) return;
         selection.Clear();
         OnPropertyChanged(nameof(HasSelection));
+    }
+
+    /// <summary>Ist dieselbe Aufnahme im Editor offen, übernimmt er den Wert (sonst überschriebe er ihn beim Schließen).</summary>
+    private static void applyToOpenEditor(string jsonPath, bool permanent) {
+        if(!AppServices.IsInitialized) return;
+        Views.EditorWindow? editor = AppServices.Workflow.OpenEditor;
+        if(editor == null || !string.Equals(Path.GetFullPath(editor.JsonPath), Path.GetFullPath(jsonPath), StringComparison.OrdinalIgnoreCase)) return;
+        editor.ViewModel.IsPermanent = permanent;
     }
 
     private bool isUnderRoot(string path) {
