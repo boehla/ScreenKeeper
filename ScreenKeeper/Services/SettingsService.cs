@@ -55,9 +55,20 @@ public sealed class SettingsService : ISettingsService {
                 backupBrokenFile();
             }
         }
+        bool fromFile = loaded != null;
         loaded ??= new AppSettings();
+        bool migrated = fromFile && (loaded.SettingsVersion ?? 0) < AppSettings.CurrentSettingsVersion;
         loaded.Normalize();
         Settings = loaded;
+        // Eine alte Datei nach der einmaligen Umstellung gleich zurückschreiben, damit Datei und Anzeige übereinstimmen
+        if(migrated) {
+            try {
+                AtomicFile.WriteAllText(FilePath, JsonSerializer.Serialize(Settings, options));
+                Log.Info($"Einstellungen auf Format {AppSettings.CurrentSettingsVersion} umgestellt (Aufbewahrung {Settings.RetentionDays} Tage)");
+            } catch(Exception ex) {
+                Log.Error(ex, $"Umgestellte Einstellungen {FilePath} konnten nicht geschrieben werden");
+            }
+        }
     }
 
     public void Save() {

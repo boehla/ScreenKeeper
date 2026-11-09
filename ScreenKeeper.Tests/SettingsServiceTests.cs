@@ -108,6 +108,9 @@ public class SettingsServiceTests {
             service.Load();
             Assert.Equal(30, service.Settings.RetentionDays);
             Assert.Equal(AppSettings.CurrentSettingsVersion, service.Settings.SettingsVersion);
+            // die umgestellte Datei wurde sofort zurückgeschrieben
+            Assert.Contains("\"settingsVersion\": 1", File.ReadAllText(path));
+            Assert.Contains("\"retentionDays\": 30", File.ReadAllText(path));
 
             // Datei ab 0.7.0 mit bewusst abgeschalteter Aufbewahrung bleibt aus
             File.WriteAllText(path, "{ \"settingsVersion\": 1, \"retentionDays\": 0 }");
