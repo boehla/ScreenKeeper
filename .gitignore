@@ -1,0 +1,19 @@
+# Build
+bin/
+obj/
+publish/
+TestResults/
+*.binlog
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.swp
+
+# Sonstiges
+*.log
+Thumbs.db
+Desktop.ini

@@ -1,0 +1,126 @@
+name: Release
+
+# Jeder Push auf main baut und testet. Ist die <Version> aus ScreenKeeper.csproj noch nicht als Tag v<Version>
+# vorhanden, werden zwei ZIPs veröffentlicht und ein GitHub-Release mit den Notizen aus dem CHANGELOG angelegt.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-test:
+    runs-on: windows-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      exists: ${{ steps.version.outputs.exists }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Version aus csproj lesen
+        id: version
+        shell: pwsh
+        run: |
+          [xml]$proj = Get-Content ScreenKeeper/ScreenKeeper.csproj
+          $version = ($proj.Project.PropertyGroup | ForEach-Object { $_.Version } | Where-Object { $_ } | Select-Object -First 1).Trim()
+          if (-not $version) { throw "Keine <Version> in ScreenKeeper.csproj gefunden" }
+          $exists = (git tag --list "v$version") -ne $null -and (git tag --list "v$version").Length -gt 0
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "exists=$($exists.ToString().ToLower())" >> $env:GITHUB_OUTPUT
+          Write-Host "Version $version, Tag vorhanden: $exists"
+
+      - name: Build
+        run: dotnet build ScreenKeeper/ScreenKeeper.csproj -c Release -warnaserror
+
+      - name: Test
+        run: dotnet test ScreenKeeper.Tests/ScreenKeeper.Tests.csproj -c Release --logger "trx;LogFileName=tests.trx"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: '**/TestResults/*.trx'
+
+  release:
+    needs: build-test
+    if: needs.build-test.outputs.exists == 'false'
+    runs-on: windows-latest
+    env:
+      VERSION: ${{ needs.build-test.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Publish (self-contained, eine EXE)
+        run: >
+          dotnet publish ScreenKeeper/ScreenKeeper.csproj -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -p:DebugType=none
+          -o publish/self-contained
+
+      - name: Publish (framework-dependent)
+        run: >
+          dotnet publish ScreenKeeper/ScreenKeeper.csproj -c Release -r win-x64 --self-contained false
+          -p:PublishSingleFile=true -p:DebugType=none
+          -o publish/framework-dependent
+
+      - name: ZIPs packen
+        shell: pwsh
+        run: |
+          Copy-Item LICENSE, README.md publish/self-contained/
+          Copy-Item ScreenKeeper/README.md publish/self-contained/BEDIENUNG.md
+          Copy-Item ScreenKeeper/CHANGELOG.md publish/self-contained/
+          Copy-Item LICENSE, README.md publish/framework-dependent/
+          Copy-Item ScreenKeeper/README.md publish/framework-dependent/BEDIENUNG.md
+          Copy-Item ScreenKeeper/CHANGELOG.md publish/framework-dependent/
+          Compress-Archive -Path publish/self-contained/* -DestinationPath "ScreenKeeper-$env:VERSION-win-x64.zip"
+          Compress-Archive -Path publish/framework-dependent/* -DestinationPath "ScreenKeeper-$env:VERSION-win-x64-framework-dependent.zip"
+          Get-ChildItem *.zip | ForEach-Object { "{0}  {1:N1} MB" -f $_.Name, ($_.Length / 1MB) }
+
+      - name: Release-Notizen aus CHANGELOG
+        shell: pwsh
+        run: |
+          $lines = Get-Content ScreenKeeper/CHANGELOG.md
+          $start = ($lines | Select-String -Pattern "^## $([regex]::Escape($env:VERSION))(\s|$)" | Select-Object -First 1).LineNumber
+          $notes = @()
+          if ($start) {
+            for ($i = $start; $i -lt $lines.Count; $i++) {
+              if ($lines[$i] -match '^## ') { break }
+              $notes += $lines[$i]
+            }
+          }
+          if (-not $notes -or ($notes -join '').Trim().Length -eq 0) { $notes = @("Version $env:VERSION") }
+          $notes += ""
+          $notes += "| Datei | Inhalt |"
+          $notes += "|---|---|"
+          $notes += "| ScreenKeeper-$env:VERSION-win-x64.zip | Einzelne EXE inkl. .NET-Laufzeit, keine Installation nötig |"
+          $notes += "| ScreenKeeper-$env:VERSION-win-x64-framework-dependent.zip | Kleiner, benötigt die .NET 10 Desktop Runtime |"
+          $notes | Set-Content -Encoding UTF8 release-notes.md
+          Get-Content release-notes.md
+
+      - name: Tag und Release anlegen
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "v$env:VERSION"
+          git push origin "v$env:VERSION"
+          gh release create "v$env:VERSION" `
+            "ScreenKeeper-$env:VERSION-win-x64.zip" `
+            "ScreenKeeper-$env:VERSION-win-x64-framework-dependent.zip" `
+            --title "ScreenKeeper $env:VERSION" `
+            --notes-file release-notes.md

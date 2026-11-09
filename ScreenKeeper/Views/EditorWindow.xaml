@@ -1,0 +1,38 @@
+﻿<Window x:Class="ScreenKeeper.Views.EditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:ScreenKeeper.Resources"
+        xmlns:views="clr-namespace:ScreenKeeper.Views"
+        Title="{loc:Str EditorTitle}"
+        Background="Black"
+        WindowStartupLocation="Manual"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True">
+    <Grid x:Name="root">
+        <!-- Zeichenfläche: Element in Bildpixeln unter Zoom/Pan; empfängt alle Mausereignisse der Fläche -->
+        <Canvas x:Name="viewport" Background="Black" ClipToBounds="True" Focusable="False" Cursor="Cross">
+            <Grid x:Name="surface" RenderOptions.BitmapScalingMode="NearestNeighbor">
+                <Grid.RenderTransform>
+                    <TransformGroup>
+                        <ScaleTransform x:Name="zoomTransform" ScaleX="1" ScaleY="1" />
+                        <TranslateTransform x:Name="panTransform" X="0" Y="0" />
+                    </TransformGroup>
+                </Grid.RenderTransform>
+                <Image x:Name="originalImage" Stretch="Fill" />
+                <views:DrawingHost x:Name="annotationHost" />
+            </Grid>
+        </Canvas>
+        <!-- Overlay in Ansichts-DIPs (nicht gezoomt): konstante Gerätepixel-Größe; ohne Hintergrund → Klicks gehen durch -->
+        <Canvas x:Name="overlay" ClipToBounds="True">
+            <views:SelectionOverlay x:Name="selectionOverlay" />
+            <views:AnnotationOverlay x:Name="annotationOverlay" />
+            <!-- Inline-Bearbeitung von Text (Position, Schrift und Farbe setzt EditorWindow.TextEditing.cs) -->
+            <TextBox x:Name="textEditor" Visibility="Collapsed" AcceptsReturn="True" AcceptsTab="False"
+                     BorderBrush="#A0FFFFFF" BorderThickness="1" Padding="0" Background="Transparent"
+                     VerticalScrollBarVisibility="Disabled" HorizontalScrollBarVisibility="Disabled"
+                     UndoLimit="100" Cursor="IBeam" />
+            <views:Magnifier x:Name="magnifier" Visibility="Collapsed" />
+            <views:EditorToolbar x:Name="toolbar" Visibility="Hidden" />
+        </Canvas>
+    </Grid>
+</Window>

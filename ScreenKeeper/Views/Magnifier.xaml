@@ -1,0 +1,24 @@
+﻿<UserControl x:Class="ScreenKeeper.Views.Magnifier"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             IsHitTestVisible="False"
+             Focusable="False"
+             UseLayoutRounding="True"
+             SnapsToDevicePixels="True">
+    <Border Background="#F0202020" BorderBrush="#FFE0E0E0" BorderThickness="1">
+        <StackPanel>
+            <!-- Vergrößerte Pixel aus dem Original, darüber Raster und Fadenkreuz -->
+            <Grid x:Name="lens" HorizontalAlignment="Center" ClipToBounds="True">
+                <Image x:Name="pixelImage" Stretch="Fill" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                <Path x:Name="gridPath" Fill="#48808080" RenderOptions.EdgeMode="Aliased" />
+                <Path x:Name="crossPath" Fill="#40FF4040" RenderOptions.EdgeMode="Aliased" />
+                <Path x:Name="centerOuterPath" Fill="White" RenderOptions.EdgeMode="Aliased" />
+                <Path x:Name="centerInnerPath" Fill="Black" RenderOptions.EdgeMode="Aliased" />
+            </Grid>
+            <StackPanel Orientation="Horizontal" Margin="6,3,6,4" HorizontalAlignment="Center">
+                <Border x:Name="colorSwatch" Width="10" Height="10" Margin="0,0,6,0" BorderBrush="#FFE0E0E0" BorderThickness="1" VerticalAlignment="Center" />
+                <TextBlock x:Name="infoText" Foreground="White" FontFamily="Consolas" FontSize="12" VerticalAlignment="Center" />
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</UserControl>

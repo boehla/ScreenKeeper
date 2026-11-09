@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <!-- WinForms nur für NotifyIcon und FolderBrowserDialog -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>ScreenKeeper</RootNamespace>
+    <AssemblyName>ScreenKeeper</AssemblyName>
+    <Version>0.6.1</Version>
+    <Product>ScreenKeeper</Product>
+    <Description>Screenshot-Tool mit unveränderlichem Original und nachträglich änderbarer Bearbeitung</Description>
+    <NeutralLanguage>de</NeutralLanguage>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>ScreenKeeper.ico</ApplicationIcon>
+    <SatelliteResourceLanguages>de</SatelliteResourceLanguages>
+    <!-- WFO0003: WinForms-Analyzer empfiehlt SetHighDpiMode statt Manifest; für eine WPF-App ist das Manifest richtig -->
+    <NoWarn>$(NoWarn);WFO0003</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- WinForms-/GDI+-Namespaces nicht global einbinden (Namenskonflikte mit WPF) -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+    <!-- System.IO wird bei WPF nicht implizit eingebunden (Konflikt mit System.Windows.Shapes.Path) -->
+    <Using Include="System.IO" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="ScreenKeeper.ico" />
+  </ItemGroup>
+
+</Project>

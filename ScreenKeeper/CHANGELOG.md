@@ -1,0 +1,192 @@
+# Changelog
+
+## 0.6.1
+
+- Das zuletzt gezeichnete Objekt (auch Stempel, Zeiger und Text) bleibt ausgewählt; Farbe und Optionen in der Werkzeugleiste wirken damit sofort auf dieses Objekt.
+- Der Beginn einer neuen Zeichnung hebt die Auswahl auf; bei aktivem Zeichenwerkzeug schließt Esc weiterhin direkt.
+
+## 0.6.0 – Phase 6: Feinschliff (09.11.2026)
+
+### Fehlerbehebungen
+
+- **Druck-Taste über den Tastatur-Hook ging jedes zweite Mal verloren:** Der Low-Level-Hook lief im UI-Thread. Während
+  Aufnahme und Editor-Aufbau (dort 0,2–0,6 s) konnte Windows ihn nicht aufrufen, das Loslassen der Druck-Taste kam
+  nicht an, der Hook hielt die Taste für „noch gedrückt“ und verschluckte den nächsten Druck (nachgestellt mit
+  `SendInput` bei laufendem Greenshot: 2. von 3 Drücken ohne Wirkung). Außerdem kann Windows einen Hook, der zu lange
+  braucht, stillschweigend entfernen. Der Hook läuft jetzt in einem eigenen Thread mit eigener Nachrichtenschleife
+  (`KeyboardHook`), die Entscheidung trifft ein testbarer `PrintScreenFilter`; das Loslassen einer abgefangenen
+  Druck-Taste wird immer unterdrückt, auch wenn Strg/Shift vorher losgelassen wurden
+- Druck bei offenem Editor holt den Editor jetzt zuverlässig in den Vordergrund (vorher nur `Activate`, das Windows bei
+  einem Hook-Hotkey oft verweigert); Strg+Druck („nur speichern“) bei offenem Editor fotografiert nicht mehr den Editor,
+  sondern holt ihn ebenfalls nach vorne
+- Vorschaubild einer neuen Aufnahme wird im Hintergrund geschrieben (vorher synchron vor dem Öffnen des Editors).
+  Damit sich Schreibvorgänge nicht überholen, warten Vorschaubild-Aktualisierung beim Schließen des Editors, das
+  Nacherzeugen in der History und das Löschen auf ein noch laufendes Hintergrund-Schreiben derselben Datei
+- Vollbild-Editor: nach einem DPI-Wechsel (`WM_DPICHANGED`) wird das Fenster wieder exakt über den virtuellen
+  Bildschirm gelegt (WPF verschiebt es sonst auf das vorgeschlagene Rechteck)
+- Kann der Bearbeitungsstand beim Schließen nicht gespeichert werden (z. B. Ablageordner schreibgeschützt oder
+  Laufwerk getrennt), erscheint eine Meldung statt nur eines Protokolleintrags
+- Datenformat: `ocrText` wird wie in der Spezifikation immer geschrieben (auch `null`); unbekannte Felder in
+  Zeichenobjekten, Monitoren, Fenstern und Mauszeiger bleiben beim Speichern erhalten (vorher nur auf oberster Ebene und
+  bei unbekannten Objekttypen); eine höhere `formatVersion` wird gelesen und protokolliert (Warnung)
+
+### Leistung
+
+- Editor wird beim Programmstart einmal unsichtbar vorgewärmt (außerhalb des Bildschirms, ohne Fokus, ohne Speichern).
+  Erste Aufnahme nach dem Start bis zum sichtbaren Editor: vorher 606–771 ms, jetzt 251–324 ms; jede weitere
+  142–192 ms (1920 × 1080)
+- Protokoll zeigt die Dauer der Aufnahmeschritte (Zeiger, Bild, Monitore/Fenster) und des Speicherns beim Schließen
+
+### Sonstiges
+
+- Umrechnung Bildschirm ↔ Bildpixel zentral in `ScreenCoordinates` (Aufnahme, Mauszeiger, Fenster, Pfeiltasten,
+  Vergleich der Monitor-Anordnung)
+- Nicht verwendeter Text `AppName` entfernt
+- Neue Tests (11): negative Koordinaten mit zwei Monitoren, Lupe/Werkzeugleiste je Monitor, DPI 150 %,
+  Monitor-Anordnung, Druck-Filter des Hooks, verlustfreie Rundreise des Spezifikationsbeispiels, unbekannte Felder,
+  defekte JSON, Muster ohne Sekunden mit sofortigem Vorschaubild-Update, Ablage auf fehlendem Laufwerk, 2 × 4K
+- Testschalter `--capture --test-capture-timing` (Zeit bis zum sichtbaren Editor, 3 Läufe); Prüfprotokoll in
+  `ABNAHME.md`, Testanleitung in `TESTS.md` (Repo-Root)
+
+## 0.5.0 – Phase 4 und 5: History, nachträgliches Bearbeiten, Einstellungen (09.11.2026)
+
+### Phase 4 – History und nachträgliches Bearbeiten
+
+- History-Fenster als Hauptfenster (in der Taskleiste; Größe, Position und Maximiert werden gemerkt). Schließen
+  versteckt es nur, beendet wird über das Tray-Menü. Tray-Doppelklick, Tray-Menü, Hotkey und ein zweiter Programmstart
+  öffnen bzw. aktivieren es
+- Aufnahmen neueste zuerst, nach Tagen gruppiert („Heute“, „Gestern“, sonst Datum lang, mit Anzahl). Je Eintrag
+  Vorschaubild, Uhrzeit, Kennzeichen „bearbeitet“ (Bereich oder Zeichnungen), „nur Bild“ (ohne JSON), „JSON defekt“;
+  Tooltip mit Dateiname, Größe und Ordner
+- Schnell auch bei vielen Aufnahmen: Monatsordner werden im Hintergrund von neu nach alt gelesen, Einträge in Blöcken zu 60
+  beim Scrollen nachgeladen, die Liste ist virtualisiert. Vorschaubilder werden erst beim Anzeigen im Hintergrund geladen
+  (verkleinert dekodiert, höchstens 300 im Speicher); fehlende Vorschaubilder werden aus dem PNG erzeugt.
+  5.000 Aufnahmen: erster Block nach ca. 0,6 s, alle nach ca. 3,5 s
+- Filter: Von/Bis (Datum), Schnellwahl Heute / 7 Tage / 30 Tage / Alle, Suche im Dateinamen. Monatsordner außerhalb
+  des Zeitraums werden gar nicht erst gelesen
+- Aktionen über Knöpfe, Kontextmenü und Tasten: Bearbeiten (Doppelklick, Enter), In Zwischenablage (Strg+C, Bereich bzw.
+  ganzes Bild mit Zeichnungen und Maus), Im Explorer anzeigen, Löschen (Entf, Rückfrage, Mehrfachauswahl; PNG, JSON und
+  Vorschaubild in den Papierkorb), Aktualisieren (F5), Ordner öffnen
+- Bearbeiten öffnet denselben Editor wie eine neue Aufnahme (Vollbild bei gleicher Monitor-Anordnung, sonst
+  Fenster-Modus). Aufnahmen ohne JSON (auch von Hand abgelegte PNGs) erscheinen mit Zeit aus dem Dateinamen bzw.
+  Änderungsdatum und bekommen beim ersten Bearbeiten ein Dokument (ein Monitor in Bildgröße); eine defekte JSON wird
+  als `.json.broken` gesichert und ersetzt
+- Nach dem Schließen des Editors wird der Eintrag aktualisiert (Vorschaubild, Kennzeichen); neue Aufnahmen erscheinen
+  sofort oben in der Liste
+- Aufbewahrung: Ist `retentionDays` > 0, werden Aufnahmen, die älter sind, beim Start und einmal täglich in den
+  Papierkorb verschoben (alle drei Dateien, Protokolleintrag). Standard: aus
+- Neue Einstellung `historyWindow` (Lage des Fensters)
+
+### Phase 5 – Einstellungen
+
+- Einstellungsfenster mit den Seiten Allgemein, Hotkeys und Editor; OK, Abbrechen, Übernehmen; Fehler werden direkt
+  unter dem Feld angezeigt. Alle Einstellungen wirken ohne Neustart
+- Allgemein: Ablageordner und Exportordner (Ordnerwahl, leer = Standard, Anzeige des verwendeten Pfads,
+  Umgebungsvariablen erlaubt), Dateinamen-Muster mit Vorschau und Prüfung (ungültige Zeichen, unbekannte oder offene
+  Platzhalter), Aufbewahrung in Tagen (0 = aus), Autostart mit Windows (Zustand aus der Registry), Benachrichtigung bei
+  „nur speichern“
+- Hotkeys: Tastenaufzeichnung (Feld anklicken, Kombination drücken – auch Druck; Esc bricht ab, Entf löscht), während der
+  Aufzeichnung sind die globalen Hotkeys ausgesetzt. Status je Hotkey (aktiv, über Tastatur-Hook, nicht verfügbar) und
+  „Status Druck-Taste: über RegisterHotKey / über Tastatur-Hook / nicht verfügbar“
+- Konfliktprüfung beim Speichern: gleiche Hotkeys, ungültige Hotkeys und Buchstaben/Ziffern ohne Strg/Alt/Win sind
+  Fehler; Probe-Registrierung geänderter Hotkeys (von einem anderen Programm belegt → Hinweis, bei Druck mit Verweis auf den
+  Tastatur-Hook) und Hinweis bei aktiver Windows-Einstellung „Druck öffnet Bildschirmausschnitt“ – speichern ist nach
+  Rückfrage trotzdem möglich
+- Editor: Lupe (Vergrößerung 4–16, Größe), Standardfarbe und Textmarkerfarbe (Palette des Editors), Strichstärke,
+  Schriftgröße, Blockgröße, Weichzeichner-Stärke, Stempelgröße, Zeigerart, Füllung, Text-Hintergrund, Glätten,
+  aufgenommenen Mauszeiger standardmäßig anzeigen
+- Hotkeys werden nach dem Speichern nur bei Änderung neu registriert; Ablageordner, Exportordner und Muster gelten ab der
+  nächsten Aufnahme, die History lädt bei geändertem Ablageordner neu, die Aufbewahrung wird neu bewertet
+- Tests für Tagesgruppierung (inkl. Tages- und Zeitzonengrenzen), blockweises Laden, Filter, Aufnahmen ohne JSON,
+  Zeit aus Dateinamen, Aufbewahrung (Probelauf), Muster-Prüfung, Hotkey-Konflikte und Probe-Registrierung, Einstellungen
+  mit allen Feldern, Anlegen eines Dokuments für ein PNG
+
+## 0.3.0 – Phase 3: Zeichenwerkzeuge, virtuelle Maus, Rückgängig (09.11.2026)
+
+- Zeichenwerkzeuge als einzelne, nachträglich änderbare Objekte (alle mit Live-Vorschau beim Ziehen und einem
+  Rückgängig-Schritt je Objekt; zu kleine Objekte werden verworfen):
+  Rechteck (R) und Ellipse (E) mit Rahmenfarbe, Strichstärke und optionaler Füllung (Shift: Quadrat/Kreis),
+  Linie (L) und Pfeil (A) mit gefüllter, zur Strichstärke proportionaler Spitze (Shift: 45°-Raster),
+  Freihand (F) mit Glättung (Catmull-Rom → Bézier, Punkte werden ausgedünnt),
+  Text (T) mit Inline-Bearbeitung direkt im Bild (Enter übernimmt, Shift+Enter neue Zeile, Esc verwirft, Aufziehen legt
+  die Umbruchbreite fest, optionaler Hintergrund in Kontrastfarbe), Textmarker (H, halbtransparent, Standard Gelb),
+  Verpixeln (P, Blockgröße) und Weichzeichnen (B, Stärke), Nummern-Stempel (N, fortlaufend, ohne Umnummerieren)
+- Verpixeln und Weichzeichnen werden bei Anzeige und Export aus dem Original berechnet (Blockfarbe = Mittelwert der
+  Originalpixel bzw. dreifacher Box-Blur ≈ Gauß); im Export sind keine Originalpixel des Bereichs enthalten.
+  Die Ergebnisse werden zwischengespeichert, damit das Ziehen flüssig bleibt
+- Virtuelle Maus (M): Klick setzt einen Zeiger der gewählten Art (aufgenommener Zeiger – nur wenn erfasst –, Pfeil,
+  Hand, Textcursor); ausgewählte Zeiger lassen sich aus- und einblenden, die Art ändern, verschieben und löschen.
+  Ausgeblendete Zeiger sind im Editor gestrichelt angedeutet (nicht im Export)
+- Auswahl (S): Objekt anklicken (oberstes zuerst; Rahmen nur am Strich, Linien über den Abstand), verschieben,
+  Größe über Anfasser ändern (8 Anfasser, Linie/Pfeil: Endpunkte, Stempel: Durchmesser, Text: Seiten = Umbruchbreite,
+  Ecken = Schriftgröße), Entf löscht, Strg+D dupliziert, Esc hebt die Auswahl auf, Doppelklick auf Text bearbeitet ihn.
+  Auch im Werkzeug „Bereich“ wählt ein Klick auf ein Objekt dieses aus, ein Klick ins Leere arbeitet wie bisher
+- Werkzeugleiste: Werkzeugknöpfe mit aktivem Zustand und Tastenkürzeln, dazu nur die passenden Optionen –
+  Farbpalette, Strichstärke (1–12 px), Füllung/Hintergrund, Glätten, Schriftgröße, Blockgröße, Stärke, Stempelgröße,
+  Zeigerart, Zeiger ein-/ausblenden, Objekt löschen. Änderungen wirken auf das ausgewählte Objekt (als
+  Rückgängig-Schritt) bzw. den gerade bearbeiteten Text
+- Zuletzt verwendete Werte werden beim Schließen des Editors gemerkt (neue Einstellungen `defaultFontSize`,
+  `defaultBlockSize`, `defaultBlurRadius`, `defaultFill`, `defaultTextBackground`, `defaultSmooth`,
+  `defaultStampSize`, `defaultCursorKind`; dazu wie bisher `defaultColor`, `defaultThickness`, `highlightColor`)
+- Rückgängig/Wiederholen für alle Änderungen (Bereich, Objekte, Eigenschaften, Text, Maus); 200 Schritte
+- Datenformat: Text hat das neue optionale Feld `width` (Umbruchbreite); weiterhin `formatVersion` 1
+- Ein Render-Pfad: Anzeige = Export, Striche auf Pixelkanten ausgerichtet (1-px-Linien bleiben scharf)
+- Tests für Bildeffekte, Treffertests, Geometrie (45°-Raster, Pfeilspitze, Glättung, Größe ändern), Rückgängig-Befehle
+  (60 Schritte vor und zurück), Werkzeuge, Textbearbeitung, Optionen, Nummerierung und Serialisierung
+
+## 0.2.0 – Phase 2: Editor (09.11.2026)
+
+- Neuer Editor (ein Fenster für beide Modi): Vollbild 1:1 über alle Monitore (1 Bildpixel = 1 Gerätepixel) und
+  Fenster-Modus (maximiert, Zoom 10–800 % mit Strg+Mausrad um den Mauspunkt, Verschieben mit Leertaste+Ziehen
+  oder mittlerer Maustaste, Mausrad/Shift+Mausrad verschiebt)
+- Bereich wählen: aufziehen, 8 Anfasser (auch die Kantenlinien), Verschieben im Bereich, neues Aufziehen außerhalb;
+  Abdunkelung außerhalb (50 %), 1-px-Rahmen weiß/schwarz gestrichelt, Größenanzeige „B × H“; passende Mauszeiger
+- Lupe (liest direkt aus dem Original): Vergrößerung aus den Einstellungen (4–16), Pixelraster, Fadenkreuz auf dem
+  Mittelpixel, Anzeige Position · Größe · Farbwert (#RRGGBB) mit Farbfeld; weicht dem Cursor aus und bleibt im Monitor.
+  Sichtbar vor der ersten Bereichswahl, beim Aufziehen, beim Ziehen der Anfasser und während der Tastatur-Auswahl
+- Tastatur: Pfeiltasten bewegen Cursor bzw. aktive Kante um genau 1 Pixel (Shift: 10), der Mauszeiger wandert mit;
+  Leertaste/Enter setzen Start- und Endpunkt (beide Pixel gehören zum Bereich)
+- Schwebende Werkzeugleiste (unter dem Bereich, sonst darüber bzw. innen; vorher oben mittig auf dem primären Monitor):
+  Bereich → Zwischenablage (Enter, Strg+C), Bereich speichern (Strg+S, PNG im Exportordner mit Kollisionssuffix),
+  Speichern unter … (Strg+Shift+S, PNG oder JPG), ganzer Bildschirm → Zwischenablage (Strg+Shift+C),
+  aktueller Monitor → Zwischenablage, Rückgängig/Wiederholen, Abbrechen (Esc). Bereich-Knöpfe ohne Bereich deaktiviert
+- Rückgängig/Wiederholen (Strg+Z, Strg+Y bzw. Strg+Shift+Z) für alle Bereichsänderungen, 200 Schritte;
+  ein Ziehvorgang = ein Schritt
+- Esc bricht einen laufenden Ziehvorgang bzw. die Tastatur-Auswahl ab, sonst schließt es den Editor
+- Bearbeitungsstand und Vorschaubild werden bei jedem Schließen gespeichert (Knöpfe, Esc, Alt+F4, WM_CLOSE)
+- Editor kommt zuverlässig in den Vordergrund und erhält die Tastatur; Zeit vom Hotkey bis zur Anzeige im Protokoll
+- Tests für Rückgängig-Stapel, Bereichs-Logik, Lupen- und Werkzeugleisten-Position, Umrechnung Maus → Bildpixel,
+  Editor-Logik und Export-Dateinamen
+
+## 0.1.0 – Phase 0 und 1 (09.11.2026)
+
+### Phase 0 – Grundgerüst
+
+- WPF-Projekt für .NET 10 (`net10.0-windows10.0.19041.0`), keine NuGet-Pakete
+- Manifest mit `PerMonitorV2`, Windows 10/11
+- Programmsymbol `ScreenKeeper.ico` (16–256 px), auch als Tray-Symbol
+- Einzelinstanz je Benutzer (Mutex); ein zweiter Start öffnet die History der laufenden Instanz
+- Tray-Symbol mit Kontextmenü (Aufnahme, History öffnen, Einstellungen, Beenden), Doppelklick = History
+- History- und Einstellungsfenster als Platzhalter
+- Alle Texte zentral in `Resources\Strings.resx` (Deutsch)
+- Protokoll in `%APPDATA%\ScreenKeeper\log.txt`; unbehandelte Fehler werden protokolliert und gemeldet
+- MVVM-Basisklassen (`ViewModelBase`, `RelayCommand`)
+
+### Phase 1 – Aufnahme und Ablage
+
+- Globale Hotkeys (Druck, Strg+Druck, Shift+Druck) über `RegisterHotKey`; ist die Druck-Taste belegt,
+  Abfangen über einen Low-Level-Tastatur-Hook
+- Hinweise beim Start: Windows-Einstellung „Druck-Taste öffnet Bildschirmausschnitt“, laufendes Greenshot/ShareX/Lightshot,
+  nicht registrierbare Hotkeys
+- Aufnahme des gesamten virtuellen Bildschirms ohne Mauszeiger (alle Monitore, auch mit negativen Koordinaten)
+- Erfassung von Monitoren (Name, Bereich, primär, Skalierung), Mauszeiger (Bild mit Transparenz, Hotspot, sichtbar;
+  auch monochrome und invertierende Zeiger) und sichtbaren Fenstern (Rahmen, Titel, Prozess, Z-Reihenfolge)
+- Sofortiges Speichern: JSON und Vorschaubild direkt, Original-PNG im Hintergrund; alle Dateien werden atomar geschrieben
+- Ablage in `<Ablageordner>\JJJJ\MM`, Dateinamen-Muster mit Platzhaltern, Kollisionssuffix `_2`, `_3` …
+- Datenformat Version 1 mit allen Zeichenobjekt-Typen; unbekannte Typen und Felder bleiben beim Speichern erhalten
+- Einstellungen in `%APPDATA%\ScreenKeeper\settings.json` (tolerant beim Laden)
+- Aufgenommener Mauszeiger wird als virtuelle Maus ins Dokument übernommen
+- Vorläufige Bildansicht 1:1 über alle Monitore (Esc schließt und speichert den Stand)
+- Render-Pfad für Export (Original + virtuelle Maus, Zuschnitt auf Bereich/Monitor/Gesamt)
+- Zwischenablage-Dienst (Bitmap + PNG), Autostart-Dienst, Löschen in den Papierkorb
+- Automatisierte Tests (xUnit) für Datenformat, Ablage, Hotkeys, Einstellungen und Rendering

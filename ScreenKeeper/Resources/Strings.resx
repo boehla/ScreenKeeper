@@ -1,0 +1,613 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="TrayTooltip" xml:space="preserve">
+    <value>ScreenKeeper – Druck: Aufnahme</value>
+  </data>
+  <data name="MenuCapture" xml:space="preserve">
+    <value>Aufnahme</value>
+  </data>
+  <data name="MenuHistory" xml:space="preserve">
+    <value>History öffnen</value>
+  </data>
+  <data name="MenuSettings" xml:space="preserve">
+    <value>Einstellungen</value>
+  </data>
+  <data name="MenuExit" xml:space="preserve">
+    <value>Beenden</value>
+  </data>
+  <data name="HistoryTitle" xml:space="preserve">
+    <value>ScreenKeeper – History</value>
+  </data>
+  <data name="SettingsTitle" xml:space="preserve">
+    <value>ScreenKeeper – Einstellungen</value>
+  </data>
+  <data name="EditorTitle" xml:space="preserve">
+    <value>ScreenKeeper – Bearbeiten</value>
+  </data>
+  <data name="ToolRegion" xml:space="preserve">
+    <value>Bereich wählen</value>
+  </data>
+  <data name="ToolbarCopySelection" xml:space="preserve">
+    <value>Bereich → Zwischenablage (Enter, Strg+C)</value>
+  </data>
+  <data name="ToolbarSaveSelection" xml:space="preserve">
+    <value>Bereich speichern (Strg+S)</value>
+  </data>
+  <data name="ToolbarSaveSelectionAs" xml:space="preserve">
+    <value>Bereich speichern unter … (Strg+Shift+S)</value>
+  </data>
+  <data name="ToolbarCopyFull" xml:space="preserve">
+    <value>Ganzer Bildschirm → Zwischenablage (Strg+Shift+C)</value>
+  </data>
+  <data name="ToolbarCopyMonitor" xml:space="preserve">
+    <value>Aktueller Monitor → Zwischenablage</value>
+  </data>
+  <data name="ToolbarUndo" xml:space="preserve">
+    <value>Rückgängig (Strg+Z)</value>
+  </data>
+  <data name="ToolbarRedo" xml:space="preserve">
+    <value>Wiederholen (Strg+Y)</value>
+  </data>
+  <data name="ToolbarCancel" xml:space="preserve">
+    <value>Abbrechen (Esc)</value>
+  </data>
+  <data name="SaveAsTitle" xml:space="preserve">
+    <value>Bereich speichern unter</value>
+  </data>
+  <data name="SaveAsFilter" xml:space="preserve">
+    <value>PNG-Bild (*.png)|*.png|JPG-Bild (*.jpg)|*.jpg;*.jpeg</value>
+  </data>
+  <data name="ErrorClipboardFailed" xml:space="preserve">
+    <value>Das Bild konnte nicht in die Zwischenablage kopiert werden: {0}</value>
+  </data>
+  <data name="ErrorSaveFailed" xml:space="preserve">
+    <value>Das Bild konnte nicht gespeichert werden: {0}</value>
+  </data>
+  <data name="ErrorEditStateSaveFailed" xml:space="preserve">
+    <value>Der Bearbeitungsstand konnte nicht gespeichert werden: {0}</value>
+  </data>
+  <data name="UndoSelection" xml:space="preserve">
+    <value>Bereich ändern</value>
+  </data>
+  <data name="NotifySavedTitle" xml:space="preserve">
+    <value>Aufnahme gespeichert</value>
+  </data>
+  <data name="NotifySavedText" xml:space="preserve">
+    <value>{0}</value>
+  </data>
+  <data name="HintTitle" xml:space="preserve">
+    <value>ScreenKeeper – Hinweis</value>
+  </data>
+  <data name="HintSnippingEnabled" xml:space="preserve">
+    <value>Windows öffnet mit der Druck-Taste das Bildschirmausschnitt-Tool. Abschalten unter Einstellungen › Barrierefreiheit › Tastatur („Bildschirmausschnitt mit der Druck-Taste öffnen“).</value>
+  </data>
+  <data name="HintProcessRunning" xml:space="preserve">
+    <value>{0} läuft und belegt möglicherweise die Druck-Taste. Bitte {0} beenden oder dessen Hotkeys abschalten.</value>
+  </data>
+  <data name="HintHotkeyFailed" xml:space="preserve">
+    <value>Der Hotkey „{0}“ konnte nicht registriert werden – er wird vermutlich von einem anderen Programm verwendet.</value>
+  </data>
+  <data name="HintHotkeyInvalid" xml:space="preserve">
+    <value>Der Hotkey „{0}“ in den Einstellungen ist ungültig.</value>
+  </data>
+  <data name="ErrorTitle" xml:space="preserve">
+    <value>ScreenKeeper – Fehler</value>
+  </data>
+  <data name="ErrorUnhandled" xml:space="preserve">
+    <value>Ein unerwarteter Fehler ist aufgetreten:
+
+{0}
+
+Details stehen in {1}.</value>
+  </data>
+  <data name="ErrorCaptureFailed" xml:space="preserve">
+    <value>Die Aufnahme ist fehlgeschlagen: {0}</value>
+  </data>
+  <data name="ErrorScreenUnavailable" xml:space="preserve">
+    <value>Der Bildschirm kann gerade nicht aufgenommen werden (Windows-Fehler {0}). Ist der Bildschirm gesperrt, ein Sicherheitsdialog offen oder das Remotedesktop-Fenster minimiert?</value>
+  </data>
+  <data name="ErrorPngWriteFailed" xml:space="preserve">
+    <value>Das Bild {0} konnte nicht gespeichert werden: {1}</value>
+  </data>
+  <data name="CliUsage" xml:space="preserve">
+    <value>Aufruf: ScreenKeeper --capture [--no-editor] [--folder &lt;Ordner&gt;] | --render &lt;json&gt; &lt;out.png&gt; [--region selection|full|monitor:&lt;n&gt;] | --open &lt;json&gt; | --version</value>
+  </data>
+  <data name="CliMissingArgument" xml:space="preserve">
+    <value>Fehlendes Argument für {0}.</value>
+  </data>
+  <data name="CliFileNotFound" xml:space="preserve">
+    <value>Datei nicht gefunden: {0}</value>
+  </data>
+  <data name="CliInvalidRegion" xml:space="preserve">
+    <value>Ungültiger Bereich: {0} (erlaubt: selection, full, monitor:&lt;Nummer&gt;)</value>
+  </data>
+  <data name="CliNoSelection" xml:space="preserve">
+    <value>Die Aufnahme hat keinen gewählten Bereich.</value>
+  </data>
+  <data name="ToolObjectSelect" xml:space="preserve">
+    <value>Auswahl / Verschieben (S) – Objekt anklicken, ziehen, Anfasser, Entf löscht</value>
+  </data>
+  <data name="ToolRectangle" xml:space="preserve">
+    <value>Rechteck (R)</value>
+  </data>
+  <data name="ToolEllipse" xml:space="preserve">
+    <value>Ellipse (E)</value>
+  </data>
+  <data name="ToolLine" xml:space="preserve">
+    <value>Linie (L) – Shift: 45°-Raster</value>
+  </data>
+  <data name="ToolArrow" xml:space="preserve">
+    <value>Pfeil (A) – Shift: 45°-Raster</value>
+  </data>
+  <data name="ToolFreehand" xml:space="preserve">
+    <value>Freihand (F)</value>
+  </data>
+  <data name="ToolText" xml:space="preserve">
+    <value>Text (T) – Enter übernimmt, Shift+Enter neue Zeile, Esc verwirft</value>
+  </data>
+  <data name="ToolHighlight" xml:space="preserve">
+    <value>Textmarker (H)</value>
+  </data>
+  <data name="ToolPixelate" xml:space="preserve">
+    <value>Verpixeln (P)</value>
+  </data>
+  <data name="ToolBlur" xml:space="preserve">
+    <value>Weichzeichnen (B)</value>
+  </data>
+  <data name="ToolNumber" xml:space="preserve">
+    <value>Nummern-Stempel (N)</value>
+  </data>
+  <data name="ToolCursor" xml:space="preserve">
+    <value>Virtuelle Maus (M)</value>
+  </data>
+  <data name="OptionColor" xml:space="preserve">
+    <value>Farbe</value>
+  </data>
+  <data name="OptionThickness" xml:space="preserve">
+    <value>Strichstärke</value>
+  </data>
+  <data name="OptionFill" xml:space="preserve">
+    <value>Füllung</value>
+  </data>
+  <data name="OptionTextBackground" xml:space="preserve">
+    <value>Hintergrund</value>
+  </data>
+  <data name="OptionSmooth" xml:space="preserve">
+    <value>Glätten</value>
+  </data>
+  <data name="OptionFontSize" xml:space="preserve">
+    <value>Schriftgröße</value>
+  </data>
+  <data name="OptionBlockSize" xml:space="preserve">
+    <value>Blockgröße</value>
+  </data>
+  <data name="OptionBlurRadius" xml:space="preserve">
+    <value>Stärke</value>
+  </data>
+  <data name="OptionStampSize" xml:space="preserve">
+    <value>Größe</value>
+  </data>
+  <data name="OptionCursorKind" xml:space="preserve">
+    <value>Zeigerart</value>
+  </data>
+  <data name="OptionCursorVisible" xml:space="preserve">
+    <value>Zeiger ein-/ausblenden</value>
+  </data>
+  <data name="OptionValuePixels" xml:space="preserve">
+    <value>{0} px</value>
+  </data>
+  <data name="ToolbarDeleteObject" xml:space="preserve">
+    <value>Objekt löschen (Entf)</value>
+  </data>
+  <data name="CursorKindCaptured" xml:space="preserve">
+    <value>Aufgenommener Zeiger</value>
+  </data>
+  <data name="CursorKindArrow" xml:space="preserve">
+    <value>Pfeil</value>
+  </data>
+  <data name="CursorKindHand" xml:space="preserve">
+    <value>Hand</value>
+  </data>
+  <data name="CursorKindIBeam" xml:space="preserve">
+    <value>Textcursor</value>
+  </data>
+  <data name="UndoAddAnnotation" xml:space="preserve">
+    <value>Objekt hinzufügen</value>
+  </data>
+  <data name="UndoRemoveAnnotation" xml:space="preserve">
+    <value>Objekt löschen</value>
+  </data>
+  <data name="UndoChangeAnnotation" xml:space="preserve">
+    <value>Objekt ändern</value>
+  </data>
+  <data name="UndoMoveAnnotation" xml:space="preserve">
+    <value>Objekt verschieben</value>
+  </data>
+  <data name="UndoResizeAnnotation" xml:space="preserve">
+    <value>Objektgröße ändern</value>
+  </data>
+  <data name="UndoEditText" xml:space="preserve">
+    <value>Text bearbeiten</value>
+  </data>
+  <data name="UndoDuplicateAnnotation" xml:space="preserve">
+    <value>Objekt duplizieren</value>
+  </data>
+  <data name="ErrorImageNotFound" xml:space="preserve">
+    <value>Das Bild {0} wurde nicht gefunden.</value>
+  </data>
+  <data name="SizeKilobytes" xml:space="preserve">
+    <value>{0} KB</value>
+  </data>
+  <data name="SizeMegabytes" xml:space="preserve">
+    <value>{0} MB</value>
+  </data>
+  <data name="KeyCtrl" xml:space="preserve">
+    <value>Strg</value>
+  </data>
+  <data name="KeyAlt" xml:space="preserve">
+    <value>Alt</value>
+  </data>
+  <data name="KeyShift" xml:space="preserve">
+    <value>Umschalt</value>
+  </data>
+  <data name="KeyWin" xml:space="preserve">
+    <value>Win</value>
+  </data>
+  <data name="KeyPrintScreen" xml:space="preserve">
+    <value>Druck</value>
+  </data>
+  <data name="HistoryToday" xml:space="preserve">
+    <value>Heute</value>
+  </data>
+  <data name="HistoryYesterday" xml:space="preserve">
+    <value>Gestern</value>
+  </data>
+  <data name="HistoryDateFormat" xml:space="preserve">
+    <value>dddd, d. MMMM yyyy</value>
+  </data>
+  <data name="HistoryGroupCount" xml:space="preserve">
+    <value>({0})</value>
+  </data>
+  <data name="HistoryItemTooltip" xml:space="preserve">
+    <value>{0}
+Größe: {1}
+Ordner: {2}</value>
+  </data>
+  <data name="HistoryBadgeEdited" xml:space="preserve">
+    <value>bearbeitet</value>
+  </data>
+  <data name="HistoryBadgeImageOnly" xml:space="preserve">
+    <value>nur Bild</value>
+  </data>
+  <data name="HistoryBadgeBroken" xml:space="preserve">
+    <value>JSON defekt</value>
+  </data>
+  <data name="HistoryEdit" xml:space="preserve">
+    <value>Bearbeiten</value>
+  </data>
+  <data name="HistoryEditTooltip" xml:space="preserve">
+    <value>Im Editor öffnen (Doppelklick, Enter)</value>
+  </data>
+  <data name="HistoryCopy" xml:space="preserve">
+    <value>In Zwischenablage</value>
+  </data>
+  <data name="HistoryCopyTooltip" xml:space="preserve">
+    <value>Bereich (bzw. ganzes Bild) mit Zeichnungen in die Zwischenablage (Strg+C)</value>
+  </data>
+  <data name="HistoryShowInExplorer" xml:space="preserve">
+    <value>Im Explorer anzeigen</value>
+  </data>
+  <data name="HistoryDelete" xml:space="preserve">
+    <value>Löschen</value>
+  </data>
+  <data name="HistoryDeleteTooltip" xml:space="preserve">
+    <value>In den Papierkorb verschieben (Entf)</value>
+  </data>
+  <data name="HistoryRefresh" xml:space="preserve">
+    <value>Aktualisieren</value>
+  </data>
+  <data name="HistoryOpenFolder" xml:space="preserve">
+    <value>Ordner öffnen</value>
+  </data>
+  <data name="HistoryFilterFrom" xml:space="preserve">
+    <value>Von:</value>
+  </data>
+  <data name="HistoryFilterTo" xml:space="preserve">
+    <value>Bis:</value>
+  </data>
+  <data name="HistoryQuickToday" xml:space="preserve">
+    <value>Heute</value>
+  </data>
+  <data name="HistoryQuick7Days" xml:space="preserve">
+    <value>7 Tage</value>
+  </data>
+  <data name="HistoryQuick30Days" xml:space="preserve">
+    <value>30 Tage</value>
+  </data>
+  <data name="HistoryQuickAll" xml:space="preserve">
+    <value>Alle</value>
+  </data>
+  <data name="HistorySearchPlaceholder" xml:space="preserve">
+    <value>Suche im Dateinamen</value>
+  </data>
+  <data name="HistoryStatusLoading" xml:space="preserve">
+    <value>Aufnahmen werden geladen …</value>
+  </data>
+  <data name="HistoryStatusEmpty" xml:space="preserve">
+    <value>Noch keine Aufnahmen vorhanden.</value>
+  </data>
+  <data name="HistoryStatusNoMatch" xml:space="preserve">
+    <value>Keine Aufnahmen im gewählten Zeitraum bzw. zum Suchtext.</value>
+  </data>
+  <data name="HistoryStatusCount" xml:space="preserve">
+    <value>{0} Aufnahme(n)</value>
+  </data>
+  <data name="HistoryStatusMore" xml:space="preserve">
+    <value>{0} Aufnahme(n) geladen – weitere beim Scrollen</value>
+  </data>
+  <data name="HistoryLoadFailed" xml:space="preserve">
+    <value>Die History konnte nicht geladen werden: {0}</value>
+  </data>
+  <data name="HistoryCopied" xml:space="preserve">
+    <value>{0} in die Zwischenablage kopiert.</value>
+  </data>
+  <data name="HistoryDeleteConfirmOne" xml:space="preserve">
+    <value>Die Aufnahme „{0}“ (Bild, Bearbeitungsstand und Vorschaubild) in den Papierkorb verschieben?</value>
+  </data>
+  <data name="HistoryDeleteConfirmMany" xml:space="preserve">
+    <value>{0} Aufnahmen (jeweils Bild, Bearbeitungsstand und Vorschaubild) in den Papierkorb verschieben?</value>
+  </data>
+  <data name="HistoryDeleteFailed" xml:space="preserve">
+    <value>Löschen in den Papierkorb fehlgeschlagen: {0}</value>
+  </data>
+  <data name="HistoryDeleteInEditor" xml:space="preserve">
+    <value>Die Aufnahme ist gerade im Editor geöffnet. Bitte den Editor zuerst schließen.</value>
+  </data>
+  <data name="HistoryDeleted" xml:space="preserve">
+    <value>{0} Aufnahme(n) in den Papierkorb verschoben.</value>
+  </data>
+  <data name="HistoryEditFailed" xml:space="preserve">
+    <value>Die Aufnahme konnte nicht geöffnet werden: {0}</value>
+  </data>
+  <data name="SettingsTabGeneral" xml:space="preserve">
+    <value>Allgemein</value>
+  </data>
+  <data name="SettingsTabHotkeys" xml:space="preserve">
+    <value>Hotkeys</value>
+  </data>
+  <data name="SettingsTabEditor" xml:space="preserve">
+    <value>Editor</value>
+  </data>
+  <data name="SettingsOk" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="SettingsCancel" xml:space="preserve">
+    <value>Abbrechen</value>
+  </data>
+  <data name="SettingsApply" xml:space="preserve">
+    <value>Übernehmen</value>
+  </data>
+  <data name="SettingsSaved" xml:space="preserve">
+    <value>Einstellungen gespeichert.</value>
+  </data>
+  <data name="SettingsBrowse" xml:space="preserve">
+    <value>Durchsuchen …</value>
+  </data>
+  <data name="SettingsDefault" xml:space="preserve">
+    <value>Standard</value>
+  </data>
+  <data name="SettingsStorageFolder" xml:space="preserve">
+    <value>Ablageordner</value>
+  </data>
+  <data name="SettingsExportFolder" xml:space="preserve">
+    <value>Exportordner (Bereich speichern)</value>
+  </data>
+  <data name="SettingsResolvedFolder" xml:space="preserve">
+    <value>Verwendet:</value>
+  </data>
+  <data name="SettingsFolderInvalid" xml:space="preserve">
+    <value>Der Pfad ist ungültig.</value>
+  </data>
+  <data name="SettingsFolderNotAbsolute" xml:space="preserve">
+    <value>Bitte einen vollständigen Pfad angeben (z. B. D:\Bilder\ScreenKeeper) oder leer lassen für den Standard.</value>
+  </data>
+  <data name="SettingsFileNamePattern" xml:space="preserve">
+    <value>Dateinamen-Muster</value>
+  </data>
+  <data name="SettingsPatternHelp" xml:space="preserve">
+    <value>Platzhalter: {yyyy} Jahr, {MM} Monat, {dd} Tag, {HH} Stunde, {mm} Minute, {ss} Sekunde. Bei gleichem Namen wird _2, _3 … angehängt.</value>
+  </data>
+  <data name="SettingsPatternPreview" xml:space="preserve">
+    <value>Vorschau: {0}</value>
+  </data>
+  <data name="SettingsPatternInvalidChars" xml:space="preserve">
+    <value>Ungültige Zeichen im Muster: {0}</value>
+  </data>
+  <data name="SettingsPatternUnknownPlaceholder" xml:space="preserve">
+    <value>Unbekannter Platzhalter {0}.</value>
+  </data>
+  <data name="SettingsPatternUnclosed" xml:space="preserve">
+    <value>Nicht geschlossener Platzhalter: {0}</value>
+  </data>
+  <data name="SettingsRetention" xml:space="preserve">
+    <value>Aufbewahrung</value>
+  </data>
+  <data name="SettingsRetentionUnit" xml:space="preserve">
+    <value>Tage (0 = aus)</value>
+  </data>
+  <data name="SettingsRetentionInvalid" xml:space="preserve">
+    <value>Bitte eine ganze Zahl von 0 bis {0} eingeben.</value>
+  </data>
+  <data name="SettingsRetentionOff" xml:space="preserve">
+    <value>Aufnahmen werden nicht automatisch gelöscht.</value>
+  </data>
+  <data name="SettingsRetentionOn" xml:space="preserve">
+    <value>Aufnahmen älter als {0} Tage werden beim Start und einmal täglich in den Papierkorb verschoben.</value>
+  </data>
+  <data name="SettingsProgram" xml:space="preserve">
+    <value>Programm</value>
+  </data>
+  <data name="SettingsAutostart" xml:space="preserve">
+    <value>Mit Windows starten</value>
+  </data>
+  <data name="SettingsAutostartFailed" xml:space="preserve">
+    <value>Der Autostart konnte nicht geändert werden: {0}</value>
+  </data>
+  <data name="SettingsNotifyOnSaveOnly" xml:space="preserve">
+    <value>Benachrichtigung bei „nur speichern“ anzeigen</value>
+  </data>
+  <data name="SettingsFileLocation" xml:space="preserve">
+    <value>Einstellungsdatei:</value>
+  </data>
+  <data name="SettingsHotkeyHelp" xml:space="preserve">
+    <value>Feld anklicken und die gewünschte Tastenkombination drücken (Esc bricht ab, Entf oder „Entfernen“ schaltet den Hotkey aus). Solange ein Feld aktiv ist, sind die Hotkeys ausgesetzt. Buchstaben und Ziffern brauchen Strg, Alt oder Win.</value>
+  </data>
+  <data name="SettingsHotkeyCaptureEdit" xml:space="preserve">
+    <value>Aufnahme + Bearbeiten</value>
+  </data>
+  <data name="SettingsHotkeyCaptureSave" xml:space="preserve">
+    <value>Aufnahme nur speichern</value>
+  </data>
+  <data name="SettingsHotkeyHistory" xml:space="preserve">
+    <value>History öffnen</value>
+  </data>
+  <data name="SettingsHotkeyClear" xml:space="preserve">
+    <value>Entfernen</value>
+  </data>
+  <data name="SettingsHotkeyNone" xml:space="preserve">
+    <value>(aus)</value>
+  </data>
+  <data name="SettingsHotkeyRecording" xml:space="preserve">
+    <value>Tastenkombination drücken …</value>
+  </data>
+  <data name="SettingsHotkeyStatusRegistered" xml:space="preserve">
+    <value>aktiv</value>
+  </data>
+  <data name="SettingsHotkeyStatusHooked" xml:space="preserve">
+    <value>aktiv über Tastatur-Hook</value>
+  </data>
+  <data name="SettingsHotkeyStatusFailed" xml:space="preserve">
+    <value>nicht verfügbar (Fehler {0})</value>
+  </data>
+  <data name="SettingsHotkeyStatusInvalid" xml:space="preserve">
+    <value>ungültig</value>
+  </data>
+  <data name="SettingsHotkeyStatusOff" xml:space="preserve">
+    <value>aus</value>
+  </data>
+  <data name="SettingsHotkeyStatusSuspended" xml:space="preserve">
+    <value>ausgesetzt (Aufzeichnung)</value>
+  </data>
+  <data name="SettingsHotkeyStatusInactive" xml:space="preserve">
+    <value>nicht aktiv (Kommandozeile)</value>
+  </data>
+  <data name="SettingsHotkeyWarningConfirm" xml:space="preserve">
+    <value>{0}
+
+Trotzdem speichern?</value>
+  </data>
+  <data name="SettingsPrintStatus" xml:space="preserve">
+    <value>Status Druck-Taste: {0}</value>
+  </data>
+  <data name="PrintStatusRegistered" xml:space="preserve">
+    <value>über RegisterHotKey</value>
+  </data>
+  <data name="PrintStatusHooked" xml:space="preserve">
+    <value>über Tastatur-Hook (RegisterHotKey nicht möglich, Taste ist anderweitig belegt)</value>
+  </data>
+  <data name="PrintStatusUnavailable" xml:space="preserve">
+    <value>nicht verfügbar</value>
+  </data>
+  <data name="PrintStatusUnused" xml:space="preserve">
+    <value>keinem Hotkey zugeordnet</value>
+  </data>
+  <data name="SettingsMagnifier" xml:space="preserve">
+    <value>Lupe</value>
+  </data>
+  <data name="SettingsMagnifierZoom" xml:space="preserve">
+    <value>Vergrößerung</value>
+  </data>
+  <data name="SettingsMagnifierSize" xml:space="preserve">
+    <value>Größe</value>
+  </data>
+  <data name="SettingsColors" xml:space="preserve">
+    <value>Farben</value>
+  </data>
+  <data name="SettingsDefaultColor" xml:space="preserve">
+    <value>Standardfarbe (Rahmen, Linien, Text, Stempel)</value>
+  </data>
+  <data name="SettingsHighlightColor" xml:space="preserve">
+    <value>Textmarker</value>
+  </data>
+  <data name="SettingsToolDefaults" xml:space="preserve">
+    <value>Standardwerte der Werkzeuge</value>
+  </data>
+  <data name="SettingsCursor" xml:space="preserve">
+    <value>Mauszeiger</value>
+  </data>
+  <data name="SettingsCursorVisible" xml:space="preserve">
+    <value>Aufgenommenen Mauszeiger standardmäßig anzeigen</value>
+  </data>
+  <data name="HotkeyErrorInvalid" xml:space="preserve">
+    <value>{0}: „{1}“ ist kein gültiger Hotkey.</value>
+  </data>
+  <data name="HotkeyErrorNeedsModifier" xml:space="preserve">
+    <value>{0}: {1} braucht Strg, Alt oder Win (sonst wäre die Taste beim Tippen blockiert).</value>
+  </data>
+  <data name="HotkeyErrorDuplicate" xml:space="preserve">
+    <value>{0} und {1} verwenden denselben Hotkey ({2}).</value>
+  </data>
+  <data name="HotkeyWarningTaken" xml:space="preserve">
+    <value>{0}: {1} ist bereits von einem anderen Programm belegt und wird nicht funktionieren.</value>
+  </data>
+  <data name="HotkeyWarningTakenPrint" xml:space="preserve">
+    <value>{0}: {1} ist bereits von einem anderen Programm belegt – ScreenKeeper fängt die Druck-Taste dann über einen Tastatur-Hook ab.</value>
+  </data>
+  <data name="HotkeyWarningFailed" xml:space="preserve">
+    <value>{0}: {1} lässt sich nicht registrieren (Fehler {2}).</value>
+  </data>
+  <data name="HotkeyWarningSnipping" xml:space="preserve">
+    <value>{0}: Windows öffnet mit der Druck-Taste das Bildschirmausschnitt-Tool. ScreenKeeper fängt die Taste ab; abschalten lässt sich das unter Einstellungen › Barrierefreiheit › Tastatur.</value>
+  </data>
+</root>

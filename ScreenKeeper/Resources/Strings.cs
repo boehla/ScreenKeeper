@@ -1,0 +1,214 @@
+﻿using System.Globalization;
+using System.Resources;
+
+namespace ScreenKeeper.Resources;
+
+/// <summary>
+/// Handgepflegter Zugriff auf <c>Strings.resx</c> (der ResX-Codegenerator läuft bei <c>dotnet build</c> nicht).
+/// Jeder neue Text: Eintrag in der .resx UND Eigenschaft hier.
+/// </summary>
+public static class Strings {
+    private static readonly ResourceManager rm = new ResourceManager("ScreenKeeper.Resources.Strings", typeof(Strings).Assembly);
+
+    /// <summary>Kultur für die Texte; null = aktuelle UI-Kultur.</summary>
+    public static CultureInfo? Culture { get; set; }
+
+    public static ResourceManager ResourceManager => rm;
+
+    /// <summary>Text zum Schlüssel; fehlt er, wird <c>[Schlüssel]</c> geliefert, damit Lücken auffallen.</summary>
+    public static string Get(string key) {
+        return rm.GetString(key, Culture) ?? $"[{key}]";
+    }
+
+    public static string Format(string format, params object?[] args) {
+        return string.Format(CultureInfo.CurrentCulture, format, args);
+    }
+
+    public static string TrayTooltip => Get(nameof(TrayTooltip));
+    public static string MenuCapture => Get(nameof(MenuCapture));
+    public static string MenuHistory => Get(nameof(MenuHistory));
+    public static string MenuSettings => Get(nameof(MenuSettings));
+    public static string MenuExit => Get(nameof(MenuExit));
+    public static string HistoryTitle => Get(nameof(HistoryTitle));
+    public static string SettingsTitle => Get(nameof(SettingsTitle));
+    public static string EditorTitle => Get(nameof(EditorTitle));
+    public static string ToolRegion => Get(nameof(ToolRegion));
+    public static string ToolbarCopySelection => Get(nameof(ToolbarCopySelection));
+    public static string ToolbarSaveSelection => Get(nameof(ToolbarSaveSelection));
+    public static string ToolbarSaveSelectionAs => Get(nameof(ToolbarSaveSelectionAs));
+    public static string ToolbarCopyFull => Get(nameof(ToolbarCopyFull));
+    public static string ToolbarCopyMonitor => Get(nameof(ToolbarCopyMonitor));
+    public static string ToolbarUndo => Get(nameof(ToolbarUndo));
+    public static string ToolbarRedo => Get(nameof(ToolbarRedo));
+    public static string ToolbarCancel => Get(nameof(ToolbarCancel));
+    public static string SaveAsTitle => Get(nameof(SaveAsTitle));
+    public static string SaveAsFilter => Get(nameof(SaveAsFilter));
+    public static string ErrorClipboardFailed => Get(nameof(ErrorClipboardFailed));
+    public static string ErrorSaveFailed => Get(nameof(ErrorSaveFailed));
+    public static string ErrorEditStateSaveFailed => Get(nameof(ErrorEditStateSaveFailed));
+    public static string UndoSelection => Get(nameof(UndoSelection));
+    public static string NotifySavedTitle => Get(nameof(NotifySavedTitle));
+    public static string NotifySavedText => Get(nameof(NotifySavedText));
+    public static string HintTitle => Get(nameof(HintTitle));
+    public static string HintSnippingEnabled => Get(nameof(HintSnippingEnabled));
+    public static string HintProcessRunning => Get(nameof(HintProcessRunning));
+    public static string HintHotkeyFailed => Get(nameof(HintHotkeyFailed));
+    public static string HintHotkeyInvalid => Get(nameof(HintHotkeyInvalid));
+    public static string ErrorTitle => Get(nameof(ErrorTitle));
+    public static string ErrorUnhandled => Get(nameof(ErrorUnhandled));
+    public static string ErrorCaptureFailed => Get(nameof(ErrorCaptureFailed));
+    public static string ErrorScreenUnavailable => Get(nameof(ErrorScreenUnavailable));
+    public static string ErrorPngWriteFailed => Get(nameof(ErrorPngWriteFailed));
+    public static string CliUsage => Get(nameof(CliUsage));
+    public static string CliMissingArgument => Get(nameof(CliMissingArgument));
+    public static string CliFileNotFound => Get(nameof(CliFileNotFound));
+    public static string CliInvalidRegion => Get(nameof(CliInvalidRegion));
+    public static string CliNoSelection => Get(nameof(CliNoSelection));
+    public static string ToolObjectSelect => Get(nameof(ToolObjectSelect));
+    public static string ToolRectangle => Get(nameof(ToolRectangle));
+    public static string ToolEllipse => Get(nameof(ToolEllipse));
+    public static string ToolLine => Get(nameof(ToolLine));
+    public static string ToolArrow => Get(nameof(ToolArrow));
+    public static string ToolFreehand => Get(nameof(ToolFreehand));
+    public static string ToolText => Get(nameof(ToolText));
+    public static string ToolHighlight => Get(nameof(ToolHighlight));
+    public static string ToolPixelate => Get(nameof(ToolPixelate));
+    public static string ToolBlur => Get(nameof(ToolBlur));
+    public static string ToolNumber => Get(nameof(ToolNumber));
+    public static string ToolCursor => Get(nameof(ToolCursor));
+    public static string OptionColor => Get(nameof(OptionColor));
+    public static string OptionThickness => Get(nameof(OptionThickness));
+    public static string OptionFill => Get(nameof(OptionFill));
+    public static string OptionTextBackground => Get(nameof(OptionTextBackground));
+    public static string OptionSmooth => Get(nameof(OptionSmooth));
+    public static string OptionFontSize => Get(nameof(OptionFontSize));
+    public static string OptionBlockSize => Get(nameof(OptionBlockSize));
+    public static string OptionBlurRadius => Get(nameof(OptionBlurRadius));
+    public static string OptionStampSize => Get(nameof(OptionStampSize));
+    public static string OptionCursorKind => Get(nameof(OptionCursorKind));
+    public static string OptionCursorVisible => Get(nameof(OptionCursorVisible));
+    public static string OptionValuePixels => Get(nameof(OptionValuePixels));
+    public static string ToolbarDeleteObject => Get(nameof(ToolbarDeleteObject));
+    public static string CursorKindCaptured => Get(nameof(CursorKindCaptured));
+    public static string CursorKindArrow => Get(nameof(CursorKindArrow));
+    public static string CursorKindHand => Get(nameof(CursorKindHand));
+    public static string CursorKindIBeam => Get(nameof(CursorKindIBeam));
+    public static string UndoAddAnnotation => Get(nameof(UndoAddAnnotation));
+    public static string UndoRemoveAnnotation => Get(nameof(UndoRemoveAnnotation));
+    public static string UndoChangeAnnotation => Get(nameof(UndoChangeAnnotation));
+    public static string UndoMoveAnnotation => Get(nameof(UndoMoveAnnotation));
+    public static string UndoResizeAnnotation => Get(nameof(UndoResizeAnnotation));
+    public static string UndoEditText => Get(nameof(UndoEditText));
+    public static string UndoDuplicateAnnotation => Get(nameof(UndoDuplicateAnnotation));
+    public static string ErrorImageNotFound => Get(nameof(ErrorImageNotFound));
+    public static string SizeKilobytes => Get(nameof(SizeKilobytes));
+    public static string SizeMegabytes => Get(nameof(SizeMegabytes));
+    public static string KeyCtrl => Get(nameof(KeyCtrl));
+    public static string KeyAlt => Get(nameof(KeyAlt));
+    public static string KeyShift => Get(nameof(KeyShift));
+    public static string KeyWin => Get(nameof(KeyWin));
+    public static string KeyPrintScreen => Get(nameof(KeyPrintScreen));
+    public static string HistoryToday => Get(nameof(HistoryToday));
+    public static string HistoryYesterday => Get(nameof(HistoryYesterday));
+    public static string HistoryDateFormat => Get(nameof(HistoryDateFormat));
+    public static string HistoryGroupCount => Get(nameof(HistoryGroupCount));
+    public static string HistoryItemTooltip => Get(nameof(HistoryItemTooltip));
+    public static string HistoryBadgeEdited => Get(nameof(HistoryBadgeEdited));
+    public static string HistoryBadgeImageOnly => Get(nameof(HistoryBadgeImageOnly));
+    public static string HistoryBadgeBroken => Get(nameof(HistoryBadgeBroken));
+    public static string HistoryEdit => Get(nameof(HistoryEdit));
+    public static string HistoryEditTooltip => Get(nameof(HistoryEditTooltip));
+    public static string HistoryCopy => Get(nameof(HistoryCopy));
+    public static string HistoryCopyTooltip => Get(nameof(HistoryCopyTooltip));
+    public static string HistoryShowInExplorer => Get(nameof(HistoryShowInExplorer));
+    public static string HistoryDelete => Get(nameof(HistoryDelete));
+    public static string HistoryDeleteTooltip => Get(nameof(HistoryDeleteTooltip));
+    public static string HistoryRefresh => Get(nameof(HistoryRefresh));
+    public static string HistoryOpenFolder => Get(nameof(HistoryOpenFolder));
+    public static string HistoryFilterFrom => Get(nameof(HistoryFilterFrom));
+    public static string HistoryFilterTo => Get(nameof(HistoryFilterTo));
+    public static string HistoryQuickToday => Get(nameof(HistoryQuickToday));
+    public static string HistoryQuick7Days => Get(nameof(HistoryQuick7Days));
+    public static string HistoryQuick30Days => Get(nameof(HistoryQuick30Days));
+    public static string HistoryQuickAll => Get(nameof(HistoryQuickAll));
+    public static string HistorySearchPlaceholder => Get(nameof(HistorySearchPlaceholder));
+    public static string HistoryStatusLoading => Get(nameof(HistoryStatusLoading));
+    public static string HistoryStatusEmpty => Get(nameof(HistoryStatusEmpty));
+    public static string HistoryStatusNoMatch => Get(nameof(HistoryStatusNoMatch));
+    public static string HistoryStatusCount => Get(nameof(HistoryStatusCount));
+    public static string HistoryStatusMore => Get(nameof(HistoryStatusMore));
+    public static string HistoryLoadFailed => Get(nameof(HistoryLoadFailed));
+    public static string HistoryCopied => Get(nameof(HistoryCopied));
+    public static string HistoryDeleteConfirmOne => Get(nameof(HistoryDeleteConfirmOne));
+    public static string HistoryDeleteConfirmMany => Get(nameof(HistoryDeleteConfirmMany));
+    public static string HistoryDeleteFailed => Get(nameof(HistoryDeleteFailed));
+    public static string HistoryDeleteInEditor => Get(nameof(HistoryDeleteInEditor));
+    public static string HistoryDeleted => Get(nameof(HistoryDeleted));
+    public static string HistoryEditFailed => Get(nameof(HistoryEditFailed));
+    public static string SettingsTabGeneral => Get(nameof(SettingsTabGeneral));
+    public static string SettingsTabHotkeys => Get(nameof(SettingsTabHotkeys));
+    public static string SettingsTabEditor => Get(nameof(SettingsTabEditor));
+    public static string SettingsOk => Get(nameof(SettingsOk));
+    public static string SettingsCancel => Get(nameof(SettingsCancel));
+    public static string SettingsApply => Get(nameof(SettingsApply));
+    public static string SettingsSaved => Get(nameof(SettingsSaved));
+    public static string SettingsBrowse => Get(nameof(SettingsBrowse));
+    public static string SettingsDefault => Get(nameof(SettingsDefault));
+    public static string SettingsStorageFolder => Get(nameof(SettingsStorageFolder));
+    public static string SettingsExportFolder => Get(nameof(SettingsExportFolder));
+    public static string SettingsResolvedFolder => Get(nameof(SettingsResolvedFolder));
+    public static string SettingsFolderInvalid => Get(nameof(SettingsFolderInvalid));
+    public static string SettingsFolderNotAbsolute => Get(nameof(SettingsFolderNotAbsolute));
+    public static string SettingsFileNamePattern => Get(nameof(SettingsFileNamePattern));
+    public static string SettingsPatternHelp => Get(nameof(SettingsPatternHelp));
+    public static string SettingsPatternPreview => Get(nameof(SettingsPatternPreview));
+    public static string SettingsPatternInvalidChars => Get(nameof(SettingsPatternInvalidChars));
+    public static string SettingsPatternUnknownPlaceholder => Get(nameof(SettingsPatternUnknownPlaceholder));
+    public static string SettingsPatternUnclosed => Get(nameof(SettingsPatternUnclosed));
+    public static string SettingsRetention => Get(nameof(SettingsRetention));
+    public static string SettingsRetentionUnit => Get(nameof(SettingsRetentionUnit));
+    public static string SettingsRetentionInvalid => Get(nameof(SettingsRetentionInvalid));
+    public static string SettingsRetentionOff => Get(nameof(SettingsRetentionOff));
+    public static string SettingsRetentionOn => Get(nameof(SettingsRetentionOn));
+    public static string SettingsProgram => Get(nameof(SettingsProgram));
+    public static string SettingsAutostart => Get(nameof(SettingsAutostart));
+    public static string SettingsAutostartFailed => Get(nameof(SettingsAutostartFailed));
+    public static string SettingsNotifyOnSaveOnly => Get(nameof(SettingsNotifyOnSaveOnly));
+    public static string SettingsFileLocation => Get(nameof(SettingsFileLocation));
+    public static string SettingsHotkeyHelp => Get(nameof(SettingsHotkeyHelp));
+    public static string SettingsHotkeyCaptureEdit => Get(nameof(SettingsHotkeyCaptureEdit));
+    public static string SettingsHotkeyCaptureSave => Get(nameof(SettingsHotkeyCaptureSave));
+    public static string SettingsHotkeyHistory => Get(nameof(SettingsHotkeyHistory));
+    public static string SettingsHotkeyClear => Get(nameof(SettingsHotkeyClear));
+    public static string SettingsHotkeyNone => Get(nameof(SettingsHotkeyNone));
+    public static string SettingsHotkeyRecording => Get(nameof(SettingsHotkeyRecording));
+    public static string SettingsHotkeyStatusRegistered => Get(nameof(SettingsHotkeyStatusRegistered));
+    public static string SettingsHotkeyStatusHooked => Get(nameof(SettingsHotkeyStatusHooked));
+    public static string SettingsHotkeyStatusFailed => Get(nameof(SettingsHotkeyStatusFailed));
+    public static string SettingsHotkeyStatusInvalid => Get(nameof(SettingsHotkeyStatusInvalid));
+    public static string SettingsHotkeyStatusOff => Get(nameof(SettingsHotkeyStatusOff));
+    public static string SettingsHotkeyStatusSuspended => Get(nameof(SettingsHotkeyStatusSuspended));
+    public static string SettingsHotkeyStatusInactive => Get(nameof(SettingsHotkeyStatusInactive));
+    public static string SettingsHotkeyWarningConfirm => Get(nameof(SettingsHotkeyWarningConfirm));
+    public static string SettingsPrintStatus => Get(nameof(SettingsPrintStatus));
+    public static string PrintStatusRegistered => Get(nameof(PrintStatusRegistered));
+    public static string PrintStatusHooked => Get(nameof(PrintStatusHooked));
+    public static string PrintStatusUnavailable => Get(nameof(PrintStatusUnavailable));
+    public static string PrintStatusUnused => Get(nameof(PrintStatusUnused));
+    public static string SettingsMagnifier => Get(nameof(SettingsMagnifier));
+    public static string SettingsMagnifierZoom => Get(nameof(SettingsMagnifierZoom));
+    public static string SettingsMagnifierSize => Get(nameof(SettingsMagnifierSize));
+    public static string SettingsColors => Get(nameof(SettingsColors));
+    public static string SettingsDefaultColor => Get(nameof(SettingsDefaultColor));
+    public static string SettingsHighlightColor => Get(nameof(SettingsHighlightColor));
+    public static string SettingsToolDefaults => Get(nameof(SettingsToolDefaults));
+    public static string SettingsCursor => Get(nameof(SettingsCursor));
+    public static string SettingsCursorVisible => Get(nameof(SettingsCursorVisible));
+    public static string HotkeyErrorInvalid => Get(nameof(HotkeyErrorInvalid));
+    public static string HotkeyErrorNeedsModifier => Get(nameof(HotkeyErrorNeedsModifier));
+    public static string HotkeyErrorDuplicate => Get(nameof(HotkeyErrorDuplicate));
+    public static string HotkeyWarningTaken => Get(nameof(HotkeyWarningTaken));
+    public static string HotkeyWarningTakenPrint => Get(nameof(HotkeyWarningTakenPrint));
+    public static string HotkeyWarningFailed => Get(nameof(HotkeyWarningFailed));
+    public static string HotkeyWarningSnipping => Get(nameof(HotkeyWarningSnipping));
+}
