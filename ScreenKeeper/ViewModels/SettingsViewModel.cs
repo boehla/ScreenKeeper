@@ -57,7 +57,7 @@ public sealed class SettingsViewModel : ViewModelBase {
     private int defaultBlurRadius;
     private double defaultStampSize;
     private string defaultCursorKind = "";
-    private bool defaultFill;
+    private string defaultFillColor = "";
     private bool defaultTextBackground;
     private bool defaultSmooth;
     private bool cursorVisible;
@@ -75,6 +75,7 @@ public sealed class SettingsViewModel : ViewModelBase {
 
         Palette = buildPalette(defaultColor);
         HighlightPalette = buildPalette(highlightColor);
+        FillPalette = buildFillPalette(defaultFillColor);
         Thicknesses = withValue(ToolOptions.Thicknesses, defaultThickness);
         FontSizes = withValue(ToolOptions.FontSizes, defaultFontSize);
         BlockSizes = withValue(ToolOptions.BlockSizes, defaultBlockSize);
@@ -134,6 +135,9 @@ public sealed class SettingsViewModel : ViewModelBase {
     public IReadOnlyList<ColorChoice> Palette { get; }
 
     public IReadOnlyList<ColorChoice> HighlightPalette { get; }
+
+    /// <summary>Füllfarben: keine (Hex leer), Palette deckend und halbtransparent.</summary>
+    public IReadOnlyList<ColorChoice> FillPalette { get; }
 
     public IReadOnlyList<double> Thicknesses { get; }
 
@@ -335,9 +339,10 @@ public sealed class SettingsViewModel : ViewModelBase {
         set => SetProperty(ref defaultCursorKind, value ?? defaultCursorKind);
     }
 
-    public bool DefaultFill {
-        get => defaultFill;
-        set => SetProperty(ref defaultFill, value);
+    /// <summary>Standard-Füllfarbe für Rechteck und Ellipse; leer = keine Füllung.</summary>
+    public string DefaultFillColor {
+        get => defaultFillColor;
+        set => SetProperty(ref defaultFillColor, value ?? "");
     }
 
     public bool DefaultTextBackground {
@@ -422,7 +427,7 @@ public sealed class SettingsViewModel : ViewModelBase {
         target.DefaultBlurRadius = defaultBlurRadius;
         target.DefaultStampSize = defaultStampSize;
         target.DefaultCursorKind = defaultCursorKind;
-        target.DefaultFill = defaultFill;
+        target.DefaultFillColor = defaultFillColor;
         target.DefaultTextBackground = defaultTextBackground;
         target.DefaultSmooth = defaultSmooth;
         target.CursorVisible = cursorVisible;
@@ -500,7 +505,7 @@ public sealed class SettingsViewModel : ViewModelBase {
         defaultBlurRadius = source.DefaultBlurRadius;
         defaultStampSize = source.DefaultStampSize;
         defaultCursorKind = source.DefaultCursorKind;
-        defaultFill = source.DefaultFill;
+        defaultFillColor = AnnotationColors.TryParse(source.DefaultFillColor, out Color fill) ? AnnotationColors.ToHex(fill) : "";
         defaultTextBackground = source.DefaultTextBackground;
         defaultSmooth = source.DefaultSmooth;
         cursorVisible = source.CursorVisible;
@@ -578,6 +583,14 @@ public sealed class SettingsViewModel : ViewModelBase {
         List<string> colors = AnnotationColors.Palette.Select(normalizeColor).ToList();
         if(!colors.Contains(current, StringComparer.OrdinalIgnoreCase)) colors.Add(current);
         return colors.Select(hex => new ColorChoice(hex, AnnotationColors.GetBrush(hex))).ToList();
+    }
+
+    private static IReadOnlyList<ColorChoice> buildFillPalette(string current) {
+        List<string> colors = new List<string> { "" };
+        colors.AddRange(AnnotationColors.Palette.Select(normalizeColor));
+        colors.AddRange(AnnotationColors.Palette.Select(c => AnnotationColors.ToHex(AnnotationColors.WithAlpha(AnnotationColors.Parse(c), EditorViewModel.TranslucentFillAlpha))));
+        if(!colors.Contains(current, StringComparer.OrdinalIgnoreCase)) colors.Add(current);
+        return colors.Select(hex => new ColorChoice(hex, LineCapIcons.GetFillBrush(hex))).ToList();
     }
 
     private static IReadOnlyList<T> withValue<T>(IReadOnlyList<T> values, T current) {

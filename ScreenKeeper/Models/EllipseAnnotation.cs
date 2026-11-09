@@ -3,9 +3,9 @@
 namespace ScreenKeeper.Models;
 
 /// <summary>
-/// Ellipse innerhalb von <see cref="Rect"/> mit Rahmen und optionaler Füllung.
+/// Ellipse innerhalb von <see cref="Rect"/> mit Rahmen und optionaler Füllung in eigener Farbe.
 /// </summary>
-public sealed class EllipseAnnotation : Annotation {
+public sealed class EllipseAnnotation : Annotation, IJsonOnDeserialized {
     [JsonIgnore]
     public override string Type => AnnotationTypes.Ellipse;
 
@@ -16,6 +16,14 @@ public sealed class EllipseAnnotation : Annotation {
 
     public double Thickness { get; set; } = 4;
 
-    /// <summary>Füllfarbe als #AARRGGBB; null = keine Füllung.</summary>
+    /// <summary>
+    /// Füllfarbe als #AARRGGBB (Transparenz erlaubt); null = keine Füllung. Ältere Dateien mit <c>"fill": true</c>
+    /// werden in der Rahmenfarbe gefüllt (siehe <see cref="FillColorConverter"/>).
+    /// </summary>
+    [JsonConverter(typeof(FillColorConverter))]
     public string? Fill { get; set; }
+
+    void IJsonOnDeserialized.OnDeserialized() {
+        Fill = FillColorConverter.Resolve(Fill, Stroke);
+    }
 }

@@ -21,7 +21,7 @@ public partial class EditorToolbar : UserControl {
 
     /// <summary>Alle Auswahlmenüs schließen (z. B. wenn die Leiste versteckt wird).</summary>
     public void ClosePopups() {
-        foreach(Popup popup in new[] { colorPopup, thicknessPopup, fontSizePopup, blockSizePopup, blurPopup, stampSizePopup, cursorKindPopup }) {
+        foreach(Popup popup in new[] { colorPopup, thicknessPopup, fillPopup, startCapPopup, endCapPopup, fontSizePopup, blockSizePopup, blurPopup, stampSizePopup, cursorKindPopup }) {
             popup.IsOpen = false;
         }
     }

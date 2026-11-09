@@ -145,7 +145,13 @@ public class SettingsPhase5Tests {
             s.DefaultFontSize = 32;
             s.DefaultBlockSize = 14;
             s.DefaultBlurRadius = 12;
-            s.DefaultFill = true;
+            s.DefaultFillColor = "#801E88E5";
+            s.DefaultLineStartCap = LineCaps.Dot;
+            s.DefaultLineEndCap = LineCaps.Square;
+            s.DefaultArrowStartCap = LineCaps.Triangle;
+            s.DefaultArrowEndCap = LineCaps.None;
+            s.DefaultFreehandStartCap = LineCaps.Square;
+            s.DefaultFreehandEndCap = LineCaps.Arrow;
             s.DefaultTextBackground = true;
             s.DefaultSmooth = false;
             s.DefaultStampSize = 48;
@@ -160,7 +166,8 @@ public class SettingsPhase5Tests {
             SettingsService reloaded = new SettingsService(path);
             reloaded.Load();
             foreach(PropertyInfo property in typeof(AppSettings).GetProperties(BindingFlags.Public | BindingFlags.Instance)) {
-                if(property.Name == nameof(AppSettings.ExtensionData)) continue;
+                // ExtensionData: Rohdaten; DefaultFill: altes Feld, wird beim Laden übernommen und nicht mehr geschrieben
+                if(property.Name == nameof(AppSettings.ExtensionData) || property.Name == nameof(AppSettings.DefaultFill)) continue;
                 object? expected = property.GetValue(s);
                 object? actual = property.GetValue(reloaded.Settings);
                 if(property.PropertyType == typeof(WindowPlacement)) {

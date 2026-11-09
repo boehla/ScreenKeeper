@@ -3,9 +3,9 @@
 namespace ScreenKeeper.Models;
 
 /// <summary>
-/// Rechteck mit Rahmen und optionaler Füllung.
+/// Rechteck mit Rahmen und optionaler Füllung in eigener Farbe.
 /// </summary>
-public sealed class RectangleAnnotation : Annotation {
+public sealed class RectangleAnnotation : Annotation, IJsonOnDeserialized {
     [JsonIgnore]
     public override string Type => AnnotationTypes.Rectangle;
 
@@ -16,6 +16,14 @@ public sealed class RectangleAnnotation : Annotation {
 
     public double Thickness { get; set; } = 4;
 
-    /// <summary>Füllfarbe als #AARRGGBB; null = keine Füllung.</summary>
+    /// <summary>
+    /// Füllfarbe als #AARRGGBB (Transparenz erlaubt); null = keine Füllung. Ältere Dateien mit <c>"fill": true</c>
+    /// werden in der Rahmenfarbe gefüllt (siehe <see cref="FillColorConverter"/>).
+    /// </summary>
+    [JsonConverter(typeof(FillColorConverter))]
     public string? Fill { get; set; }
+
+    void IJsonOnDeserialized.OnDeserialized() {
+        Fill = FillColorConverter.Resolve(Fill, Stroke);
+    }
 }

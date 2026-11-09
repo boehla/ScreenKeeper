@@ -4,7 +4,7 @@ using ScreenKeeper.Resources;
 namespace ScreenKeeper.ViewModels.Tools;
 
 /// <summary>
-/// Werkzeug „Rechteck“: aufziehen (Shift: Quadrat); Rahmenfarbe, Strichstärke, Füllung optional.
+/// Werkzeug „Rechteck“: aufziehen (Shift: Quadrat); Rahmenfarbe, Strichstärke, Füllfarbe (optional).
 /// </summary>
 public sealed class RectangleTool : DrawingToolBase {
     public const string ToolKey = "rectangle";
@@ -26,7 +26,7 @@ public sealed class RectangleTool : DrawingToolBase {
             Rect = new PixelRect(start.X, start.Y, 1, 1),
             Stroke = options.Color,
             Thickness = options.Thickness,
-            Fill = options.Fill ? options.Color : null
+            Fill = string.IsNullOrEmpty(options.FillColor) ? null : options.FillColor
         };
     }
 

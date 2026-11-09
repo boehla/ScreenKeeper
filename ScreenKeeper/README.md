@@ -72,7 +72,7 @@ Tray-Menü → *Einstellungen*. Alle Änderungen wirken sofort nach **OK** bzw. 
   Beim Speichern wird geprüft, ob zwei Hotkeys gleich sind (Fehler) und ob ein anderes Programm die Kombination belegt
   (Hinweis; bei der Druck-Taste übernimmt dann der Tastatur-Hook). Die Seite zeigt außerdem, wie die Druck-Taste
   gerade abgefangen wird (über RegisterHotKey, über den Tastatur-Hook oder nicht verfügbar).
-- **Editor:** Lupe (Vergrößerung 4–16, Größe), Standardfarbe, Textmarkerfarbe, Strichstärke und die übrigen
+- **Editor:** Lupe (Vergrößerung 4–16, Größe), Standardfarbe, Textmarkerfarbe, Füllfarbe, Strichstärke und die übrigen
   Standardwerte der Werkzeuge, aufgenommenen Mauszeiger standardmäßig anzeigen.
 
 **Autostart:** Die Einstellung *Mit Windows starten* trägt ScreenKeeper unter
@@ -106,9 +106,9 @@ Objekts. Alle Zeichnungen bleiben einzelne Objekte und lassen sich jederzeit aus
 |---|---|---|
 | Bereich | (Leertaste/Enter: Tastatur-Auswahl) | Bereich aufziehen; Klick auf ein Objekt wählt es aus |
 | Auswahl / Verschieben | S | Objekt anklicken, ziehen, an den Anfassern Größe ändern |
-| Rechteck, Ellipse | R, E | aufziehen (Shift: Quadrat/Kreis); Farbe, Strichstärke, Füllung |
-| Linie, Pfeil | L, A | vom Anfang zum Ende ziehen (Shift: 45°-Raster); Farbe, Strichstärke |
-| Freihand | F | zeichnen; Farbe, Strichstärke, Glätten |
+| Rechteck, Ellipse | R, E | aufziehen (Shift: Quadrat/Kreis); Rahmenfarbe, Strichstärke, Füllfarbe |
+| Linie, Pfeil | L, A | vom Anfang zum Ende ziehen (Shift: 45°-Raster); Farbe, Strichstärke, Anfang, Ende |
+| Freihand | F | zeichnen; Farbe, Strichstärke, Glätten, Anfang, Ende |
 | Text | T | klicken (oder Feld aufziehen = Umbruchbreite) und tippen; Schriftgröße, Farbe, Hintergrund |
 | Textmarker | H | halbtransparentes Rechteck aufziehen (Standard Gelb) |
 | Verpixeln | P | Rechteck aufziehen; Blockgröße |
@@ -116,6 +116,13 @@ Objekts. Alle Zeichnungen bleiben einzelne Objekte und lassen sich jederzeit aus
 | Nummern-Stempel | N | klicken: 1, 2, 3 … (nächste Nummer = höchste + 1); Farbe, Größe |
 | Virtuelle Maus | M | klicken setzt einen Mauszeiger; Zeigerart wählbar |
 
+- **Linienenden (Anfang, Ende):** Linie, Pfeil und Freihand können an jedem Ende ein Symbol tragen: ohne, Pfeil,
+  Punkt, Quadrat oder Dreieck – gefüllt in der Strichfarbe, Größe passend zur Strichstärke, ausgerichtet an der
+  Richtung des Linienendes (bei Freihand an der Kurve; eine Pfeilspitze schließt dort lückenlos an den Strich an).
+  Ein Pfeil ist eine Linie mit Pfeilspitze am Ende;
+  ohne Spitze oder mit Spitzen an beiden Enden ist er genauso einstellbar. Gemerkt wird getrennt je Werkzeug.
+- **Füllfarbe (Rechteck, Ellipse):** eigene Farbe unabhängig vom Rahmen – keine, eine Farbe der Palette oder dieselbe
+  halbtransparent (50 %). Der Rahmen liegt über der Füllung; gefüllte Objekte lassen sich auch innen anklicken.
 - **Text:** Enter übernimmt, Shift+Enter beginnt eine neue Zeile, Esc verwirft, Klick daneben übernimmt.
   Doppelklick auf einen vorhandenen Text (oder Klick mit dem Text-Werkzeug) bearbeitet ihn; leerer Text löscht ihn.
 - **Ausgewähltes Objekt:** Entf löscht, Strg+D dupliziert, Esc hebt die Auswahl auf. Farbe, Strichstärke usw. aus der
@@ -126,7 +133,7 @@ Objekts. Alle Zeichnungen bleiben einzelne Objekte und lassen sich jederzeit aus
   verschieben, mit dem Augen-Knopf aus- und einblenden (ausgeblendete Zeiger sind im Editor gestrichelt angedeutet),
   in der Art ändern (aufgenommener Zeiger, Pfeil, Hand, Textcursor) und löschen; mit **M** beliebig oft neu einfügen.
 - Die Werkzeug-Tastenkürzel gelten nur, solange kein Text bearbeitet wird. Zuletzt verwendete Farbe, Strichstärke,
-  Schrift-, Block- und Stempelgröße, Stärke, Füllung und Zeigerart werden gemerkt.
+  Schrift-, Block- und Stempelgröße, Stärke, Füllfarbe, Linienenden und Zeigerart werden gemerkt.
 - Rückgängig/Wiederholen umfasst alle Änderungen (Bereich, Zeichnungen, Maus), bis zu 200 Schritte.
 
 **Knöpfe** (Werkzeugleiste am Bereich)

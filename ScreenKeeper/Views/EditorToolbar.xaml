@@ -141,6 +141,33 @@
                 <Border Width="20" Height="20" CornerRadius="10" BorderBrush="#A0FFFFFF" BorderThickness="1" Background="{Binding Brush}" />
             </Button>
         </DataTemplate>
+        <!-- Schachbrett unter Füllfarben, damit Transparenz sichtbar wird -->
+        <DrawingBrush x:Key="Checker" TileMode="Tile" Viewport="0,0,8,8" ViewportUnits="Absolute">
+            <DrawingBrush.Drawing>
+                <DrawingGroup>
+                    <GeometryDrawing Brush="#FFBDBDBD" Geometry="M0,0 H8 V8 H0 Z" />
+                    <GeometryDrawing Brush="#FF757575" Geometry="M0,0 H4 V4 H0 Z M4,4 H8 V8 H4 Z" />
+                </DrawingGroup>
+            </DrawingBrush.Drawing>
+        </DrawingBrush>
+        <!-- Füllfarbe: eckiges Feld (Rahmenfarben sind rund) -->
+        <DataTemplate x:Key="FillTemplate">
+            <Button Style="{StaticResource ToolbarButton}" ToolTip="{Binding Label}" Click="onChoiceClick">
+                <Grid Width="20" Height="20">
+                    <Border CornerRadius="3" Background="{StaticResource Checker}" />
+                    <Border CornerRadius="3" BorderBrush="#A0FFFFFF" BorderThickness="1" Background="{Binding Brush}" />
+                </Grid>
+            </Button>
+        </DataTemplate>
+        <!-- Linienende: Symbol + Text -->
+        <DataTemplate x:Key="CapTemplate">
+            <Button Style="{StaticResource ToolbarButton}" Width="Auto" MinWidth="100" Padding="8,0" HorizontalContentAlignment="Left" Click="onChoiceClick">
+                <StackPanel Orientation="Horizontal">
+                    <Path Style="{StaticResource Icon}" Fill="White" Data="{Binding Icon}" />
+                    <TextBlock Text="{Binding Label}" Foreground="White" FontSize="12" VerticalAlignment="Center" Margin="8,0,0,0" />
+                </StackPanel>
+            </Button>
+        </DataTemplate>
     </UserControl.Resources>
     <Border Background="#F0262626" BorderBrush="#50FFFFFF" BorderThickness="1" CornerRadius="6" Padding="4">
         <StackPanel Orientation="Horizontal">
@@ -199,10 +226,55 @@
                         </Border>
                     </Popup>
                 </Grid>
-                <Button Style="{StaticResource StateButton}" Tag="{Binding IsFillActive}" Command="{Binding ToggleFillCommand}" ToolTip="{Binding FillToolTip}"
-                        Visibility="{Binding ShowFillOption, Converter={StaticResource BoolToVisibility}}">
+                <Grid Visibility="{Binding ShowFillColorOption, Converter={StaticResource BoolToVisibility}}">
+                    <ToggleButton x:Name="fillButton" Style="{StaticResource MenuButton}" Padding="0" ToolTip="{loc:Str OptionFill}"
+                                  IsChecked="{Binding IsOpen, ElementName=fillPopup}"
+                                  IsHitTestVisible="{Binding IsOpen, ElementName=fillPopup, Converter={StaticResource InverseBool}}">
+                        <Grid Width="20" Height="20">
+                            <Border CornerRadius="3" Background="{StaticResource Checker}" />
+                            <Border CornerRadius="3" BorderBrush="White" BorderThickness="1.5" Background="{Binding CurrentFillBrush}" />
+                        </Grid>
+                    </ToggleButton>
+                    <Popup x:Name="fillPopup" Style="{StaticResource MenuPopup}" PlacementTarget="{Binding ElementName=fillButton}">
+                        <Border Style="{StaticResource PopupPanel}">
+                            <ItemsControl ItemsSource="{Binding FillColorChoices}" ItemTemplate="{StaticResource FillTemplate}" Width="216" Focusable="False">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                            </ItemsControl>
+                        </Border>
+                    </Popup>
+                </Grid>
+                <Button Style="{StaticResource StateButton}" Tag="{Binding IsTextBackgroundActive}" Command="{Binding ToggleTextBackgroundCommand}" ToolTip="{loc:Str OptionTextBackground}"
+                        Visibility="{Binding ShowTextBackgroundOption, Converter={StaticResource BoolToVisibility}}">
                     <Path Style="{StaticResource Icon}" Data="M4,4 H16 V16 H4 Z M4,10 L10,4 M4,16 L16,4 M10,16 L16,10" />
                 </Button>
+                <Grid Visibility="{Binding ShowLineCapOptions, Converter={StaticResource BoolToVisibility}}">
+                    <ToggleButton x:Name="startCapButton" Style="{StaticResource MenuButton}" ToolTip="{loc:Str OptionStartCap}"
+                                  IsChecked="{Binding IsOpen, ElementName=startCapPopup}"
+                                  IsHitTestVisible="{Binding IsOpen, ElementName=startCapPopup, Converter={StaticResource InverseBool}}">
+                        <Path Style="{StaticResource Icon}" Fill="White" Data="{Binding CurrentStartCapIcon}" />
+                    </ToggleButton>
+                    <Popup x:Name="startCapPopup" Style="{StaticResource MenuPopup}" PlacementTarget="{Binding ElementName=startCapButton}">
+                        <Border Style="{StaticResource PopupPanel}">
+                            <ItemsControl ItemsSource="{Binding StartCapChoices}" ItemTemplate="{StaticResource CapTemplate}" Focusable="False" />
+                        </Border>
+                    </Popup>
+                </Grid>
+                <Grid Visibility="{Binding ShowLineCapOptions, Converter={StaticResource BoolToVisibility}}">
+                    <ToggleButton x:Name="endCapButton" Style="{StaticResource MenuButton}" ToolTip="{loc:Str OptionEndCap}"
+                                  IsChecked="{Binding IsOpen, ElementName=endCapPopup}"
+                                  IsHitTestVisible="{Binding IsOpen, ElementName=endCapPopup, Converter={StaticResource InverseBool}}">
+                        <Path Style="{StaticResource Icon}" Fill="White" Data="{Binding CurrentEndCapIcon}" />
+                    </ToggleButton>
+                    <Popup x:Name="endCapPopup" Style="{StaticResource MenuPopup}" PlacementTarget="{Binding ElementName=endCapButton}">
+                        <Border Style="{StaticResource PopupPanel}">
+                            <ItemsControl ItemsSource="{Binding EndCapChoices}" ItemTemplate="{StaticResource CapTemplate}" Focusable="False" />
+                        </Border>
+                    </Popup>
+                </Grid>
                 <Button Style="{StaticResource StateButton}" Tag="{Binding IsSmoothActive}" Command="{Binding ToggleSmoothCommand}" ToolTip="{loc:Str OptionSmooth}"
                         Visibility="{Binding ShowSmoothOption, Converter={StaticResource BoolToVisibility}}">
                     <Path Style="{StaticResource Icon}" Data="M3,14 C6,3 14,17 17,6" />

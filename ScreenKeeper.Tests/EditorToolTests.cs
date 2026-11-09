@@ -324,21 +324,26 @@ public class EditorToolTests {
         Sta.Run(() => {
             EditorViewModel vm = create();
             drag(vm, RectangleTool.ToolKey, 20, 20, 80, 60);
-            Assert.True(vm.ShowColorOption && vm.ShowThicknessOption && vm.ShowFillOption);
-            Assert.False(vm.ShowBlockSizeOption || vm.ShowFontSizeOption || vm.ShowCursorKindOption);
+            Assert.True(vm.ShowColorOption && vm.ShowThicknessOption && vm.ShowFillColorOption);
+            Assert.False(vm.ShowBlockSizeOption || vm.ShowFontSizeOption || vm.ShowCursorKindOption || vm.ShowLineCapOptions || vm.ShowTextBackgroundOption);
             click(vm, ObjectSelectTool.ToolKey, 21, 40);
             Assert.NotNull(vm.SelectedAnnotation);
             int steps = vm.UndoStack.UndoCount;
 
             vm.SetColor("#FF00FF00");
             vm.SetThickness(12);
-            vm.ToggleFill();
+            vm.SetFillColor("#801E88E5");
             RectangleAnnotation rectangle = single<RectangleAnnotation>(vm);
-            Assert.Equal(("#FF00FF00", 12.0, "#FF00FF00"), (rectangle.Stroke, rectangle.Thickness, rectangle.Fill));
+            Assert.Equal(("#FF00FF00", 12.0, "#801E88E5"), (rectangle.Stroke, rectangle.Thickness, rectangle.Fill));
             Assert.Equal(steps + 3, vm.UndoStack.UndoCount);
             Assert.Equal("#FF00FF00", vm.CurrentColor);
-            Assert.True(vm.IsFillActive);
+            Assert.Equal("#801E88E5", vm.CurrentFillColor);
             Assert.Equal("#FF00FF00", vm.Options.Color);
+            Assert.Equal("#801E88E5", vm.Options.FillColor);
+            // Rahmenfarbe ändern lässt die eigene Füllfarbe stehen
+            vm.SetColor("#FF000000");
+            Assert.Equal(("#FF000000", "#801E88E5"), (single<RectangleAnnotation>(vm).Stroke, single<RectangleAnnotation>(vm).Fill));
+            vm.Undo();
             // gleicher Wert → kein Schritt
             vm.SetThickness(12);
             Assert.Equal(steps + 3, vm.UndoStack.UndoCount);
@@ -439,7 +444,7 @@ public class EditorToolTests {
         options.FontSize = 48;
         options.BlockSize = 20;
         options.BlurRadius = 16;
-        options.Fill = true;
+        options.FillColor = "#80E53935";
         options.TextBackground = true;
         options.Smooth = false;
         options.StampSize = 48;
@@ -447,8 +452,8 @@ public class EditorToolTests {
         options.Color = "#FF000000";
         options.Thickness = 8;
         Assert.True(options.ApplyTo(settings));
-        Assert.Equal((48.0, 20, 16, true, true, false, 48.0, CursorKinds.Hand, "#FF000000", 8.0),
-            (settings.DefaultFontSize, settings.DefaultBlockSize, settings.DefaultBlurRadius, settings.DefaultFill, settings.DefaultTextBackground,
+        Assert.Equal((48.0, 20, 16, "#80E53935", true, false, 48.0, CursorKinds.Hand, "#FF000000", 8.0),
+            (settings.DefaultFontSize, settings.DefaultBlockSize, settings.DefaultBlurRadius, settings.DefaultFillColor, settings.DefaultTextBackground,
              settings.DefaultSmooth, settings.DefaultStampSize, settings.DefaultCursorKind, settings.DefaultColor, settings.DefaultThickness));
         ToolOptions reloaded = ToolOptions.FromSettings(settings);
         Assert.Equal(48, reloaded.FontSize);
@@ -484,6 +489,98 @@ public class EditorToolTests {
             // Rückgängig entfernt das ausgewählte Objekt – keine hängende Auswahl
             vm.Undo();
             Assert.Null(vm.SelectedAnnotation);
+        });
+    }
+
+    [Fact]
+    public void LineCaps_ApplyToSelectedObject_AsOneUndoStep_AndAreRememberedPerType() {
+        Sta.Run(() => {
+            EditorViewModel vm = create();
+            Assert.True(vm.SelectToolByKey(ArrowTool.ToolKey));
+            Assert.True(vm.ShowLineCapOptions);
+            Assert.False(vm.ShowFillColorOption);
+            Assert.Equal((LineCaps.None, LineCaps.Arrow), (vm.CurrentStartCap, vm.CurrentEndCap));
+            Assert.True(vm.SelectToolByKey(LineTool.ToolKey));
+            Assert.Equal((LineCaps.None, LineCaps.None), (vm.CurrentStartCap, vm.CurrentEndCap));
+
+            drag(vm, LineTool.ToolKey, 20, 20, 120, 60);
+            LineAnnotation line = single<LineAnnotation>(vm);
+            Assert.Same(line, vm.SelectedAnnotation);
+            int steps = vm.UndoStack.UndoCount;
+
+            vm.SetEndCap(LineCaps.Arrow);
+            Assert.Equal(LineCaps.Arrow, single<LineAnnotation>(vm).EndCap);
+            Assert.Equal(steps + 1, vm.UndoStack.UndoCount);
+            vm.SetStartCap(LineCaps.Dot);
+            Assert.Equal((LineCaps.Dot, LineCaps.Arrow), (single<LineAnnotation>(vm).StartCap, single<LineAnnotation>(vm).EndCap));
+            Assert.Equal(steps + 2, vm.UndoStack.UndoCount);
+            Assert.Equal((LineCaps.Dot, LineCaps.Arrow), (vm.CurrentStartCap, vm.CurrentEndCap));
+            // gleicher Wert → kein Schritt
+            vm.SetStartCap(LineCaps.Dot);
+            Assert.Equal(steps + 2, vm.UndoStack.UndoCount);
+
+            // als Standard gemerkt – nur für Linien, Pfeil und Freihand behalten ihre eigenen Werte
+            Assert.Equal((LineCaps.Dot, LineCaps.Arrow), (vm.Options.LineStartCap, vm.Options.LineEndCap));
+            Assert.Equal((LineCaps.None, LineCaps.Arrow), (vm.Options.ArrowStartCap, vm.Options.ArrowEndCap));
+            Assert.Equal((LineCaps.None, LineCaps.None), (vm.Options.FreehandStartCap, vm.Options.FreehandEndCap));
+            AppSettings settings = new AppSettings();
+            Assert.True(vm.StoreOptions(settings));
+            Assert.Equal((LineCaps.Dot, LineCaps.Arrow, LineCaps.None, LineCaps.Arrow), (settings.DefaultLineStartCap, settings.DefaultLineEndCap, settings.DefaultArrowStartCap, settings.DefaultArrowEndCap));
+
+            vm.Undo();
+            Assert.Equal((LineCaps.None, LineCaps.Arrow), (single<LineAnnotation>(vm).StartCap, single<LineAnnotation>(vm).EndCap));
+            vm.Undo();
+            Assert.Equal((LineCaps.None, LineCaps.None), (single<LineAnnotation>(vm).StartCap, single<LineAnnotation>(vm).EndCap));
+
+            // neue Freihand-Linie bekommt ihre eigenen Standards; Änderung wirkt auf sie
+            vm.Options.FreehandEndCap = LineCaps.Triangle;
+            drag(vm, FreehandTool.ToolKey, 50, 150, 200, 220);
+            FreehandAnnotation freehand = single<FreehandAnnotation>(vm);
+            Assert.Equal((LineCaps.None, LineCaps.Triangle), (freehand.StartCap, freehand.EndCap));
+            vm.SetStartCap(LineCaps.Square);
+            Assert.Equal(LineCaps.Square, single<FreehandAnnotation>(vm).StartCap);
+            Assert.Equal(LineCaps.Square, vm.Options.FreehandStartCap);
+            Assert.Equal(LineCaps.Dot, vm.Options.LineStartCap);
+        });
+    }
+
+    [Fact]
+    public void FillColor_NewObjectsUseDefault_TextKeepsBackgroundToggle() {
+        Sta.Run(() => {
+            EditorViewModel vm = create();
+            Assert.True(vm.SelectToolByKey(EllipseTool.ToolKey));
+            Assert.True(vm.ShowFillColorOption);
+            Assert.False(vm.ShowTextBackgroundOption || vm.ShowLineCapOptions);
+            Assert.Equal("", vm.CurrentFillColor);
+            Assert.Equal(1 + 2 * AnnotationColors.Palette.Count, vm.FillColorChoices.Count);
+            Assert.Equal("", vm.FillColorChoices[0].Value);
+            Assert.Contains(vm.FillColorChoices, c => (string)c.Value == "#80E53935");
+
+            // ohne Auswahl: nur Standard ändern, kein Rückgängig-Schritt
+            vm.SetFillColor("#8043A047");
+            Assert.Equal(0, vm.UndoStack.UndoCount);
+            drag(vm, EllipseTool.ToolKey, 20, 20, 80, 60);
+            Assert.Equal("#8043A047", single<EllipseAnnotation>(vm).Fill);
+            drag(vm, RectangleTool.ToolKey, 120, 20, 180, 60);
+            Assert.Equal("#8043A047", single<RectangleAnnotation>(vm).Fill);
+            // gefüllt: auch innen ein Treffer
+            click(vm, ObjectSelectTool.ToolKey, 150, 40);
+            Assert.IsType<RectangleAnnotation>(vm.SelectedAnnotation);
+            // „keine“ entfernt die Füllung (ein Schritt)
+            int steps = vm.UndoStack.UndoCount;
+            vm.SetFillColor("");
+            Assert.Null(single<RectangleAnnotation>(vm).Fill);
+            Assert.Equal(steps + 1, vm.UndoStack.UndoCount);
+            AppSettings settings = new AppSettings();
+            vm.StoreOptions(settings);
+            Assert.Equal("", settings.DefaultFillColor);
+
+            Assert.True(vm.SelectToolByKey(TextTool.ToolKey));
+            Assert.True(vm.ShowTextBackgroundOption);
+            Assert.False(vm.ShowFillColorOption);
+            Assert.False(vm.IsTextBackgroundActive);
+            vm.ToggleTextBackground();
+            Assert.True(vm.Options.TextBackground);
         });
     }
 }

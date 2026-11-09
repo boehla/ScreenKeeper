@@ -143,51 +143,57 @@ public sealed class RenderService : IRenderService {
     }
 
     private void drawLine(DrawingContext dc, LineAnnotation annotation) {
-        if(annotation.Points.Count < 2) return;
-        Pen? pen = createPen(annotation.Stroke, annotation.Thickness, PenLineCap.Round, PenLineJoin.Round);
-        if(pen == null) return;
-        dc.DrawLine(pen, AnnotationGeometry.ToStrokePoint(annotation.Points[0], annotation.Thickness), AnnotationGeometry.ToStrokePoint(annotation.Points[1], annotation.Thickness));
+        if(annotation.Points.Count < 2 || annotation.Thickness <= 0 || double.IsNaN(annotation.Thickness)) return;
+        drawCappedStroke(dc, annotation, annotation.Thickness, false);
     }
 
     private void drawArrow(DrawingContext dc, ArrowAnnotation annotation) {
         if(annotation.Points.Count < 2) return;
-        double thickness = Math.Max(1, annotation.Thickness);
-        Point start = AnnotationGeometry.ToStrokePoint(annotation.Points[0], thickness);
-        Point tip = AnnotationGeometry.ToStrokePoint(annotation.Points[1], thickness);
-        ArrowHead head = AnnotationGeometry.GetArrowHead(start, tip, thickness);
-        SolidColorBrush brush = AnnotationColors.GetBrush(annotation.Stroke);
-        // Schaft endet kurz hinter der Grundlinie in der Spitze, damit das Linienende nicht herausragt
-        Vector shaft = head.Base - start;
-        if(shaft.Length > 0.5) {
-            Pen pen = new Pen(brush, thickness) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Flat };
-            pen.Freeze();
-            Vector direction = tip - start;
-            direction.Normalize();
-            dc.DrawLine(pen, start, head.Base + direction * Math.Min(1, thickness / 2));
-        }
-        StreamGeometry geometry = new StreamGeometry();
-        using (StreamGeometryContext context = geometry.Open()) {
-            context.BeginFigure(head.Tip, true, true);
-            context.LineTo(head.Left, true, false);
-            context.LineTo(head.Right, true, false);
-        }
-        geometry.Freeze();
-        dc.DrawGeometry(brush, null, geometry);
+        drawCappedStroke(dc, annotation, Math.Max(1, annotation.Thickness), false);
     }
 
     private void drawFreehand(DrawingContext dc, FreehandAnnotation annotation) {
         if(annotation.Points.Count == 0) return;
         Pen? pen = createPen(annotation.Stroke, annotation.Thickness, PenLineCap.Round, PenLineJoin.Round);
         if(pen == null) return;
-        List<Point> points = annotation.Points.Select(p => AnnotationGeometry.ToStrokePoint(p, annotation.Thickness)).ToList();
-        if(points.Count == 1) {
-            dc.DrawEllipse(pen.Brush, null, points[0], annotation.Thickness / 2, annotation.Thickness / 2);
+        if(annotation.Points.Count == 1) {
+            Point point = AnnotationGeometry.ToStrokePoint(annotation.Points[0], annotation.Thickness);
+            dc.DrawEllipse(pen.Brush, null, point, annotation.Thickness / 2, annotation.Thickness / 2);
+            return;
+        }
+        drawCappedStroke(dc, annotation, annotation.Thickness, annotation.Smooth);
+    }
+
+    /// <summary>
+    /// Linie, Pfeil oder Freihand mit Endsymbolen: zuerst der Strich (bei einer Pfeilspitze bis zu deren Grundlinie gekürzt,
+    /// dort flach endend), dann die gefüllten Symbole in Strichfarbe darüber.
+    /// </summary>
+    private static void drawCappedStroke(DrawingContext dc, ILineCapAnnotation annotation, double thickness, bool smooth) {
+        List<Point> points = AnnotationGeometry.GetStrokePoints(annotation, thickness);
+        SolidColorBrush brush = AnnotationColors.GetBrush(annotation.Stroke);
+        CappedStroke capped = AnnotationGeometry.GetCappedStroke(points, thickness, annotation.StartCap, annotation.EndCap, smooth);
+        if(capped.TrimmedPath == null) {
+            Pen pen = createPen(brush, thickness, PenLineCap.Round, PenLineCap.Round);
+            drawPath(dc, pen, points, smooth);
+        } else if(capped.TrimmedPath.Count >= 2) {
+            PenLineCap startCap = capped.Start != null && capped.Start.TrimsLine ? PenLineCap.Flat : PenLineCap.Round;
+            PenLineCap endCap = capped.End != null && capped.End.TrimsLine ? PenLineCap.Flat : PenLineCap.Round;
+            drawPath(dc, createPen(brush, thickness, startCap, endCap), capped.TrimmedPath, false);
+        }
+        drawLineCap(dc, brush, capped.Start);
+        drawLineCap(dc, brush, capped.End);
+    }
+
+    /// <summary>Linienzug (zwei Punkte als Linie, sonst als Streckenzug bzw. geglättete Kurve).</summary>
+    private static void drawPath(DrawingContext dc, Pen pen, IReadOnlyList<Point> points, bool smooth) {
+        if(points.Count == 2) {
+            dc.DrawLine(pen, points[0], points[1]);
             return;
         }
         StreamGeometry geometry = new StreamGeometry();
         using (StreamGeometryContext context = geometry.Open()) {
             context.BeginFigure(points[0], false, false);
-            if(annotation.Smooth && points.Count > 2) {
+            if(smooth && points.Count > 2) {
                 foreach(BezierSegment segment in AnnotationGeometry.SmoothPath(points)) {
                     context.BezierTo(segment.Control1, segment.Control2, segment.End, true, true);
                 }
@@ -197,6 +203,32 @@ public sealed class RenderService : IRenderService {
         }
         geometry.Freeze();
         dc.DrawGeometry(null, pen, geometry);
+    }
+
+    private static void drawLineCap(DrawingContext dc, Brush brush, LineCapShape? shape) {
+        if(shape == null) return;
+        if(shape.IsCircle) {
+            dc.DrawEllipse(brush, null, shape.Point, shape.Radius, shape.Radius);
+            return;
+        }
+        if(shape.Polygon.Count < 3) return;
+        StreamGeometry geometry = new StreamGeometry();
+        using (StreamGeometryContext context = geometry.Open()) {
+            context.BeginFigure(shape.Polygon[0], true, true);
+            for(int i = 1; i < shape.Polygon.Count; i++) context.LineTo(shape.Polygon[i], true, false);
+        }
+        geometry.Freeze();
+        dc.DrawGeometry(brush, null, geometry);
+    }
+
+    private static Pen createPen(Brush brush, double thickness, PenLineCap startCap, PenLineCap endCap) {
+        Pen pen = new Pen(brush, thickness) {
+            StartLineCap = startCap,
+            EndLineCap = endCap,
+            LineJoin = PenLineJoin.Round
+        };
+        pen.Freeze();
+        return pen;
     }
 
     private void drawText(DrawingContext dc, TextAnnotation annotation) {

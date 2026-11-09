@@ -78,7 +78,9 @@ public class AnnotationSerializationTests {
             Assert.Equal(defaults.DefaultBlurRadius, settings.DefaultBlurRadius);
             Assert.Equal(defaults.DefaultStampSize, settings.DefaultStampSize);
             Assert.Equal(CursorKinds.Arrow, settings.DefaultCursorKind);
-            Assert.True(settings.DefaultFill);
+            // altes "defaultFill": true → Standardfarbe als Füllfarbe; das alte Feld wird nicht mehr geschrieben
+            Assert.Equal(settings.DefaultColor, settings.DefaultFillColor);
+            Assert.Null(settings.DefaultFill);
             Assert.True(settings.DefaultSmooth);
             Assert.False(settings.DefaultTextBackground);
 
@@ -89,6 +91,100 @@ public class AnnotationSerializationTests {
             reloaded.Load();
             Assert.Equal(48, reloaded.Settings.DefaultFontSize);
             Assert.Equal(CursorKinds.Captured, reloaded.Settings.DefaultCursorKind);
+            Assert.Equal(settings.DefaultColor, reloaded.Settings.DefaultFillColor);
+            Assert.DoesNotContain("\"defaultFill\"", File.ReadAllText(path));
+        }
+    }
+
+    [Fact]
+    public void LineCaps_RoundTrip_AndOldFilesGetTypeDefaults() {
+        CaptureDocument document = new CaptureDocument {
+            Annotations = new List<Annotation> {
+                new LineAnnotation { Points = new List<PixelPoint> { new PixelPoint(1, 1), new PixelPoint(9, 9) }, StartCap = LineCaps.Dot, EndCap = LineCaps.Square },
+                new ArrowAnnotation { Points = new List<PixelPoint> { new PixelPoint(1, 1), new PixelPoint(9, 9) }, StartCap = LineCaps.Triangle, EndCap = LineCaps.None },
+                new FreehandAnnotation { Points = new List<PixelPoint> { new PixelPoint(1, 1), new PixelPoint(5, 2), new PixelPoint(9, 9) }, StartCap = LineCaps.Arrow, EndCap = LineCaps.Dot }
+            }
+        };
+        string json = CaptureDocumentSerializer.Serialize(document);
+        Assert.Contains("\"startCap\": \"dot\"", json);
+        Assert.Contains("\"endCap\": \"square\"", json);
+        CaptureDocument loaded = CaptureDocumentSerializer.Deserialize(json);
+        Assert.Equal(json, CaptureDocumentSerializer.Serialize(loaded));
+        LineAnnotation line = Assert.IsType<LineAnnotation>(loaded.Annotations[0]);
+        ArrowAnnotation arrow = Assert.IsType<ArrowAnnotation>(loaded.Annotations[1]);
+        FreehandAnnotation freehand = Assert.IsType<FreehandAnnotation>(loaded.Annotations[2]);
+        Assert.Equal((LineCaps.Dot, LineCaps.Square), (line.StartCap, line.EndCap));
+        Assert.Equal((LineCaps.Triangle, LineCaps.None), (arrow.StartCap, arrow.EndCap));
+        Assert.Equal((LineCaps.Arrow, LineCaps.Dot), (freehand.StartCap, freehand.EndCap));
+
+        // Dateien aus 0.6 ohne die Felder (und mit null): bisheriges Aussehen – Linie und Freihand ohne, Pfeil mit Spitze am Ende
+        string old = "{ \"formatVersion\": 1, \"annotations\": ["
+            + "{ \"type\": \"line\", \"points\": [ { \"x\": 1, \"y\": 1 }, { \"x\": 9, \"y\": 9 } ] },"
+            + "{ \"type\": \"arrow\", \"points\": [ { \"x\": 1, \"y\": 1 }, { \"x\": 9, \"y\": 9 } ] },"
+            + "{ \"type\": \"freehand\", \"points\": [ { \"x\": 1, \"y\": 1 }, { \"x\": 9, \"y\": 9 } ] },"
+            + "{ \"type\": \"arrow\", \"points\": [ { \"x\": 1, \"y\": 1 }, { \"x\": 9, \"y\": 9 } ], \"startCap\": null, \"endCap\": null }"
+            + "] }";
+        CaptureDocument legacy = CaptureDocumentSerializer.Deserialize(old);
+        LineAnnotation oldLine = Assert.IsType<LineAnnotation>(legacy.Annotations[0]);
+        ArrowAnnotation oldArrow = Assert.IsType<ArrowAnnotation>(legacy.Annotations[1]);
+        FreehandAnnotation oldFreehand = Assert.IsType<FreehandAnnotation>(legacy.Annotations[2]);
+        ArrowAnnotation nullArrow = Assert.IsType<ArrowAnnotation>(legacy.Annotations[3]);
+        Assert.Equal((LineCaps.None, LineCaps.None), (oldLine.StartCap, oldLine.EndCap));
+        Assert.Equal((LineCaps.None, LineCaps.Arrow), (oldArrow.StartCap, oldArrow.EndCap));
+        Assert.Equal((LineCaps.None, LineCaps.None), (oldFreehand.StartCap, oldFreehand.EndCap));
+        Assert.Equal((LineCaps.None, LineCaps.Arrow), (nullArrow.StartCap, nullArrow.EndCap));
+    }
+
+    [Fact]
+    public void UnknownLineCap_IsKeptForRoundTrip() {
+        string json = "{ \"annotations\": [ { \"type\": \"line\", \"points\": [ { \"x\": 1, \"y\": 1 }, { \"x\": 9, \"y\": 9 } ], \"endCap\": \"star\" } ] }";
+        CaptureDocument loaded = CaptureDocumentSerializer.Deserialize(json);
+        Assert.Equal("star", ((LineAnnotation)loaded.Annotations[0]).EndCap);
+        Assert.Contains("\"endCap\": \"star\"", CaptureDocumentSerializer.Serialize(loaded));
+    }
+
+    [Fact]
+    public void Fill_ReadsColorBoolAndNull_WritesColor() {
+        string json = "{ \"annotations\": ["
+            + "{ \"type\": \"rectangle\", \"rect\": { \"x\": 0, \"y\": 0, \"width\": 10, \"height\": 10 }, \"stroke\": \"#FF1E88E5\", \"fill\": true },"
+            + "{ \"type\": \"ellipse\", \"fill\": true, \"rect\": { \"x\": 0, \"y\": 0, \"width\": 10, \"height\": 10 }, \"stroke\": \"#FF43A047\" },"
+            + "{ \"type\": \"rectangle\", \"rect\": { \"x\": 0, \"y\": 0, \"width\": 10, \"height\": 10 }, \"fill\": false },"
+            + "{ \"type\": \"ellipse\", \"rect\": { \"x\": 0, \"y\": 0, \"width\": 10, \"height\": 10 }, \"fill\": null },"
+            + "{ \"type\": \"rectangle\", \"rect\": { \"x\": 0, \"y\": 0, \"width\": 10, \"height\": 10 }, \"fill\": \"#80FFEB3B\" },"
+            + "{ \"type\": \"rectangle\", \"rect\": { \"x\": 0, \"y\": 0, \"width\": 10, \"height\": 10 } }"
+            + "] }";
+        CaptureDocument loaded = CaptureDocumentSerializer.Deserialize(json);
+        // true → Rahmenfarbe (auch wenn "fill" vor "stroke" steht)
+        Assert.Equal("#FF1E88E5", ((RectangleAnnotation)loaded.Annotations[0]).Fill);
+        Assert.Equal("#FF43A047", ((EllipseAnnotation)loaded.Annotations[1]).Fill);
+        Assert.Null(((RectangleAnnotation)loaded.Annotations[2]).Fill);
+        Assert.Null(((EllipseAnnotation)loaded.Annotations[3]).Fill);
+        Assert.Equal("#80FFEB3B", ((RectangleAnnotation)loaded.Annotations[4]).Fill);
+        Assert.Null(((RectangleAnnotation)loaded.Annotations[5]).Fill);
+
+        string written = CaptureDocumentSerializer.Serialize(loaded);
+        Assert.Contains("\"fill\": \"#FF1E88E5\"", written);
+        Assert.DoesNotContain("\"fill\": true", written);
+        Assert.DoesNotContain("\"fill\": null", written);
+        Assert.Equal(written, CaptureDocumentSerializer.Serialize(CaptureDocumentSerializer.Deserialize(written)));
+        // Kopie (Rückgängig) behält die Farbe
+        Assert.Equal("#80FFEB3B", ((RectangleAnnotation)loaded.Annotations[4].Clone()).Fill);
+    }
+
+    [Fact]
+    public void Settings_LineCapsAndFillColor_AreNormalized() {
+        using (TempFolder temp = new TempFolder()) {
+            string path = Path.Combine(temp.Path, "settings.json");
+            File.WriteAllText(path, "{ \"defaultLineEndCap\": \"stern\", \"defaultArrowEndCap\": null, \"defaultFreehandStartCap\": \"dot\", \"defaultFillColor\": \"lila\", \"defaultFill\": true }");
+            SettingsService service = new SettingsService(path);
+            service.Load();
+            AppSettings settings = service.Settings;
+            Assert.Equal(LineCaps.None, settings.DefaultLineEndCap);
+            Assert.Equal(LineCaps.Arrow, settings.DefaultArrowEndCap);
+            Assert.Equal(LineCaps.Dot, settings.DefaultFreehandStartCap);
+            Assert.Equal(LineCaps.None, settings.DefaultArrowStartCap);
+            // ungültige Füllfarbe → keine Füllung (das alte Feld zählt nur, wenn noch keine Füllfarbe gesetzt war)
+            Assert.Equal("", settings.DefaultFillColor);
         }
     }
 }

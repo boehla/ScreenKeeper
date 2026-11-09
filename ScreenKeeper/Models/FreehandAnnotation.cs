@@ -3,9 +3,15 @@
 namespace ScreenKeeper.Models;
 
 /// <summary>
-/// Freihand-Linie durch alle <see cref="Points"/>.
+/// Freihand-Linie durch alle <see cref="Points"/>, optional mit Symbolen an den Enden.
 /// </summary>
-public sealed class FreehandAnnotation : Annotation {
+public sealed class FreehandAnnotation : Annotation, ILineCapAnnotation {
+    public const string DefaultStartCap = LineCaps.None;
+    public const string DefaultEndCap = LineCaps.None;
+
+    private string startCap = DefaultStartCap;
+    private string endCap = DefaultEndCap;
+
     [JsonIgnore]
     public override string Type => AnnotationTypes.Freehand;
 
@@ -18,4 +24,16 @@ public sealed class FreehandAnnotation : Annotation {
 
     /// <summary>Linie beim Zeichnen glätten.</summary>
     public bool Smooth { get; set; } = true;
+
+    /// <summary>Symbol am Anfang (siehe <see cref="LineCaps"/>); fehlt das Feld, gilt <see cref="DefaultStartCap"/>.</summary>
+    public string StartCap {
+        get => startCap;
+        set => startCap = value ?? DefaultStartCap;
+    }
+
+    /// <summary>Symbol am Ende (siehe <see cref="LineCaps"/>); fehlt das Feld, gilt <see cref="DefaultEndCap"/>.</summary>
+    public string EndCap {
+        get => endCap;
+        set => endCap = value ?? DefaultEndCap;
+    }
 }

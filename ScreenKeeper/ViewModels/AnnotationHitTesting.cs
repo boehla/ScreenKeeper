@@ -7,7 +7,8 @@ namespace ScreenKeeper.ViewModels;
 /// <summary>
 /// Treffertest je Zeichenobjekt-Typ in kontinuierlichen Bildkoordinaten. <c>tolerance</c> ist ein Zuschlag in Bildpixeln
 /// (vom Aufrufer aus Gerätepixeln umgerechnet), damit dünne Linien gut zu treffen sind.
-/// Rahmen ohne Füllung zählen nur am Strich, Linien/Pfeile/Freihand über den Abstand zur Strecke,
+/// Rahmen ohne Füllung zählen nur am Strich (mit Füllung auch innen), Linien/Pfeile/Freihand über den Abstand zur Strecke
+/// und die Fläche ihrer Endsymbole,
 /// Text, Stempel, Zeiger und Flächen (Textmarker, Verpixeln, Weichzeichnen) über ihre Fläche.
 /// </summary>
 public static class AnnotationHitTesting {
@@ -25,9 +26,9 @@ public static class AnnotationHitTesting {
         switch(annotation) {
             case RectangleAnnotation rectangle: return hitFrame(rectangle.Rect, rectangle.Thickness, !string.IsNullOrEmpty(rectangle.Fill), x, y, tolerance);
             case EllipseAnnotation ellipse: return hitEllipse(ellipse, x, y, tolerance);
-            case LineAnnotation line: return hitPolyline(line.Points, line.Thickness, x, y, tolerance);
-            case ArrowAnnotation arrow: return hitArrow(arrow, x, y, tolerance);
-            case FreehandAnnotation freehand: return hitPolyline(freehand.Points, freehand.Thickness, x, y, tolerance);
+            case LineAnnotation line: return hitCappedLine(line, x, y, tolerance);
+            case ArrowAnnotation arrow: return hitCappedLine(arrow, x, y, tolerance);
+            case FreehandAnnotation freehand: return hitCappedLine(freehand, x, y, tolerance);
             case HighlightAnnotation highlight: return hitArea(highlight.Rect, x, y, tolerance);
             case PixelateAnnotation pixelate: return hitArea(pixelate.Rect, x, y, tolerance);
             case BlurAnnotation blur: return hitArea(blur.Rect, x, y, tolerance);
@@ -88,17 +89,16 @@ public static class AnnotationHitTesting {
         return false;
     }
 
-    private static bool hitArrow(ArrowAnnotation arrow, double x, double y, double tolerance) {
-        if(hitPolyline(arrow.Points, arrow.Thickness, x, y, tolerance)) return true;
-        if(arrow.Points.Count < 2) return false;
-        double thickness = Math.Max(1, arrow.Thickness);
-        Point start = AnnotationGeometry.ToStrokePoint(arrow.Points[0], thickness);
-        Point tip = AnnotationGeometry.ToStrokePoint(arrow.Points[1], thickness);
-        ArrowHead head = AnnotationGeometry.GetArrowHead(start, tip, thickness);
-        if(AnnotationGeometry.IsInTriangle(x, y, head.Tip, head.Left, head.Right)) return true;
-        return AnnotationGeometry.DistanceToSegment(x, y, head.Tip, head.Left) <= tolerance
-            || AnnotationGeometry.DistanceToSegment(x, y, head.Left, head.Right) <= tolerance
-            || AnnotationGeometry.DistanceToSegment(x, y, head.Right, head.Tip) <= tolerance;
+    /// <summary>
+    /// Linie, Pfeil, Freihand: Abstand zum Linienzug oder Treffer auf einem der Endsymbole (Pfeilspitze, Punkt, Quadrat,
+    /// Dreieck – jeweils Fläche plus Zuschlag).
+    /// </summary>
+    private static bool hitCappedLine(ILineCapAnnotation annotation, double x, double y, double tolerance) {
+        List<PixelPoint> points = annotation is FreehandAnnotation ? annotation.Points : annotation.Points.Take(2).ToList();
+        if(hitPolyline(points, annotation.Thickness, x, y, tolerance)) return true;
+        if(points.Count < 2) return false;
+        (LineCapShape? start, LineCapShape? end) = AnnotationGeometry.GetLineCaps(annotation);
+        return (start != null && start.Contains(x, y, tolerance)) || (end != null && end.Contains(x, y, tolerance));
     }
 
     private static bool hitArea(PixelRect rect, double x, double y, double tolerance) {

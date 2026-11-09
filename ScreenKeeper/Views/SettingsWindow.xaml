@@ -231,6 +231,8 @@
                         <ListBox Style="{StaticResource PaletteList}" ItemsSource="{Binding Palette}" SelectedValue="{Binding DefaultColor}" />
                         <TextBlock Style="{StaticResource Label}" Text="{loc:Str SettingsHighlightColor}" />
                         <ListBox Style="{StaticResource PaletteList}" ItemsSource="{Binding HighlightPalette}" SelectedValue="{Binding HighlightColor}" />
+                        <TextBlock Style="{StaticResource Label}" Text="{loc:Str SettingsDefaultFill}" />
+                        <ListBox Style="{StaticResource PaletteList}" ItemsSource="{Binding FillPalette}" SelectedValue="{Binding DefaultFillColor}" />
 
                         <TextBlock Style="{StaticResource Section}" Text="{loc:Str SettingsToolDefaults}" />
                         <Grid>
@@ -259,8 +261,7 @@
                             <TextBlock Grid.Row="5" Style="{StaticResource Label}" Text="{loc:Str OptionCursorKind}" />
                             <ComboBox Grid.Row="5" Grid.Column="1" Width="180" ItemsSource="{Binding CursorKindChoices}" DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding DefaultCursorKind}" />
                         </Grid>
-                        <CheckBox Margin="0,8,0,5" Content="{loc:Str OptionFill}" IsChecked="{Binding DefaultFill}" />
-                        <CheckBox Content="{loc:Str OptionTextBackground}" IsChecked="{Binding DefaultTextBackground}" />
+                        <CheckBox Margin="0,8,0,5" Content="{loc:Str OptionTextBackground}" IsChecked="{Binding DefaultTextBackground}" />
                         <CheckBox Content="{loc:Str OptionSmooth}" IsChecked="{Binding DefaultSmooth}" />
 
                         <TextBlock Style="{StaticResource Section}" Text="{loc:Str SettingsCursor}" />

@@ -58,8 +58,33 @@ public sealed class AppSettings {
     /// <summary>Zuletzt verwendete Stärke beim Weichzeichnen (Radius in Bildpixeln).</summary>
     public int DefaultBlurRadius { get; set; } = 8;
 
-    /// <summary>Rechteck und Ellipse gefüllt zeichnen (Füllung in der Rahmenfarbe).</summary>
-    public bool DefaultFill { get; set; }
+    /// <summary>
+    /// Altes Feld (bis 0.6): Rechteck und Ellipse in der Rahmenfarbe füllen. Wird nur noch gelesen und von
+    /// <see cref="Normalize"/> nach <see cref="DefaultFillColor"/> übernommen (true → Standardfarbe als Füllung).
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? DefaultFill { get; set; }
+
+    /// <summary>Zuletzt verwendete Füllfarbe für Rechteck und Ellipse (#AARRGGBB, Transparenz erlaubt); leer = keine Füllung.</summary>
+    public string DefaultFillColor { get; set; } = "";
+
+    /// <summary>Zuletzt verwendetes Symbol am Anfang einer Linie (siehe <see cref="LineCaps"/>).</summary>
+    public string DefaultLineStartCap { get; set; } = LineAnnotation.DefaultStartCap;
+
+    /// <summary>Zuletzt verwendetes Symbol am Ende einer Linie.</summary>
+    public string DefaultLineEndCap { get; set; } = LineAnnotation.DefaultEndCap;
+
+    /// <summary>Zuletzt verwendetes Symbol am Anfang eines Pfeils.</summary>
+    public string DefaultArrowStartCap { get; set; } = ArrowAnnotation.DefaultStartCap;
+
+    /// <summary>Zuletzt verwendetes Symbol an der Spitze eines Pfeils.</summary>
+    public string DefaultArrowEndCap { get; set; } = ArrowAnnotation.DefaultEndCap;
+
+    /// <summary>Zuletzt verwendetes Symbol am Anfang einer Freihand-Linie.</summary>
+    public string DefaultFreehandStartCap { get; set; } = FreehandAnnotation.DefaultStartCap;
+
+    /// <summary>Zuletzt verwendetes Symbol am Ende einer Freihand-Linie.</summary>
+    public string DefaultFreehandEndCap { get; set; } = FreehandAnnotation.DefaultEndCap;
 
     /// <summary>Text mit Hintergrund zeichnen.</summary>
     public bool DefaultTextBackground { get; set; }
@@ -112,6 +137,17 @@ public sealed class AppSettings {
         if(DefaultBlurRadius < 1 || DefaultBlurRadius > 200) DefaultBlurRadius = defaults.DefaultBlurRadius;
         if(DefaultStampSize < 8 || DefaultStampSize > 400 || double.IsNaN(DefaultStampSize)) DefaultStampSize = defaults.DefaultStampSize;
         if(DefaultCursorKind != CursorKinds.Captured && DefaultCursorKind != CursorKinds.Arrow && DefaultCursorKind != CursorKinds.Hand && DefaultCursorKind != CursorKinds.IBeam) DefaultCursorKind = defaults.DefaultCursorKind;
+        // Füllung: altes bool-Feld übernehmen (nur wenn noch keine Füllfarbe gesetzt ist), ungültige Farben → keine Füllung
+        DefaultFillColor ??= "";
+        if(DefaultFill == true && DefaultFillColor.Length == 0) DefaultFillColor = DefaultColor;
+        DefaultFill = null;
+        if(DefaultFillColor.Length > 0 && !AnnotationColors.TryParse(DefaultFillColor, out _)) DefaultFillColor = "";
+        DefaultLineStartCap = LineCaps.Normalize(DefaultLineStartCap, defaults.DefaultLineStartCap);
+        DefaultLineEndCap = LineCaps.Normalize(DefaultLineEndCap, defaults.DefaultLineEndCap);
+        DefaultArrowStartCap = LineCaps.Normalize(DefaultArrowStartCap, defaults.DefaultArrowStartCap);
+        DefaultArrowEndCap = LineCaps.Normalize(DefaultArrowEndCap, defaults.DefaultArrowEndCap);
+        DefaultFreehandStartCap = LineCaps.Normalize(DefaultFreehandStartCap, defaults.DefaultFreehandStartCap);
+        DefaultFreehandEndCap = LineCaps.Normalize(DefaultFreehandEndCap, defaults.DefaultFreehandEndCap);
         if(RetentionDays < 0) RetentionDays = 0;
         if(RetentionDays > MaxRetentionDays) RetentionDays = MaxRetentionDays;
         if(HistoryWindow != null && !HistoryWindow.IsValid) HistoryWindow = null;

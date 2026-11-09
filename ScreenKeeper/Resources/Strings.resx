@@ -237,6 +237,33 @@ Details stehen in {1}.</value>
   <data name="OptionValuePixels" xml:space="preserve">
     <value>{0} px</value>
   </data>
+  <data name="OptionStartCap" xml:space="preserve">
+    <value>Anfang</value>
+  </data>
+  <data name="OptionEndCap" xml:space="preserve">
+    <value>Ende</value>
+  </data>
+  <data name="LineCapNone" xml:space="preserve">
+    <value>Ohne</value>
+  </data>
+  <data name="LineCapArrow" xml:space="preserve">
+    <value>Pfeil</value>
+  </data>
+  <data name="LineCapDot" xml:space="preserve">
+    <value>Punkt</value>
+  </data>
+  <data name="LineCapSquare" xml:space="preserve">
+    <value>Quadrat</value>
+  </data>
+  <data name="LineCapTriangle" xml:space="preserve">
+    <value>Dreieck</value>
+  </data>
+  <data name="FillNone" xml:space="preserve">
+    <value>Keine Füllung</value>
+  </data>
+  <data name="FillTranslucent" xml:space="preserve">
+    <value>{0} (halbtransparent)</value>
+  </data>
   <data name="ToolbarDeleteObject" xml:space="preserve">
     <value>Objekt löschen (Entf)</value>
   </data>
@@ -579,6 +606,9 @@ Trotzdem speichern?</value>
   </data>
   <data name="SettingsHighlightColor" xml:space="preserve">
     <value>Textmarker</value>
+  </data>
+  <data name="SettingsDefaultFill" xml:space="preserve">
+    <value>Füllung (Rechteck, Ellipse)</value>
   </data>
   <data name="SettingsToolDefaults" xml:space="preserve">
     <value>Standardwerte der Werkzeuge</value>

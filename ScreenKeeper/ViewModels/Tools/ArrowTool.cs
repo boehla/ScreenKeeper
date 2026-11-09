@@ -5,7 +5,7 @@ using ScreenKeeper.Services;
 namespace ScreenKeeper.ViewModels.Tools;
 
 /// <summary>
-/// Werkzeug „Pfeil“: vom Anfang zur Spitze ziehen (Shift: 45°-Raster); Farbe, Strichstärke.
+/// Werkzeug „Pfeil“: vom Anfang zur Spitze ziehen (Shift: 45°-Raster); Farbe, Strichstärke, Linienenden.
 /// </summary>
 public sealed class ArrowTool : DrawingToolBase {
     public const string ToolKey = "arrow";
@@ -25,7 +25,9 @@ public sealed class ArrowTool : DrawingToolBase {
         return new ArrowAnnotation {
             Points = new List<PixelPoint> { start, start },
             Stroke = Editor.Options.Color,
-            Thickness = Editor.Options.Thickness
+            Thickness = Editor.Options.Thickness,
+            StartCap = Editor.Options.ArrowStartCap,
+            EndCap = Editor.Options.ArrowEndCap
         };
     }
 

@@ -26,8 +26,8 @@ public sealed class ToolOptions {
 
     public double Thickness { get; set; } = 4;
 
-    /// <summary>Rechteck und Ellipse in der Rahmenfarbe füllen.</summary>
-    public bool Fill { get; set; }
+    /// <summary>Füllfarbe für Rechteck und Ellipse (#AARRGGBB); leer = keine Füllung.</summary>
+    public string FillColor { get; set; } = "";
 
     /// <summary>Text mit Hintergrund (Kontrastfarbe zur Textfarbe).</summary>
     public bool TextBackground { get; set; }
@@ -44,19 +44,74 @@ public sealed class ToolOptions {
 
     public string CursorKind { get; set; } = CursorKinds.Arrow;
 
+    /// <summary>Linienenden je Werkzeug (siehe <see cref="LineCaps"/>).</summary>
+    public string LineStartCap { get; set; } = LineAnnotation.DefaultStartCap;
+
+    public string LineEndCap { get; set; } = LineAnnotation.DefaultEndCap;
+
+    public string ArrowStartCap { get; set; } = ArrowAnnotation.DefaultStartCap;
+
+    public string ArrowEndCap { get; set; } = ArrowAnnotation.DefaultEndCap;
+
+    public string FreehandStartCap { get; set; } = FreehandAnnotation.DefaultStartCap;
+
+    public string FreehandEndCap { get; set; } = FreehandAnnotation.DefaultEndCap;
+
+    /// <summary>Symbol am Anfang für neue Objekte des Typs <paramref name="annotationType"/> (Linie, Pfeil, Freihand).</summary>
+    public string GetStartCap(string? annotationType) {
+        switch(annotationType) {
+            case AnnotationTypes.Line: return LineStartCap;
+            case AnnotationTypes.Arrow: return ArrowStartCap;
+            case AnnotationTypes.Freehand: return FreehandStartCap;
+        }
+        return LineCaps.None;
+    }
+
+    /// <summary>Symbol am Ende für neue Objekte des Typs <paramref name="annotationType"/>.</summary>
+    public string GetEndCap(string? annotationType) {
+        switch(annotationType) {
+            case AnnotationTypes.Line: return LineEndCap;
+            case AnnotationTypes.Arrow: return ArrowEndCap;
+            case AnnotationTypes.Freehand: return FreehandEndCap;
+        }
+        return LineCaps.None;
+    }
+
+    public void SetStartCap(string? annotationType, string cap) {
+        switch(annotationType) {
+            case AnnotationTypes.Line: LineStartCap = cap; break;
+            case AnnotationTypes.Arrow: ArrowStartCap = cap; break;
+            case AnnotationTypes.Freehand: FreehandStartCap = cap; break;
+        }
+    }
+
+    public void SetEndCap(string? annotationType, string cap) {
+        switch(annotationType) {
+            case AnnotationTypes.Line: LineEndCap = cap; break;
+            case AnnotationTypes.Arrow: ArrowEndCap = cap; break;
+            case AnnotationTypes.Freehand: FreehandEndCap = cap; break;
+        }
+    }
+
     public static ToolOptions FromSettings(AppSettings settings) {
         return new ToolOptions {
             Color = AnnotationColors.TryParse(settings.DefaultColor, out _) ? settings.DefaultColor : AnnotationColors.Red,
             HighlightColor = AnnotationColors.TryParse(settings.HighlightColor, out _) ? settings.HighlightColor : "#FFFFEB3B",
             Thickness = settings.DefaultThickness,
-            Fill = settings.DefaultFill,
+            FillColor = AnnotationColors.TryParse(settings.DefaultFillColor, out _) ? settings.DefaultFillColor : "",
             TextBackground = settings.DefaultTextBackground,
             Smooth = settings.DefaultSmooth,
             FontSize = settings.DefaultFontSize,
             BlockSize = settings.DefaultBlockSize,
             BlurRadius = settings.DefaultBlurRadius,
             StampSize = settings.DefaultStampSize,
-            CursorKind = settings.DefaultCursorKind
+            CursorKind = settings.DefaultCursorKind,
+            LineStartCap = LineCaps.Normalize(settings.DefaultLineStartCap, LineAnnotation.DefaultStartCap),
+            LineEndCap = LineCaps.Normalize(settings.DefaultLineEndCap, LineAnnotation.DefaultEndCap),
+            ArrowStartCap = LineCaps.Normalize(settings.DefaultArrowStartCap, ArrowAnnotation.DefaultStartCap),
+            ArrowEndCap = LineCaps.Normalize(settings.DefaultArrowEndCap, ArrowAnnotation.DefaultEndCap),
+            FreehandStartCap = LineCaps.Normalize(settings.DefaultFreehandStartCap, FreehandAnnotation.DefaultStartCap),
+            FreehandEndCap = LineCaps.Normalize(settings.DefaultFreehandEndCap, FreehandAnnotation.DefaultEndCap)
         };
     }
 
@@ -67,19 +122,25 @@ public sealed class ToolOptions {
         bool changed = settings.DefaultColor != Color
             || settings.HighlightColor != HighlightColor
             || settings.DefaultThickness != Thickness
-            || settings.DefaultFill != Fill
+            || settings.DefaultFillColor != FillColor
             || settings.DefaultTextBackground != TextBackground
             || settings.DefaultSmooth != Smooth
             || settings.DefaultFontSize != FontSize
             || settings.DefaultBlockSize != BlockSize
             || settings.DefaultBlurRadius != BlurRadius
             || settings.DefaultStampSize != StampSize
-            || settings.DefaultCursorKind != CursorKind;
+            || settings.DefaultCursorKind != CursorKind
+            || settings.DefaultLineStartCap != LineStartCap
+            || settings.DefaultLineEndCap != LineEndCap
+            || settings.DefaultArrowStartCap != ArrowStartCap
+            || settings.DefaultArrowEndCap != ArrowEndCap
+            || settings.DefaultFreehandStartCap != FreehandStartCap
+            || settings.DefaultFreehandEndCap != FreehandEndCap;
         if(!changed) return false;
         settings.DefaultColor = Color;
         settings.HighlightColor = HighlightColor;
         settings.DefaultThickness = Thickness;
-        settings.DefaultFill = Fill;
+        settings.DefaultFillColor = FillColor;
         settings.DefaultTextBackground = TextBackground;
         settings.DefaultSmooth = Smooth;
         settings.DefaultFontSize = FontSize;
@@ -87,6 +148,12 @@ public sealed class ToolOptions {
         settings.DefaultBlurRadius = BlurRadius;
         settings.DefaultStampSize = StampSize;
         settings.DefaultCursorKind = CursorKind;
+        settings.DefaultLineStartCap = LineStartCap;
+        settings.DefaultLineEndCap = LineEndCap;
+        settings.DefaultArrowStartCap = ArrowStartCap;
+        settings.DefaultArrowEndCap = ArrowEndCap;
+        settings.DefaultFreehandStartCap = FreehandStartCap;
+        settings.DefaultFreehandEndCap = FreehandEndCap;
         return true;
     }
 }

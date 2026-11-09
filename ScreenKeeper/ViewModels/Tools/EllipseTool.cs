@@ -4,7 +4,7 @@ using ScreenKeeper.Resources;
 namespace ScreenKeeper.ViewModels.Tools;
 
 /// <summary>
-/// Werkzeug „Ellipse“: aufziehen (Shift: Kreis); Rahmenfarbe, Strichstärke, Füllung optional.
+/// Werkzeug „Ellipse“: aufziehen (Shift: Kreis); Rahmenfarbe, Strichstärke, Füllfarbe (optional).
 /// </summary>
 public sealed class EllipseTool : DrawingToolBase {
     public const string ToolKey = "ellipse";
@@ -26,7 +26,7 @@ public sealed class EllipseTool : DrawingToolBase {
             Rect = new PixelRect(start.X, start.Y, 1, 1),
             Stroke = options.Color,
             Thickness = options.Thickness,
-            Fill = options.Fill ? options.Color : null
+            Fill = string.IsNullOrEmpty(options.FillColor) ? null : options.FillColor
         };
     }
 

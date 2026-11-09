@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.7.0
+
+- **Linienenden:** Linie, Pfeil und Freihand haben in der Werkzeugleiste die Optionen „Anfang“ und „Ende“ mit den
+  Symbolen ohne, Pfeil, Punkt, Quadrat und Dreieck (Menü mit Symbol und Text). Die Symbole sind gefüllt in der
+  Strichfarbe, wachsen mit der Strichstärke wie die bisherige Pfeilspitze und folgen der Richtung des Linienendes
+  (bei geglätteter Freihand der Tangente der Kurve). Bei einer Pfeilspitze endet der Strich an ihrer Grundlinie, damit
+  nichts übersteht (bei Freihand wird die Kurve dafür gekürzt); an einer Freihand-Linie richtet sich die Spitze nach
+  der Sehne über ihre Länge, damit sie auch bei einer Biegung kurz vor dem Ende ohne Lücke auf dem Strich sitzt.
+  Punkt, Quadrat und Dreieck sitzen mittig auf dem Endpunkt.
+- Treffertest und Auswahlrahmen berücksichtigen die Endsymbole (Fläche des Symbols plus Toleranz).
+- Datenformat: `startCap`/`endCap` (`none`, `arrow`, `dot`, `square`, `triangle`) bei `line`, `arrow`, `freehand`.
+  Fehlt ein Feld (Dateien bis 0.6) oder ist es `null`, gilt der bisherige Standard des Typs: Linie und Freihand ohne,
+  Pfeil mit Spitze am Ende – ältere Aufnahmen sehen unverändert aus. Unbekannte Werte bleiben erhalten und werden
+  ohne Symbol gezeichnet.
+- **Eigene Füllfarbe für Rechteck und Ellipse:** statt „Füllung an/aus“ (in Rahmenfarbe) ein eigener Farbwähler
+  „Füllung“ mit „keine“, der Palette und der Palette mit 50 % Deckkraft (Schachbrett zeigt die Transparenz). Die
+  Rahmenfarbe ändert die Füllung nicht mehr mit; der Rahmen liegt über der Füllung.
+- Datenformat: `fill` ist weiter eine Farbe `#AARRGGBB` (Transparenz erlaubt). Tolerant gelesen werden zusätzlich
+  `true` (→ Rahmenfarbe), `false` und `null` (→ keine Füllung); geschrieben wird immer die Farbe.
+- Der Text-Hintergrund ist ein eigener Knopf „Hintergrund“ (vorher teilte er sich den Füllungs-Knopf).
+- Einstellungen: `defaultFillColor` (leer = keine Füllung) ersetzt `defaultFill`; ein altes `"defaultFill": true` wird
+  beim Laden zur Standardfarbe als Füllfarbe und danach nicht mehr geschrieben. Neu `defaultLineStartCap`,
+  `defaultLineEndCap`, `defaultArrowStartCap`, `defaultArrowEndCap`, `defaultFreehandStartCap`,
+  `defaultFreehandEndCap` (je Typ getrennt, ungültige Werte → Standard). Im Einstellungsfenster wählt eine Farbreihe
+  „Füllung (Rechteck, Ellipse)“ die Standard-Füllfarbe.
+- Testhilfe `--test-annotate` füllt das Rechteck halbtransparent und setzt Endsymbole an Linie, Pfeil und Freihand.
+- Neue Tests: Serialisierung (neue Felder, alte Dateien ohne Felder, `fill` als bool), Geometrie und Treffertest der
+  Endsymbole, Pixeltests (Endsymbole in Strichfarbe, Füllfarbe innen, Rahmenfarbe außen), Editor (Option wirkt auf
+  das ausgewählte Objekt als ein Rückgängig-Schritt und wird je Typ als Standard gemerkt).
+
 ## 0.6.1
 
 - Das zuletzt gezeichnete Objekt (auch Stempel, Zeiger und Text) bleibt ausgewählt; Farbe und Optionen in der Werkzeugleiste wirken damit sofort auf dieses Objekt.

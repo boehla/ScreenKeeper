@@ -52,9 +52,9 @@ public static class AnnotationEditing {
             case HighlightAnnotation highlight: return toRect(highlight.Rect);
             case PixelateAnnotation pixelate: return toRect(pixelate.Rect);
             case BlurAnnotation blur: return toRect(blur.Rect);
-            case LineAnnotation line: return toRect(AnnotationGeometry.GetBounds(line.Points));
-            case ArrowAnnotation arrow: return toRect(AnnotationGeometry.GetBounds(arrow.Points));
-            case FreehandAnnotation freehand: return toRect(AnnotationGeometry.GetBounds(freehand.Points));
+            case LineAnnotation line: return withLineCaps(line);
+            case ArrowAnnotation arrow: return withLineCaps(arrow);
+            case FreehandAnnotation freehand: return withLineCaps(freehand);
             case TextAnnotation text: return measure.GetTextBounds(text);
             case NumberStampAnnotation stamp: return new Rect(stamp.X - stamp.Size / 2, stamp.Y - stamp.Size / 2, stamp.Size, stamp.Size);
             case CursorAnnotation cursor: return measure.GetCursorBounds(cursor);
@@ -243,6 +243,16 @@ public static class AnnotationEditing {
         double y = cornerY + pointer.Y - down.Y;
         double size = 2 * Math.Max(Math.Abs(x - stamp.X), Math.Abs(y - stamp.Y));
         stamp.Size = Math.Max(MinStampSize, Math.Round(size));
+    }
+
+    /// <summary>Umriss der Punkte, vergrößert um die Endsymbole (die z. B. als Punkt oder Dreieck über das Ende hinausragen).</summary>
+    private static Rect withLineCaps(ILineCapAnnotation annotation) {
+        Rect bounds = toRect(AnnotationGeometry.GetBounds(annotation.Points));
+        if(annotation.Points.Count < 2) return bounds;
+        (LineCapShape? start, LineCapShape? end) = AnnotationGeometry.GetLineCaps(annotation);
+        if(start != null) bounds.Union(start.Bounds);
+        if(end != null) bounds.Union(end.Bounds);
+        return bounds;
     }
 
     private static List<PixelPoint>? getLinePoints(Annotation annotation) {

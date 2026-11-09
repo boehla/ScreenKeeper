@@ -88,6 +88,15 @@ public static class Strings {
     public static string OptionCursorKind => Get(nameof(OptionCursorKind));
     public static string OptionCursorVisible => Get(nameof(OptionCursorVisible));
     public static string OptionValuePixels => Get(nameof(OptionValuePixels));
+    public static string OptionStartCap => Get(nameof(OptionStartCap));
+    public static string OptionEndCap => Get(nameof(OptionEndCap));
+    public static string LineCapNone => Get(nameof(LineCapNone));
+    public static string LineCapArrow => Get(nameof(LineCapArrow));
+    public static string LineCapDot => Get(nameof(LineCapDot));
+    public static string LineCapSquare => Get(nameof(LineCapSquare));
+    public static string LineCapTriangle => Get(nameof(LineCapTriangle));
+    public static string FillNone => Get(nameof(FillNone));
+    public static string FillTranslucent => Get(nameof(FillTranslucent));
     public static string ToolbarDeleteObject => Get(nameof(ToolbarDeleteObject));
     public static string CursorKindCaptured => Get(nameof(CursorKindCaptured));
     public static string CursorKindArrow => Get(nameof(CursorKindArrow));
@@ -201,6 +210,7 @@ public static class Strings {
     public static string SettingsColors => Get(nameof(SettingsColors));
     public static string SettingsDefaultColor => Get(nameof(SettingsDefaultColor));
     public static string SettingsHighlightColor => Get(nameof(SettingsHighlightColor));
+    public static string SettingsDefaultFill => Get(nameof(SettingsDefaultFill));
     public static string SettingsToolDefaults => Get(nameof(SettingsToolDefaults));
     public static string SettingsCursor => Get(nameof(SettingsCursor));
     public static string SettingsCursorVisible => Get(nameof(SettingsCursorVisible));

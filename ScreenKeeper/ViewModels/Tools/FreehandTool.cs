@@ -6,7 +6,7 @@ namespace ScreenKeeper.ViewModels.Tools;
 
 /// <summary>
 /// Werkzeug „Freihand“: sammelt beim Ziehen Punkte (nur, wenn sich die Maus mindestens <see cref="MinPointDistanceDevice"/>
-/// Gerätepixel bewegt hat) und dünnt sie beim Loslassen aus; Farbe, Strichstärke, Glättung.
+/// Gerätepixel bewegt hat) und dünnt sie beim Loslassen aus; Farbe, Strichstärke, Glättung, Linienenden.
 /// </summary>
 public sealed class FreehandTool : DrawingToolBase {
     public const string ToolKey = "freehand";
@@ -33,7 +33,9 @@ public sealed class FreehandTool : DrawingToolBase {
             Points = new List<PixelPoint> { start },
             Stroke = Editor.Options.Color,
             Thickness = Editor.Options.Thickness,
-            Smooth = Editor.Options.Smooth
+            Smooth = Editor.Options.Smooth,
+            StartCap = Editor.Options.FreehandStartCap,
+            EndCap = Editor.Options.FreehandEndCap
         };
     }
 

@@ -9,7 +9,8 @@ namespace ScreenKeeper.Views;
 
 /// <summary>
 /// Testhilfe für automatisierte Prüfungen (<c>--open &lt;json&gt; --test-annotate</c>, nicht dokumentiert): bedient die
-/// echten Werkzeuge über Maus-Sequenzen (PointerDown/Move/Up), legt je ein Objekt jedes Typs an, verschiebt und
+/// echten Werkzeuge über Maus-Sequenzen (PointerDown/Move/Up), legt je ein Objekt jedes Typs an (Rechteck gefüllt, Linie,
+/// Pfeil und Freihand mit Endsymbolen), verschiebt und
 /// vergrößert Objekte, macht 3× Rückgängig und 3× Wiederholen, prüft das Dokument, speichert und schließt.
 /// </summary>
 public partial class EditorWindow {
@@ -18,6 +19,9 @@ public partial class EditorWindow {
         AnnotationTypes.Text, AnnotationTypes.Highlight, AnnotationTypes.Pixelate, AnnotationTypes.Blur, AnnotationTypes.NumberStamp,
         AnnotationTypes.Cursor
     };
+
+    /// <summary>Halbtransparentes Gelb als Füllfarbe des Test-Rechtecks.</summary>
+    private const string testFillColor = "#80FFEB3B";
 
     /// <summary>Ist die Testhilfe fehlgeschlagen? (Exit-Code 1)</summary>
     public bool TestFailed { get; private set; }
@@ -46,18 +50,25 @@ public partial class EditorWindow {
         int size = cell / 2;
         int startCount = document.Annotations.Count;
 
+        // Das gerade gezeichnete Objekt bleibt ausgewählt: Füllfarbe und Linienenden wirken darauf (je ein Rückgängig-Schritt)
         PixelPoint rectangle = origin(0, 0);
         testDrag(RectangleTool.ToolKey, rectangle, offset(rectangle, size, size * 2 / 3), ModifierKeys.None);
+        viewModel.SetFillColor(testFillColor);
         PixelPoint ellipse = origin(1, 0);
         testDrag(EllipseTool.ToolKey, ellipse, offset(ellipse, size, size * 2 / 3), ModifierKeys.None);
         PixelPoint line = origin(2, 0);
         testDrag(LineTool.ToolKey, line, offset(line, size, size / 3), ModifierKeys.None);
+        viewModel.SetStartCap(LineCaps.Dot);
+        viewModel.SetEndCap(LineCaps.Square);
         PixelPoint arrow = origin(3, 0);
         testDrag(ArrowTool.ToolKey, arrow, offset(arrow, size, size / 3 + 3), ModifierKeys.Shift);
+        viewModel.SetStartCap(LineCaps.Triangle);
         PixelPoint freehand = origin(4, 0);
         List<PixelPoint> path = new List<PixelPoint>();
         for(int i = 0; i <= 24; i++) path.Add(offset(freehand, i * size / 24, (int)Math.Round(Math.Sin(i / 3.0) * size / 4) + size / 4));
         testPath(FreehandTool.ToolKey, path, ModifierKeys.None);
+        viewModel.SetStartCap(LineCaps.Dot);
+        viewModel.SetEndCap(LineCaps.Arrow);
 
         PixelPoint text = origin(0, 1);
         testClick(TextTool.ToolKey, text);
@@ -100,10 +111,21 @@ public partial class EditorWindow {
             Log.Error(new InvalidOperationException(message), message);
             Console.Error.WriteLine(message);
         }
-        // 12 neue Objekte (2 Stempel) + Verschieben + Größe ändern
-        if(steps < 14) {
+        // 12 neue Objekte (2 Stempel) + Füllfarbe + 5 Linienenden + Verschieben + Größe ändern
+        if(steps < 20) {
             TestFailed = true;
-            Log.Warn($"Test: nur {steps} Rückgängig-Schritte (erwartet mindestens 14)");
+            Log.Warn($"Test: nur {steps} Rückgängig-Schritte (erwartet mindestens 20)");
+        }
+        List<string> problems = new List<string>();
+        if(!document.Annotations.OfType<RectangleAnnotation>().Any(r => r.Fill == testFillColor)) problems.Add("kein Rechteck mit Füllfarbe");
+        if(!document.Annotations.OfType<LineAnnotation>().Any(l => l.StartCap == LineCaps.Dot && l.EndCap == LineCaps.Square)) problems.Add("keine Linie mit Endsymbolen");
+        if(!document.Annotations.OfType<ArrowAnnotation>().Any(a => a.StartCap == LineCaps.Triangle && a.EndCap == LineCaps.Arrow)) problems.Add("kein Pfeil mit Dreieck am Anfang");
+        if(!document.Annotations.OfType<FreehandAnnotation>().Any(f => f.StartCap == LineCaps.Dot && f.EndCap == LineCaps.Arrow)) problems.Add("keine Freihand-Linie mit Endsymbolen");
+        if(problems.Count > 0) {
+            TestFailed = true;
+            string message = $"Test: {string.Join(", ", problems)}";
+            Log.Error(new InvalidOperationException(message), message);
+            Console.Error.WriteLine(message);
         }
         // Export über denselben Render-Pfad (darf nicht werfen)
         AppServices.Render.Render(document, original, viewModel.ImageBounds);

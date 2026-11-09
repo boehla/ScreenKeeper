@@ -5,7 +5,7 @@ using ScreenKeeper.Services;
 namespace ScreenKeeper.ViewModels.Tools;
 
 /// <summary>
-/// Werkzeug „Linie“: von Start- zu Endpunkt ziehen (Shift: 45°-Raster); Farbe, Strichstärke.
+/// Werkzeug „Linie“: von Start- zu Endpunkt ziehen (Shift: 45°-Raster); Farbe, Strichstärke, Linienenden.
 /// </summary>
 public sealed class LineTool : DrawingToolBase {
     public const string ToolKey = "line";
@@ -25,7 +25,9 @@ public sealed class LineTool : DrawingToolBase {
         return new LineAnnotation {
             Points = new List<PixelPoint> { start, start },
             Stroke = Editor.Options.Color,
-            Thickness = Editor.Options.Thickness
+            Thickness = Editor.Options.Thickness,
+            StartCap = Editor.Options.LineStartCap,
+            EndCap = Editor.Options.LineEndCap
         };
     }
 

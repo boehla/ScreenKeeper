@@ -31,14 +31,20 @@ public sealed partial class EditorViewModel {
     private const double handleHitExtraDevice = 3;
 
     private static readonly string[] optionProperties = {
-        nameof(ShowColorOption), nameof(ShowThicknessOption), nameof(ShowFillOption), nameof(ShowSmoothOption),
+        nameof(ShowColorOption), nameof(ShowThicknessOption), nameof(ShowFillColorOption), nameof(ShowTextBackgroundOption),
+        nameof(ShowLineCapOptions), nameof(ShowSmoothOption),
         nameof(ShowFontSizeOption), nameof(ShowBlockSizeOption), nameof(ShowBlurRadiusOption), nameof(ShowStampSizeOption),
         nameof(ShowCursorKindOption), nameof(ShowCursorVisibleOption), nameof(ShowOptions), nameof(HasSelectedAnnotation),
         nameof(CurrentColor), nameof(CurrentColorBrush), nameof(CurrentThickness), nameof(CurrentThicknessText),
-        nameof(IsFillActive), nameof(FillToolTip), nameof(IsSmoothActive), nameof(CurrentFontSizeText),
+        nameof(CurrentFillColor), nameof(CurrentFillBrush), nameof(IsTextBackgroundActive),
+        nameof(CurrentStartCap), nameof(CurrentEndCap), nameof(CurrentStartCapIcon), nameof(CurrentEndCapIcon),
+        nameof(IsSmoothActive), nameof(CurrentFontSizeText),
         nameof(CurrentBlockSizeText), nameof(CurrentBlurRadiusText), nameof(CurrentStampSizeText),
         nameof(CurrentCursorKindLabel), nameof(IsCursorVisible), nameof(SelectedAnnotation)
     };
+
+    /// <summary>Deckkraft der halbtransparenten Füllfarben in der Werkzeugleiste.</summary>
+    public const byte TranslucentFillAlpha = 0x80;
 
     private string? selectedAnnotationId;
     private TextAnnotation? editingText;
@@ -50,7 +56,10 @@ public sealed partial class EditorViewModel {
     private IReadOnlyList<OptionChoice>? blurRadiusChoices;
     private IReadOnlyList<OptionChoice>? stampSizeChoices;
     private IReadOnlyList<OptionChoice>? cursorKindChoices;
-    private ICommand? toggleFillCommand;
+    private IReadOnlyList<OptionChoice>? fillColorChoices;
+    private IReadOnlyList<OptionChoice>? startCapChoices;
+    private IReadOnlyList<OptionChoice>? endCapChoices;
+    private ICommand? toggleTextBackgroundCommand;
     private ICommand? toggleSmoothCommand;
     private ICommand? toggleCursorVisibleCommand;
     private ICommand? deleteSelectedCommand;
@@ -270,7 +279,16 @@ public sealed partial class EditorViewModel {
     /// <summary>Zeigerarten; „aufgenommener Zeiger“ nur, wenn bei der Aufnahme ein Zeigerbild erfasst wurde.</summary>
     public IReadOnlyList<OptionChoice> CursorKindChoices => cursorKindChoices ??= createCursorKindChoices();
 
-    public ICommand ToggleFillCommand => toggleFillCommand ??= new RelayCommand(ToggleFill);
+    /// <summary>Füllfarben: keine, die Palette deckend und die Palette mit 50 % Deckkraft.</summary>
+    public IReadOnlyList<OptionChoice> FillColorChoices => fillColorChoices ??= createFillColorChoices();
+
+    public IReadOnlyList<OptionChoice> StartCapChoices => startCapChoices ??= LineCaps.All
+        .Select(c => new OptionChoice(OptionKind.StartCap, c, LineCapIcons.GetLabel(c), null, LineCapIcons.Get(c, true))).ToList();
+
+    public IReadOnlyList<OptionChoice> EndCapChoices => endCapChoices ??= LineCaps.All
+        .Select(c => new OptionChoice(OptionKind.EndCap, c, LineCapIcons.GetLabel(c), null, LineCapIcons.Get(c, false))).ToList();
+
+    public ICommand ToggleTextBackgroundCommand => toggleTextBackgroundCommand ??= new RelayCommand(ToggleTextBackground);
 
     public ICommand ToggleSmoothCommand => toggleSmoothCommand ??= new RelayCommand(ToggleSmooth);
 
@@ -283,7 +301,12 @@ public sealed partial class EditorViewModel {
 
     public bool ShowThicknessOption => isTarget(AnnotationTypes.Rectangle, AnnotationTypes.Ellipse, AnnotationTypes.Line, AnnotationTypes.Arrow, AnnotationTypes.Freehand);
 
-    public bool ShowFillOption => isTarget(AnnotationTypes.Rectangle, AnnotationTypes.Ellipse, AnnotationTypes.Text);
+    public bool ShowFillColorOption => isTarget(AnnotationTypes.Rectangle, AnnotationTypes.Ellipse);
+
+    public bool ShowTextBackgroundOption => isTarget(AnnotationTypes.Text);
+
+    /// <summary>„Anfang“ und „Ende“ (Linienenden) für Linie, Pfeil und Freihand.</summary>
+    public bool ShowLineCapOptions => isTarget(AnnotationTypes.Line, AnnotationTypes.Arrow, AnnotationTypes.Freehand);
 
     public bool ShowSmoothOption => isTarget(AnnotationTypes.Freehand);
 
@@ -336,19 +359,30 @@ public sealed partial class EditorViewModel {
 
     public string CurrentThicknessText => formatPixels(CurrentThickness);
 
-    /// <summary>Füllung (Rechteck/Ellipse) bzw. Hintergrund (Text) aktiv?</summary>
-    public bool IsFillActive {
+    /// <summary>Füllfarbe von Rechteck/Ellipse (#AARRGGBB); leer = keine Füllung.</summary>
+    public string CurrentFillColor {
         get {
             switch(optionTargetAnnotation) {
-                case RectangleAnnotation rectangle: return !string.IsNullOrEmpty(rectangle.Fill);
-                case EllipseAnnotation ellipse: return !string.IsNullOrEmpty(ellipse.Fill);
-                case TextAnnotation text: return !string.IsNullOrEmpty(text.Background);
+                case RectangleAnnotation rectangle: return rectangle.Fill ?? "";
+                case EllipseAnnotation ellipse: return ellipse.Fill ?? "";
             }
-            return optionTargetType == AnnotationTypes.Text ? Options.TextBackground : Options.Fill;
+            return Options.FillColor;
         }
     }
 
-    public string FillToolTip => optionTargetType == AnnotationTypes.Text ? Strings.OptionTextBackground : Strings.OptionFill;
+    public Brush CurrentFillBrush => LineCapIcons.GetFillBrush(CurrentFillColor);
+
+    /// <summary>Hintergrund hinter Text aktiv?</summary>
+    public bool IsTextBackgroundActive => optionTargetAnnotation is TextAnnotation text ? !string.IsNullOrEmpty(text.Background) : Options.TextBackground;
+
+    /// <summary>Symbol am Anfang von Linie/Pfeil/Freihand (ausgewähltes Objekt bzw. Standard des Werkzeugs).</summary>
+    public string CurrentStartCap => optionTargetAnnotation is ILineCapAnnotation line ? line.StartCap : Options.GetStartCap(optionTargetType);
+
+    public string CurrentEndCap => optionTargetAnnotation is ILineCapAnnotation line ? line.EndCap : Options.GetEndCap(optionTargetType);
+
+    public Geometry CurrentStartCapIcon => LineCapIcons.Get(CurrentStartCap, true);
+
+    public Geometry CurrentEndCapIcon => LineCapIcons.Get(CurrentEndCap, false);
 
     public bool IsSmoothActive => optionTargetAnnotation is FreehandAnnotation freehand ? freehand.Smooth : Options.Smooth;
 
@@ -382,6 +416,9 @@ public sealed partial class EditorViewModel {
             case OptionKind.BlurRadius: SetBlurRadius((int)choice.Value); break;
             case OptionKind.StampSize: SetStampSize((double)choice.Value); break;
             case OptionKind.CursorKind: SetCursorKind((string)choice.Value); break;
+            case OptionKind.FillColor: SetFillColor((string)choice.Value); break;
+            case OptionKind.StartCap: SetStartCap((string)choice.Value); break;
+            case OptionKind.EndCap: SetEndCap((string)choice.Value); break;
         }
     }
 
@@ -442,19 +479,40 @@ public sealed partial class EditorViewModel {
         });
     }
 
-    public void ToggleFill() {
-        bool value = !IsFillActive;
-        if(optionTargetType == AnnotationTypes.Text) {
-            Options.TextBackground = value;
-        } else {
-            Options.Fill = value;
-        }
+    /// <summary>Füllfarbe für Rechteck und Ellipse setzen (leer = keine Füllung).</summary>
+    public void SetFillColor(string fill) {
+        string value = fill ?? "";
+        Options.FillColor = value;
         changeTarget(a => {
+            string? stored = value.Length == 0 ? null : value;
             switch(a) {
-                case RectangleAnnotation rectangle: rectangle.Fill = value ? rectangle.Stroke : null; break;
-                case EllipseAnnotation ellipse: ellipse.Fill = value ? ellipse.Stroke : null; break;
-                case TextAnnotation text: text.Background = value ? AnnotationColors.GetTextBackground(text.Foreground) : null; break;
+                case RectangleAnnotation rectangle: rectangle.Fill = stored; break;
+                case EllipseAnnotation ellipse: ellipse.Fill = stored; break;
             }
+        });
+    }
+
+    /// <summary>Symbol am Anfang setzen (gemerkt getrennt für Linie, Pfeil und Freihand).</summary>
+    public void SetStartCap(string cap) {
+        Options.SetStartCap(optionTargetType, cap);
+        changeTarget(a => {
+            if(a is ILineCapAnnotation line) line.StartCap = cap;
+        });
+    }
+
+    /// <summary>Symbol am Ende setzen (gemerkt getrennt für Linie, Pfeil und Freihand).</summary>
+    public void SetEndCap(string cap) {
+        Options.SetEndCap(optionTargetType, cap);
+        changeTarget(a => {
+            if(a is ILineCapAnnotation line) line.EndCap = cap;
+        });
+    }
+
+    public void ToggleTextBackground() {
+        bool value = !IsTextBackgroundActive;
+        Options.TextBackground = value;
+        changeTarget(a => {
+            if(a is TextAnnotation text) text.Background = value ? AnnotationColors.GetTextBackground(text.Foreground) : null;
         });
     }
 
@@ -558,14 +616,9 @@ public sealed partial class EditorViewModel {
 
     private static void applyColor(Annotation annotation, string color) {
         switch(annotation) {
-            case RectangleAnnotation rectangle:
-                rectangle.Stroke = color;
-                if(!string.IsNullOrEmpty(rectangle.Fill)) rectangle.Fill = color;
-                break;
-            case EllipseAnnotation ellipse:
-                ellipse.Stroke = color;
-                if(!string.IsNullOrEmpty(ellipse.Fill)) ellipse.Fill = color;
-                break;
+            // Die Füllung hat eine eigene Farbe und bleibt unverändert
+            case RectangleAnnotation rectangle: rectangle.Stroke = color; break;
+            case EllipseAnnotation ellipse: ellipse.Stroke = color; break;
             case LineAnnotation line: line.Stroke = color; break;
             case ArrowAnnotation arrow: arrow.Stroke = color; break;
             case FreehandAnnotation freehand: freehand.Stroke = color; break;
@@ -576,6 +629,16 @@ public sealed partial class EditorViewModel {
             case HighlightAnnotation highlight: highlight.Color = color; break;
             case NumberStampAnnotation stamp: stamp.Color = color; break;
         }
+    }
+
+    private static IReadOnlyList<OptionChoice> createFillColorChoices() {
+        List<OptionChoice> choices = new List<OptionChoice> { new OptionChoice(OptionKind.FillColor, "", Strings.FillNone, LineCapIcons.GetFillBrush("")) };
+        foreach(string color in AnnotationColors.Palette) choices.Add(new OptionChoice(OptionKind.FillColor, color, color, AnnotationColors.GetBrush(color)));
+        foreach(string color in AnnotationColors.Palette) {
+            string translucent = AnnotationColors.ToHex(AnnotationColors.WithAlpha(AnnotationColors.Parse(color), TranslucentFillAlpha));
+            choices.Add(new OptionChoice(OptionKind.FillColor, translucent, Strings.Format(Strings.FillTranslucent, translucent), AnnotationColors.GetBrush(translucent)));
+        }
+        return choices;
     }
 
     private IReadOnlyList<OptionChoice> createCursorKindChoices() {
