@@ -47,6 +47,7 @@ public partial class EditorWindow : Window, IEditorHost {
     private bool testMode;
     private bool warmUp;
     private bool closed;
+    private bool discarded;
 
     public EditorWindow(CaptureDocument doc, BitmapSource original, string jsonPath, EditorMode mode, long startTimestamp = 0) {
         InitializeComponent();
@@ -100,6 +101,9 @@ public partial class EditorWindow : Window, IEditorHost {
     public EditorMode Mode => mode;
 
     public EditorViewModel ViewModel => viewModel;
+
+    /// <summary>Die Aufnahme wurde verworfen: beim Schließen nichts gespeichert, die Dateien löscht der Ablauf danach.</summary>
+    public bool IsDiscarded => discarded;
 
     /// <summary>
     /// Vorwärmen beim Programmstart (Tray-Betrieb, im Leerlauf): einen winzigen Editor außerhalb des Bildschirms anzeigen
@@ -200,6 +204,12 @@ public partial class EditorWindow : Window, IEditorHost {
         if(!closed) Close();
     }
 
+    void IEditorHost.DiscardCapture() {
+        if(closed || warmUp) return;
+        discarded = true;
+        Close();
+    }
+
     private void onLoaded(object sender, RoutedEventArgs e) {
         deviceScale = VisualTreeHelper.GetDpi(this).DpiScaleX;
         if(mode == EditorMode.Fullscreen) placeOverVirtualScreen();
@@ -255,6 +265,11 @@ public partial class EditorWindow : Window, IEditorHost {
         // übernimmt auch einen gerade bearbeiteten Text
         viewModel.CancelGesture();
         storeToolOptions();
+        if(discarded) {
+            // nichts speichern – sonst entstünden JSON und Vorschaubild neu; gelöscht wird nach dem Schließen
+            Log.Info($"Bearbeitungsstand verworfen: {jsonPath}");
+            return;
+        }
         try {
             long start = Stopwatch.GetTimestamp();
             AppServices.Storage.SaveDocument(document, jsonPath);

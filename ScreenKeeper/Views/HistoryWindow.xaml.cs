@@ -41,6 +41,7 @@ public partial class HistoryWindow : Window, IHistoryHost {
         AppServices.Workflow.CaptureStored += onCaptureStored;
         AppServices.Workflow.CaptureCopied += onCaptureCopied;
         AppServices.Workflow.EditorClosed += onEditorClosed;
+        AppServices.Workflow.CaptureDiscarded += onCaptureDiscarded;
         AppServices.Settings.Changed += onSettingsChanged;
         Loaded += onLoaded;
         Activated += (s, e) => viewModel.RefreshDayLabels();
@@ -124,6 +125,10 @@ public partial class HistoryWindow : Window, IHistoryHost {
         viewModel.OnEditorClosed(jsonPath);
     }
 
+    private void onCaptureDiscarded(object? sender, CaptureFiles files) {
+        viewModel.OnCaptureDiscarded(files);
+    }
+
     private void onCaptureCopied(object? sender, (CaptureFiles Original, CaptureFiles Copy) copied) {
         CaptureEntry? entry = AppServices.Storage.GetEntry(copied.Copy);
         if(entry != null) viewModel.InsertCopy(copied.Original.PngPath, entry);
@@ -158,6 +163,7 @@ public partial class HistoryWindow : Window, IHistoryHost {
         AppServices.Workflow.CaptureStored -= onCaptureStored;
         AppServices.Workflow.CaptureCopied -= onCaptureCopied;
         AppServices.Workflow.EditorClosed -= onEditorClosed;
+        AppServices.Workflow.CaptureDiscarded -= onCaptureDiscarded;
         update.Detach();
         AppServices.Settings.Changed -= onSettingsChanged;
         thumbnails.Clear();

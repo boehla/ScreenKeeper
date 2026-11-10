@@ -16,4 +16,10 @@ public interface IEditorHost {
 
     /// <summary>Editor schließen (der Bearbeitungsstand wird beim Schließen gespeichert).</summary>
     void CloseEditor();
+
+    /// <summary>
+    /// Aufnahme verwerfen: Editor schließen, ohne den Bearbeitungsstand zu speichern; PNG, JSON und Vorschaubild kommen in
+    /// den Papierkorb.
+    /// </summary>
+    void DiscardCapture();
 }

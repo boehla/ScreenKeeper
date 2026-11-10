@@ -29,6 +29,9 @@ public class EditorViewModelTests {
         public void CloseEditor() {
             CloseCount++;
         }
+
+        public void DiscardCapture() {
+        }
     }
 
     private static EditorViewModel create(FakeHost host) {

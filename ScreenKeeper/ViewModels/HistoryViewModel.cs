@@ -389,6 +389,17 @@ public sealed class HistoryViewModel : ViewModelBase {
         item.Reload(updated);
     }
 
+    /// <summary>
+    /// Aufnahme im Editor verworfen: Eintrag entfernen, sobald das PNG weg ist (schlug das Löschen fehl, bleibt er stehen).
+    /// </summary>
+    public void OnCaptureDiscarded(CaptureFiles files) {
+        HistoryItem? item = FindItem(Path.GetFullPath(files.PngPath));
+        if(item == null || File.Exists(item.Files.PngPath)) return;
+        string name = item.Name;
+        RemoveItems(new[] { item });
+        Message = Strings.Format(Strings.HistoryDiscarded, name);
+    }
+
     public HistoryItem? FindItem(string path) {
         foreach(HistoryRow row in Rows) {
             if(row is HistoryItem item && (string.Equals(item.Files.JsonPath, path, StringComparison.OrdinalIgnoreCase) || string.Equals(item.Files.PngPath, path, StringComparison.OrdinalIgnoreCase))) return item;

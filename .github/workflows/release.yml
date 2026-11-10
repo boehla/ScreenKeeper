@@ -1,7 +1,8 @@
 name: Release
 
 # Jeder Push auf main baut und testet. Ist die <Version> aus ScreenKeeper.csproj noch nicht als Tag v<Version>
-# vorhanden, werden zwei ZIPs veröffentlicht und ein GitHub-Release mit den Notizen aus dem CHANGELOG angelegt.
+# vorhanden, werden zwei ZIPs und ein Installer (Inno Setup, installer/ScreenKeeper.iss) veröffentlicht und ein
+# GitHub-Release mit den Notizen aus dem CHANGELOG angelegt. Das In-App-Update lädt nur die ZIPs (exakter Dateiname).
 
 on:
   push:
@@ -89,6 +90,26 @@ jobs:
           Compress-Archive -Path publish/framework-dependent/* -DestinationPath "ScreenKeeper-$env:VERSION-win-x64-framework-dependent.zip"
           Get-ChildItem *.zip | ForEach-Object { "{0}  {1:N1} MB" -f $_.Name, ($_.Length / 1MB) }
 
+      - name: Installer bauen
+        shell: pwsh
+        run: |
+          # Inno Setup liegt je nach Installationsart maschinenweit oder im Benutzerprofil
+          $candidates = @(
+            (Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'),
+            (Join-Path $env:LOCALAPPDATA 'Programs\Inno Setup 6\ISCC.exe')
+          )
+          $iscc = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $iscc) {
+            choco install innosetup -y --no-progress
+            if ($LASTEXITCODE -ne 0) { throw "Inno Setup konnte nicht installiert werden ($LASTEXITCODE)" }
+            $iscc = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          }
+          if (-not $iscc) { throw "ISCC.exe nicht gefunden: $($candidates -join ', ')" }
+          $numeric = ($env:VERSION -split '[-+]')[0]
+          & $iscc "/DAppVersion=$env:VERSION" "/DAppVersionNumeric=$numeric" "/DSourceDir=$PWD\publish\self-contained" "/DOutputDir=$PWD" installer/ScreenKeeper.iss
+          if ($LASTEXITCODE -ne 0) { throw "ISCC fehlgeschlagen ($LASTEXITCODE)" }
+          Get-ChildItem *-setup.exe | ForEach-Object { "{0}  {1:N1} MB" -f $_.Name, ($_.Length / 1MB) }
+
       - name: Release-Notizen aus CHANGELOG
         shell: pwsh
         run: |
@@ -105,6 +126,7 @@ jobs:
           $notes += ""
           $notes += "| Datei | Inhalt |"
           $notes += "|---|---|"
+          $notes += "| ScreenKeeper-$env:VERSION-win-x64-setup.exe | Installer ohne Adminrechte (pro Benutzer), optional mit Autostart |"
           $notes += "| ScreenKeeper-$env:VERSION-win-x64.zip | Einzelne EXE inkl. .NET-Laufzeit, keine Installation nötig |"
           $notes += "| ScreenKeeper-$env:VERSION-win-x64-framework-dependent.zip | Kleiner, benötigt die .NET 10 Desktop Runtime |"
           $notes | Set-Content -Encoding UTF8 release-notes.md
@@ -120,6 +142,7 @@ jobs:
           git tag "v$env:VERSION"
           git push origin "v$env:VERSION"
           gh release create "v$env:VERSION" `
+            "ScreenKeeper-$env:VERSION-win-x64-setup.exe" `
             "ScreenKeeper-$env:VERSION-win-x64.zip" `
             "ScreenKeeper-$env:VERSION-win-x64-framework-dependent.zip" `
             --title "ScreenKeeper $env:VERSION" `

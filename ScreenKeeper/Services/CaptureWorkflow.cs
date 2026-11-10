@@ -2,13 +2,14 @@
 using System.Windows;
 using System.Windows.Media.Imaging;
 using ScreenKeeper.Models;
+using ScreenKeeper.Resources;
 using ScreenKeeper.Views;
 
 namespace ScreenKeeper.Services;
 
 /// <summary>
 /// Ablauf: Aufnahme → Dokument bauen → sofort JSON speichern (PNG und Vorschaubild im Hintergrund) → Editor öffnen.
-/// Läuft im UI-Thread.
+/// Wird die Aufnahme im Editor verworfen, wandern danach alle drei Dateien in den Papierkorb. Läuft im UI-Thread.
 /// </summary>
 public sealed class CaptureWorkflow {
     private readonly List<Task> pendingWrites = new List<Task>();
@@ -29,6 +30,12 @@ public sealed class CaptureWorkflow {
 
     /// <summary>Aus dem Editor wurde eine Kopie angelegt (Original, Kopie); im UI-Thread.</summary>
     public event EventHandler<(CaptureFiles Original, CaptureFiles Copy)>? CaptureCopied;
+
+    /// <summary>
+    /// Eine Aufnahme wurde im Editor verworfen; ihre Dateien sind im Papierkorb (bzw. der Versuch ist beendet). Im UI-Thread,
+    /// anstelle von <see cref="EditorClosed"/>.
+    /// </summary>
+    public event EventHandler<CaptureFiles>? CaptureDiscarded;
 
     /// <summary>
     /// Aufnahme machen und sofort speichern. Ergänzt den aufgenommenen Zeiger als virtuelle Maus.
@@ -91,7 +98,11 @@ public sealed class CaptureWorkflow {
         openEditor = editor;
         editor.Closed += (s, e) => {
             if(ReferenceEquals(openEditor, editor)) openEditor = null;
-            EditorClosed?.Invoke(this, jsonPath);
+            if(editor.IsDiscarded) {
+                discard(jsonPath);
+            } else {
+                EditorClosed?.Invoke(this, jsonPath);
+            }
         };
         editor.Show();
         editor.Activate();
@@ -132,6 +143,37 @@ public sealed class CaptureWorkflow {
         } catch(AggregateException ex) {
             Log.Error(ex, "Fehler beim Schreiben der Bilder");
         }
+    }
+
+    /// <summary>
+    /// „Aufnahme verwerfen“: PNG, JSON und Vorschaubild in den Papierkorb (wie Löschen in der History, ohne Rückfrage).
+    /// Der Editor hat beim Schließen nichts gespeichert; ein noch laufendes Hintergrund-Schreiben einer neuen Aufnahme
+    /// wartet <see cref="IStorageService.DeleteToRecycleBin(CaptureFiles)"/> ab. Läuft auf einem eigenen STA-Thread und
+    /// zählt zu den ausstehenden Schreibvorgängen, damit ein Programmende nicht mittendrin abbricht.
+    /// </summary>
+    private async void discard(string jsonPath) {
+        CaptureFiles files = CaptureFiles.FromJson(Path.GetFullPath(jsonPath));
+        Task delete = StaTask.Run(() => AppServices.Storage.DeleteToRecycleBin(files));
+        trackTask(delete);
+        try {
+            await delete;
+            Log.Info($"Editor: Aufnahme verworfen, in den Papierkorb verschoben: {files.JsonPath}");
+        } catch(Exception ex) {
+            Log.Error(ex, $"Aufnahme {files.JsonPath} konnte nicht verworfen werden");
+            MessageBox.Show(Strings.Format(Strings.DiscardFailed, ex.Message), Strings.ErrorTitle, MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        CaptureDiscarded?.Invoke(this, files);
+    }
+
+    private void trackTask(Task task) {
+        lock(sync) {
+            pendingWrites.Add(task);
+        }
+        task.ContinueWith(done => {
+            lock(sync) {
+                pendingWrites.Remove(done);
+            }
+        }, TaskScheduler.Default);
     }
 
     private void addCapturedCursor(CaptureDocument document) {

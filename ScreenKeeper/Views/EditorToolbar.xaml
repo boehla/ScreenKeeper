@@ -97,6 +97,15 @@
             <Setter Property="StrokeStartLineCap" Value="Round" />
             <Setter Property="StrokeEndLineCap" Value="Round" />
         </Style>
+        <!-- Knöpfe, die den Editor schließen: Symbol dezent eingefärbt (Ausgabe/Abbrechen hellblau, Verwerfen hellrot) -->
+        <SolidColorBrush x:Key="ClosingIconBrush" Color="#FF90CAF9" />
+        <SolidColorBrush x:Key="DiscardIconBrush" Color="#FFEF9A9A" />
+        <Style x:Key="ClosingIcon" TargetType="Path" BasedOn="{StaticResource Icon}">
+            <Setter Property="Stroke" Value="{StaticResource ClosingIconBrush}" />
+        </Style>
+        <Style x:Key="DiscardIcon" TargetType="Path" BasedOn="{StaticResource Icon}">
+            <Setter Property="Stroke" Value="{StaticResource DiscardIconBrush}" />
+        </Style>
         <Style x:Key="ValueText" TargetType="TextBlock">
             <Setter Property="Foreground" Value="White" />
             <Setter Property="FontSize" Value="12" />
@@ -367,20 +376,20 @@
             <Rectangle Style="{StaticResource Separator}" />
             <!-- Ausgabe -->
             <Button Style="{StaticResource ToolbarButton}" Command="{Binding CopySelectionCommand}" ToolTip="{loc:Str ToolbarCopySelection}">
-                <Path Style="{StaticResource Icon}" Data="M7,7 H17 V18 H7 Z M4,14 V3 H13" />
+                <Path Style="{StaticResource ClosingIcon}" Data="M7,7 H17 V18 H7 Z M4,14 V3 H13" />
             </Button>
             <Button Style="{StaticResource ToolbarButton}" Command="{Binding SaveSelectionCommand}" ToolTip="{loc:Str ToolbarSaveSelection}">
-                <Path Style="{StaticResource Icon}" Data="M3,3 H14 L17,6 V17 H3 Z M6,3 V7 H13 V3 M6,17 V11 H14 V17" />
+                <Path Style="{StaticResource ClosingIcon}" Data="M3,3 H14 L17,6 V17 H3 Z M6,3 V7 H13 V3 M6,17 V11 H14 V17" />
             </Button>
             <Button Style="{StaticResource ToolbarButton}" Command="{Binding SaveSelectionAsCommand}" ToolTip="{loc:Str ToolbarSaveSelectionAs}">
-                <Path Style="{StaticResource Icon}" Data="M3,3 H12 L15,6 V9 M9,17 H3 V3 M6,3 V7 H11 V3 M11,18 V15.5 L16.5,10 L19,12.5 L13.5,18 Z" />
+                <Path Style="{StaticResource ClosingIcon}" Data="M3,3 H12 L15,6 V9 M9,17 H3 V3 M6,3 V7 H11 V3 M11,18 V15.5 L16.5,10 L19,12.5 L13.5,18 Z" />
             </Button>
             <Rectangle Style="{StaticResource Separator}" />
             <Button Style="{StaticResource ToolbarButton}" Command="{Binding CopyFullCommand}" ToolTip="{loc:Str ToolbarCopyFull}">
-                <Path Style="{StaticResource Icon}" Data="M1,4 H9 V11 H1 Z M11,4 H19 V11 H11 Z M5,11 V14 M15,11 V14 M3,16 H17" />
+                <Path Style="{StaticResource ClosingIcon}" Data="M1,4 H9 V11 H1 Z M11,4 H19 V11 H11 Z M5,11 V14 M15,11 V14 M3,16 H17" />
             </Button>
             <Button Style="{StaticResource ToolbarButton}" Command="{Binding CopyMonitorCommand}" ToolTip="{loc:Str ToolbarCopyMonitor}">
-                <Path Style="{StaticResource Icon}" Data="M2,3 H18 V13 H2 Z M10,13 V16 M6,17 H14" />
+                <Path Style="{StaticResource ClosingIcon}" Data="M2,3 H18 V13 H2 Z M10,13 V16 M6,17 H14" />
             </Button>
             <Rectangle Style="{StaticResource Separator}" />
             <!-- Aufnahme: Kopie anlegen, permanent -->
@@ -398,8 +407,12 @@
                 <Path Style="{StaticResource Icon}" Data="M13,3 L17,7 L13,11 M17,7 H8 A5,5 0 0 0 8,17 H12" />
             </Button>
             <Rectangle Style="{StaticResource Separator}" />
+            <!-- Beenden: Aufnahme verwerfen (Mülleimer mit X, nicht zu verwechseln mit „Objekt löschen“), Abbrechen -->
+            <Button Style="{StaticResource ToolbarButton}" Command="{Binding DiscardCommand}" ToolTip="{loc:Str ToolbarDiscard}">
+                <Path Style="{StaticResource DiscardIcon}" Data="M4,6 H16 M8,6 V4 H12 V6 M6,6 L7,17 H13 L14,6 M8.5,9 L11.5,14 M11.5,9 L8.5,14" />
+            </Button>
             <Button Style="{StaticResource ToolbarButton}" Command="{Binding CancelCommand}" ToolTip="{loc:Str ToolbarCancel}">
-                <Path Style="{StaticResource Icon}" Data="M5,5 L15,15 M15,5 L5,15" />
+                <Path Style="{StaticResource ClosingIcon}" Data="M5,5 L15,15 M15,5 L5,15" />
             </Button>
         </StackPanel>
     </Border>

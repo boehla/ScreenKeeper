@@ -24,6 +24,9 @@ public sealed class TestEditorHost : IEditorHost {
 
     public void CloseEditor() {
     }
+
+    public void DiscardCapture() {
+    }
 }
 
 /// <summary>

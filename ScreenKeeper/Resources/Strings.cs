@@ -261,4 +261,7 @@ public static class Strings {
     public static string UpdateNoProcessPath => Get(nameof(UpdateNoProcessPath));
     public static string UpdateScriptFailed => Get(nameof(UpdateScriptFailed));
     public static string UpdateFolderNotWritable => Get(nameof(UpdateFolderNotWritable));
+    public static string ToolbarDiscard => Get(nameof(ToolbarDiscard));
+    public static string DiscardFailed => Get(nameof(DiscardFailed));
+    public static string HistoryDiscarded => Get(nameof(HistoryDiscarded));
 }

@@ -51,6 +51,7 @@ public sealed partial class EditorViewModel : ViewModelBase {
         UndoCommand = new RelayCommand(() => Undo(), () => UndoStack.CanUndo);
         RedoCommand = new RelayCommand(() => Redo(), () => UndoStack.CanRedo);
         CancelCommand = new RelayCommand(host.CloseEditor);
+        DiscardCommand = new RelayCommand(Discard);
         DuplicateCommand = new RelayCommand(() => {
             CancelGesture();
             DuplicateRequested?.Invoke(this, EventArgs.Empty);
@@ -116,6 +117,9 @@ public sealed partial class EditorViewModel : ViewModelBase {
     public ICommand RedoCommand { get; }
 
     public ICommand CancelCommand { get; }
+
+    /// <summary>„Aufnahme verwerfen“: Editor schließen, nichts speichern, Dateien in den Papierkorb (macht das Fenster).</summary>
+    public ICommand DiscardCommand { get; }
 
     /// <summary>„Kopie anlegen“: aktuellen Stand als neue Aufnahme speichern und dort weiterarbeiten (macht das Fenster).</summary>
     public ICommand DuplicateCommand { get; }
@@ -243,6 +247,16 @@ public sealed partial class EditorViewModel : ViewModelBase {
 
     public void CopyMonitor() {
         copyRegion(GetMonitorRegion(host.GetCursorImagePoint()));
+    }
+
+    /// <summary>
+    /// Aufnahme verwerfen. Ein laufender Vorgang wird nur abgebrochen (ein offenes Textfeld nicht übernommen – es wird ohnehin
+    /// nichts gespeichert).
+    /// </summary>
+    public void Discard() {
+        CancelTextEdit();
+        activeTool.CancelGesture();
+        host.DiscardCapture();
     }
 
     public void SaveSelection() {

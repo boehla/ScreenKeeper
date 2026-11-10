@@ -171,11 +171,15 @@ Objekts. Alle Zeichnungen bleiben einzelne Objekte und lassen sich jederzeit aus
 | Kopie anlegen | – | speichert den aktuellen Stand als neue Aufnahme (`…_2`) und bearbeitet die Kopie weiter; das Original behält den Stand von jetzt |
 | Permanent (Stern) | – | Umschalter, aktiv = blau; wird beim Schließen mitgespeichert |
 | Rückgängig / Wiederholen | Strg+Z / Strg+Y | Bereich, Zeichnungen und Maus |
+| Aufnahme verwerfen (roter Mülleimer mit X) | – | schließt den Editor und speichert nichts: PNG, JSON und Vorschaubild kommen ohne Rückfrage in den Papierkorb, die Aufnahme verschwindet aus der History |
 | Abbrechen | Esc | kein Export (bricht zuerst ein laufendes Aufziehen ab) |
 
 Ohne Bereich sind die Bereich-Knöpfe deaktiviert. Die Zwischenablage erhält das Bild als Bitmap und als PNG.
+Knöpfe, die den Editor schließen (Ausgabe und Abbrechen), haben ein hellblaues Symbol, „Aufnahme verwerfen“ ein
+hellrotes; weiße Symbole lassen den Editor offen.
 Bei **jedem** Schließen – auch mit Esc – wird der Bearbeitungsstand in der JSON-Datei gespeichert und das
-Vorschaubild aktualisiert.
+Vorschaubild aktualisiert (außer beim Verwerfen). Eine verworfene Aufnahme lässt sich aus dem Papierkorb
+wiederherstellen.
 
 **Fenster-Modus**
 

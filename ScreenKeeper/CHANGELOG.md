@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.8.0
+
+- **Aufnahme verwerfen:** neuer Knopf in der Editor-Werkzeugleiste vor „Abbrechen“ (Mülleimer mit X, Tooltip
+  „Aufnahme verwerfen (nicht speichern)“). Er schließt den Editor, ohne den Bearbeitungsstand oder das Vorschaubild zu
+  speichern, und verschiebt PNG, JSON und Vorschaubild ohne Rückfrage in den Papierkorb (wie Löschen in der History).
+  Ein noch laufendes Hintergrund-Schreiben einer neuen Aufnahme wird vorher abgewartet; das Löschen zählt zu den
+  ausstehenden Schreibvorgängen, die das Programmende abwartet. Gilt auch für eine aus der History (oder mit `--open`)
+  geöffnete Aufnahme; die History entfernt den Eintrag. Ein offenes Textfeld wird dabei verworfen statt übernommen.
+- **Schließende Knöpfe farblich abgesetzt:** Bereich → Zwischenablage, Bereich speichern, Bereich speichern unter …,
+  Ganzer Bildschirm → Zwischenablage, Aktueller Monitor → Zwischenablage und Abbrechen haben ein hellblaues Symbol,
+  „Aufnahme verwerfen“ ein hellrotes (eigene Brush-/Style-Ressourcen `ClosingIconBrush`/`ClosingIcon` und
+  `DiscardIconBrush`/`DiscardIcon` in `EditorToolbar.xaml`). Knöpfe, die den Editor offen lassen, bleiben weiß.
+- **Installer:** `ScreenKeeper-<Version>-win-x64-setup.exe` im Release (Inno Setup, `installer/ScreenKeeper.iss`):
+  Installation pro Benutzer ohne Adminrechte, Startmenü-Eintrag, optional Desktop-Symbol und „Mit Windows starten“
+  (vorausgewählt, derselbe Registry-Wert wie der Autostart-Schalter in den Einstellungen). Das In-App-Update
+  funktioniert auch bei installierten Kopien.
+
 ## 0.7.0
 
 - Einstellungen: neues Feld `settingsVersion`. Dateien aus 0.6.x ohne dieses Feld werden einmalig umgestellt: eine

@@ -761,4 +761,13 @@ Trotzdem speichern?</value>
   <data name="UpdateFolderNotWritable" xml:space="preserve">
     <value>Der Programmordner {0} ist nicht beschreibbar – bitte das Update von der Release-Seite selbst entpacken.</value>
   </data>
+  <data name="ToolbarDiscard" xml:space="preserve">
+    <value>Aufnahme verwerfen (nicht speichern)</value>
+  </data>
+  <data name="DiscardFailed" xml:space="preserve">
+    <value>Die Aufnahme konnte nicht verworfen werden: {0}</value>
+  </data>
+  <data name="HistoryDiscarded" xml:space="preserve">
+    <value>Aufnahme {0} im Editor verworfen und in den Papierkorb verschoben.</value>
+  </data>
 </root>

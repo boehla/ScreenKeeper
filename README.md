@@ -29,10 +29,16 @@ Fertige Builds liegen unter [Releases](https://github.com/boehla/ScreenKeeper/re
 
 | Datei | Inhalt |
 |---|---|
+| `ScreenKeeper-<Version>-win-x64-setup.exe` | Installer, enthält die .NET-Laufzeit; ohne Adminrechte, optional mit Autostart |
 | `ScreenKeeper-<Version>-win-x64.zip` | Einzelne EXE, enthält die .NET-Laufzeit (keine Installation nötig) |
 | `ScreenKeeper-<Version>-win-x64-framework-dependent.zip` | Kleiner, benötigt die installierte [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) |
 
-Entpacken, `ScreenKeeper.exe` starten. Das Programm läuft aus jedem Ordner und schreibt nichts neben die EXE.
+**Installer:** installiert pro Benutzer nach `%LOCALAPPDATA%\Programs\ScreenKeeper`, legt einen Startmenü-Eintrag an
+und bietet „Mit Windows starten“ (vorausgewählt) sowie ein Desktop-Symbol an. Deinstallation über die Windows-Einstellungen
+(Apps); Einstellungen und Aufnahmen bleiben dabei erhalten. Die Setup-EXE ist nicht signiert, Windows SmartScreen kann
+deshalb beim ersten Start warnen („Weitere Informationen“ → „Trotzdem ausführen“).
+
+**ZIP:** entpacken, `ScreenKeeper.exe` starten. Das Programm läuft aus jedem Ordner und schreibt nichts neben die EXE.
 ScreenKeeper sucht einmal täglich im Hintergrund nach einer neuen Version und zeigt sie unaufdringlich in der History,
 im Tray-Menü und in den Einstellungen an; ein Klick installiert sie (ZIP laden, EXE ersetzen, Neustart). Einstellungen
 liegen in `%APPDATA%\ScreenKeeper\settings.json`, Aufnahmen im Bilder-Ordner unter `ScreenKeeper` (konfigurierbar).
@@ -72,7 +78,8 @@ Koordinaten in Bildpixeln. Details in [SPEC.md](SPEC.md), Abschnitt 4.
 ## Releases
 
 Ein Push auf `main` mit geänderter `<Version>` in `ScreenKeeper/ScreenKeeper.csproj` baut, testet und veröffentlicht
-automatisch ein GitHub-Release `v<Version>` mit beiden ZIP-Dateien und den Notizen aus dem CHANGELOG
+automatisch ein GitHub-Release `v<Version>` mit beiden ZIP-Dateien, dem Installer (Inno Setup,
+[installer/ScreenKeeper.iss](installer/ScreenKeeper.iss)) und den Notizen aus dem CHANGELOG
 (siehe [.github/workflows/release.yml](.github/workflows/release.yml)).
 
 ## Offene Punkte
