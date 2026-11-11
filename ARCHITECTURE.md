@@ -73,6 +73,9 @@ Alle Services als Klassen mit Interface (`ICaptureService` usw.), ohne DI-Framew
 - `ClipboardService`: Bild als `CF_BITMAP`/DIB **und** als `PNG`-Format setzen (`DataObject` mit `SetImage` + `SetData("PNG", MemoryStream)`),
   mit Wiederholversuchen (Zwischenablage kann belegt sein).
 - `HotkeyService`: `RegisterHotKey` über ein verstecktes `HwndSource`-Fenster; Fallback `WH_KEYBOARD_LL` für die Druck-Taste.
+  Der LL-Hook (`KeyboardHook`, eigener Thread) ist nur installiert, wenn nötig: Hook-Fallback vorhanden, Esc im
+  Countdown oder ein Remotedesktop-Fenster im Vordergrund (dann alle Hotkeys über den Hook, `HotkeyFilter` mit
+  `HotkeyScope.RemoteOnly`; außerhalb lässt der Hook sie für WM_HOTKEY durch).
   Hotkey-Modell `HotkeyBinding { Modifiers, Key }` serialisierbar als String (`"Ctrl+Shift+PrintScreen"`).
 - `AutostartService`: `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, Wert `ScreenKeeper` = `"<Pfad zur EXE>"`.
 - `EnvironmentCheckService`: Hinweise erkennen (Snipping-Registry-Wert, Prozess `Greenshot`).

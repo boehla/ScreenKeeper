@@ -26,6 +26,7 @@ public partial class SettingsWindow : Window, ISettingsHost {
         Closed += (s, e) => {
             resumeHotkeys();
             update.Detach();
+            viewModel.Detach();
         };
     }
 

@@ -121,6 +121,14 @@ public sealed class HistoryItem : HistoryRow {
     /// <summary>Programm und vollständiger Fenstertitel (Tooltip).</summary>
     public string ForegroundToolTip => HasForeground ? Strings.Format(Strings.HistoryForegroundTooltip, entry.Metadata!.ForegroundProcess, entry.Metadata.ForegroundTitle) : "";
 
+    public bool HasComment => entry.Metadata?.HasComment ?? false;
+
+    /// <summary>Kommentar einzeilig und gekürzt (Zeile unter dem Programm).</summary>
+    public string CommentText => ViewModels.CommentText.SingleLine(entry.Metadata?.Comment, ViewModels.CommentText.LineLength);
+
+    /// <summary>Kommentar mit Zeilenumbrüchen (Tooltip, bei sehr langen Texten gekürzt).</summary>
+    public string CommentToolTip => HasComment ? Strings.Format(Strings.HistoryCommentTooltip, ViewModels.CommentText.Preview(entry.Metadata!.Comment, ViewModels.CommentText.ToolTipLength)) : "";
+
     /// <summary>Kein JSON: beim ersten Bearbeiten wird eines angelegt.</summary>
     public bool IsImageOnly => !entry.HasJson;
 
@@ -204,5 +212,8 @@ public sealed class HistoryItem : HistoryRow {
         OnPropertyChanged(nameof(HasForeground));
         OnPropertyChanged(nameof(ForegroundText));
         OnPropertyChanged(nameof(ForegroundToolTip));
+        OnPropertyChanged(nameof(HasComment));
+        OnPropertyChanged(nameof(CommentText));
+        OnPropertyChanged(nameof(CommentToolTip));
     }
 }

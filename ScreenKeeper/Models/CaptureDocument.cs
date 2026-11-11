@@ -10,6 +10,8 @@ namespace ScreenKeeper.Models;
 public sealed class CaptureDocument {
     public const int CurrentFormatVersion = 1;
 
+    private string? comment;
+
     public int FormatVersion { get; set; } = CurrentFormatVersion;
 
     public DateTimeOffset CapturedAt { get; set; }
@@ -36,6 +38,16 @@ public sealed class CaptureDocument {
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool Permanent { get; set; }
 
+    /// <summary>
+    /// Freier, mehrzeiliger Kommentar zur Aufnahme (durchsuchbar in der History); null = kein Kommentar. Leere bzw. nur aus
+    /// Leerraum bestehende Werte werden beim Lesen und Setzen zu null und daher nicht geschrieben (Dateien ohne das Feld
+    /// bleiben ohne es).
+    /// </summary>
+    public string? Comment {
+        get => comment;
+        set => comment = string.IsNullOrWhiteSpace(value) ? null : value;
+    }
+
     /// <summary>Gewählter Bereich; null = noch kein Bereich gewählt.</summary>
     public PixelRect? Selection { get; set; }
 
@@ -50,6 +62,17 @@ public sealed class CaptureDocument {
     /// <summary>Unbekannte Felder (z. B. aus neueren Versionen) bleiben beim Speichern erhalten.</summary>
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? ExtensionData { get; set; }
+
+    [JsonIgnore]
+    public bool HasComment => !string.IsNullOrEmpty(Comment);
+
+    /// <summary>
+    /// Einheitliche Form eines Kommentars: Leerraum an Anfang und Ende entfernt, Zeilenenden als CRLF; leer → null.
+    /// </summary>
+    public static string? NormalizeComment(string? comment) {
+        if(string.IsNullOrWhiteSpace(comment)) return null;
+        return comment.Replace("\r\n", "\n").Replace('\r', '\n').Replace("\n", "\r\n").Trim();
+    }
 
     /// <summary>
     /// Hat die Aufnahme einen Bereich oder Zeichnungen (für das Kennzeichen „bearbeitet“)?

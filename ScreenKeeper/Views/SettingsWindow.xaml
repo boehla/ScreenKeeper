@@ -190,6 +190,8 @@
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
 
                             <TextBlock Grid.Row="0" Style="{StaticResource Label}" Text="{loc:Str SettingsHotkeyCaptureEdit}" />
@@ -206,10 +208,35 @@
                             <views:HotkeyBox Grid.Row="2" Grid.Column="1" Margin="0,3" Padding="3,2" VerticalContentAlignment="Center" Hotkey="{Binding HotkeyHistory}" RecordingChanged="onRecordingChanged" />
                             <Button Grid.Row="2" Grid.Column="2" Style="{StaticResource SmallButton}" Content="{loc:Str SettingsHotkeyClear}" Command="{Binding ClearHotkeyCommand}" CommandParameter="ShowHistory" />
                             <TextBlock Grid.Row="2" Grid.Column="3" Margin="10,0,0,0" Style="{StaticResource Info}" VerticalAlignment="Center" Text="{Binding HotkeyHistoryStatus}" />
+
+                            <TextBlock Grid.Row="3" Style="{StaticResource Label}" Text="{loc:Str SettingsHotkeyCaptureDelayed}" />
+                            <views:HotkeyBox Grid.Row="3" Grid.Column="1" Margin="0,3" Padding="3,2" VerticalContentAlignment="Center" Hotkey="{Binding HotkeyCaptureDelayed}" RecordingChanged="onRecordingChanged" />
+                            <Button Grid.Row="3" Grid.Column="2" Style="{StaticResource SmallButton}" Content="{loc:Str SettingsHotkeyClear}" Command="{Binding ClearHotkeyCommand}" CommandParameter="CaptureDelayed" />
+                            <TextBlock Grid.Row="3" Grid.Column="3" Margin="10,0,0,0" Style="{StaticResource Info}" VerticalAlignment="Center" Text="{Binding HotkeyCaptureDelayedStatus}" />
+
+                            <TextBlock Grid.Row="4" Style="{StaticResource Label}" Text="{loc:Str SettingsHotkeyRemotePrintScreen}" />
+                            <views:HotkeyBox Grid.Row="4" Grid.Column="1" Margin="0,3" Padding="3,2" VerticalContentAlignment="Center" Hotkey="{Binding HotkeyRemotePrintScreen}" RecordingChanged="onRecordingChanged" />
+                            <Button Grid.Row="4" Grid.Column="2" Style="{StaticResource SmallButton}" Content="{loc:Str SettingsHotkeyClear}" Command="{Binding ClearHotkeyCommand}" CommandParameter="RemotePrintScreen" />
+                            <TextBlock Grid.Row="4" Grid.Column="3" Margin="10,0,0,0" Style="{StaticResource Info}" VerticalAlignment="Center" Text="{Binding HotkeyRemotePrintScreenStatus}" />
                         </Grid>
                         <TextBlock Margin="0,10,0,0" Style="{StaticResource Error}" Foreground="#FFB26A00" Text="{Binding HotkeyMessages}" />
                         <TextBlock Margin="0,12,0,0" FontWeight="SemiBold" Text="{Binding PrintScreenStatus}" />
                         <TextBlock Style="{StaticResource Error}" Foreground="#FFB26A00" Text="{Binding SnippingHint}" />
+
+                        <CheckBox Margin="0,10,0,2" Content="{loc:Str SettingsRemoteSessions}" ToolTip="{loc:Str SettingsRemoteSessionsTooltip}" IsChecked="{Binding CaptureHotkeysInRemoteSessions}" />
+                        <TextBlock Style="{StaticResource Info}" Text="{loc:Str SettingsRemotePrintScreenHelp}" />
+
+                        <TextBlock Style="{StaticResource Section}" Text="{loc:Str SettingsDelayedCapture}" />
+                        <TextBlock Style="{StaticResource Info}" Text="{loc:Str SettingsDelayedHelp}" />
+                        <WrapPanel Margin="0,4,0,0">
+                            <TextBlock Margin="0,0,8,0" VerticalAlignment="Center" Text="{loc:Str SettingsDelaySecondsPrefix}" />
+                            <TextBox Width="50" VerticalContentAlignment="Center" Padding="3,2" Text="{Binding CaptureDelaySecondsText, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Margin="8,0,20,0" VerticalAlignment="Center" Text="{loc:Str SettingsDelaySecondsUnit}" />
+                            <TextBlock Margin="0,0,8,0" VerticalAlignment="Center" Text="{loc:Str SettingsDelayAction}" />
+                            <ComboBox Width="180" ItemsSource="{Binding DelayedCaptureActionChoices}" DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding DelayedCaptureAction}" />
+                        </WrapPanel>
+                        <TextBlock Style="{StaticResource Error}" Text="{Binding CaptureDelaySecondsError}" />
+                        <CheckBox Content="{loc:Str SettingsDelayAsk}" IsChecked="{Binding CaptureDelayAskEachTime}" />
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
@@ -240,6 +267,7 @@
                                 <Run Text="{Binding MagnifierSize, Mode=OneWay}" /><Run Text=" px" />
                             </TextBlock>
                         </Grid>
+                        <CheckBox Margin="0,8,0,0" Content="{loc:Str SettingsMagnifierKeyHints}" ToolTip="{loc:Str SettingsMagnifierKeyHintsTooltip}" IsChecked="{Binding ShowMagnifierKeyHints}" />
 
                         <TextBlock Style="{StaticResource Section}" Text="{loc:Str SettingsColors}" />
                         <TextBlock Style="{StaticResource Label}" Text="{loc:Str SettingsDefaultColor}" />

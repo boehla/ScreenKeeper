@@ -1,7 +1,84 @@
 # Changelog
 
-## Unveröffentlicht
+## 0.9.0
 
+- **Kommentar zu Aufnahmen:** neuer Knopf „Kommentar“ (Sprechblase) in der Editor-Werkzeugleiste neben „Permanent“.
+  Er öffnet einen kleinen Dialog für freien, mehrzeiligen Text (Strg+Enter übernimmt, Esc bricht ab, leerer Text
+  entfernt den Kommentar). Der Dialog ist ein eigenes, vom Editor besessenes Fenster – über dem Vollbild-Editor
+  ebenfalls oberstes Fenster und auf dem Monitor der Werkzeugleiste zentriert –, Editor-Kürzel greifen währenddessen
+  nicht. Übernehmen ist ein Rückgängig-Schritt; der Knopf ist blau hinterlegt, wenn ein Kommentar vorhanden ist, und
+  zeigt ihn im Tooltip. Gespeichert wird mit dem Dokument.
+- **History:** Der Kommentar steht einzeilig gekürzt (kursiv, mit Sprechblase) unter dem Programm im Vordergrund, der
+  Tooltip zeigt ihn ganz. „Kommentar bearbeiten …“ (Taste K, Knopf, Kontextmenü) öffnet denselben Dialog und speichert
+  die JSON sofort atomar (fehlt sie, wird sie angelegt); ein offener Editor derselben Aufnahme übernimmt den Text. Die
+  Suche findet auch Text im Kommentar (Platzhalter „Suche: Name, Programm, Titel, Kommentar“); der Zwischenspeicher
+  der Kennzeichen wird beim Speichern einer JSON verworfen.
+- Datenformat: optionales Feld `comment` (String, Zeilenumbruch `\r\n`) nach `permanent`; nur geschrieben, wenn nicht
+  leer. `formatVersion` bleibt 1, ältere Dateien ohne das Feld laden unverändert. Kopien übernehmen den Kommentar.
+- **AGENTS.md im Ablageordner:** ScreenKeeper legt neben den Jahresordnern eine `AGENTS.md` an, die KI-Agenten und
+  Skripten Ordnerstruktur, Dateinamen (Muster, Kollisionssuffix, Kopien), alle JSON-Felder, alle Zeichenobjekte mit
+  ihren Feldern und Standardwerten sowie das Koordinatensystem erklärt. Der Inhalt ist im Programm eingebettet
+  (`Resources\AGENTS.template.md`, mit Programmversion im Kopf). Geprüft wird beim Start, nach dem Speichern der
+  Einstellungen und bei der ersten Aufnahme je Ablageordner (auch headless mit `--capture --folder`); geschrieben nur,
+  wenn die Datei fehlt oder abweicht, und nur in einen vorhandenen Ablageordner. Fehler werden nur protokolliert.
+  History, Aufräumen und Export lesen nur `JJJJ\MM\*.png` und ignorieren sie. Ein Unit-Test stellt sicher, dass jeder
+  registrierte Annotationstyp und jedes JSON-Feld darin beschrieben ist.
+- **Hotkeys im Remotedesktop (auch Vollbild):** mstsc setzt beim Aktivieren seines Fensters einen eigenen
+  Low-Level-Tastatur-Hook, der vor ScreenKeeper lag und die Tasten nicht weiterreichte (auch RegisterHotKey kam nicht
+  an). ScreenKeeper beobachtet jetzt den Vordergrund (`SetWinEventHook`, im Hook-Thread) und setzt seinen Hook neu,
+  sobald ein Fenster der Klasse `TscShellContainerClass` aktiv wird – sofort und nach 250 ms noch einmal; auch beim
+  Start bzw. Übernehmen der Einstellungen wird geprüft, ob schon eines vorne ist. Solange laufen alle eingestellten
+  Hotkeys über den Hook; nur genau diese Kombinationen (und ihr Loslassen) werden geschluckt, alles andere (Win,
+  Alt+Tab …) geht unverändert an die Sitzung. Außerhalb von RDP bleibt alles wie bisher: Der Hook ist dann nur
+  installiert, wenn ein Druck-Fallback (oder Esc im Countdown) ihn braucht, und lässt die per RegisterHotKey
+  registrierten Kombinationen durch – keine Doppelauslösung. Zusatztasten verfolgt der Hook im RDP selbst mit, weil
+  mstsc sie lokal schluckt. Neue Einstellungen `captureHotkeysInRemoteSessions` (Standard an, Schalter „Hotkeys auch
+  in Remotedesktop-Sitzungen abfangen“) und `remoteSessionWindowClasses` (nur in `settings.json`, mehrere durch `;`
+  oder `,`). Läuft das Remote-Fenster mit Administratorrechten, ScreenKeeper aber nicht, steht einmal ein Hinweis im
+  Protokoll (UIPI). Während der Hotkey-Aufzeichnung im Einstellungsfenster ist auch der Hook ausgesetzt.
+- **Druck an Remotesitzung durchreichen:** optionaler Hotkey `hotkeyRemotePrintScreen` (Standard aus). Nur bei
+  Remote-Fenster vorne und eingeschalteter Remote-Erfassung: Der Hook schluckt die Kombination, danach sendet
+  ScreenKeeper per `SendInput` (außerhalb des Hook-Callbacks) die gehaltenen Zusatztasten los, Druck, und die
+  Zusatztasten wieder gedrückt; bei Alt/Win ohne Strg vorher ein kurzes Strg, damit die Sitzung kein einzelnes Alt/Win
+  sieht. Die eigenen Ereignisse tragen eine Kennung in `dwExtraInfo` und gehen im eigenen Hook unverändert weiter.
+  Konflikte mit anderen Hotkeys werden wie gewohnt geprüft (keine Probe-Registrierung, da er nie registriert wird).
+- **Verzögerte Aufnahme:** neuer Hotkey `hotkeyCaptureDelayed` (Standard aus) und Tray-Eintrag „Verzögerte Aufnahme“.
+  Countdown (`captureDelaySeconds`, Standard 3, 1–60) mit kleinem Overlay rechts unten auf dem Monitor mit dem
+  Mauszeiger (oberstes Fenster, nimmt nie den Fokus, klick-durchlässig, nicht in der Taskleiste, per
+  `WDA_EXCLUDEFROMCAPTURE` von Aufnahmen ausgenommen und vor der Aufnahme zusätzlich ausgeblendet) und Restzeit im
+  Tray-Tooltip. Esc (für die Dauer des Countdowns über den Tastatur-Hook, auch im RDP; Esc wird dabei geschluckt) oder
+  ein Klick aufs Tray-Symbol bricht ab, der Hotkey erneut löst sofort aus, eine normale Aufnahme bricht den Countdown
+  ab. Mit `captureDelayAskEachTime` erst ein kleiner Dialog (Sekunden, Schnellwahl 2 / 5 / 10 s, Enter oder erneuter
+  Hotkey startet, Esc bricht ab); der gewählte Wert wird gespeichert, danach geht der Fokus an das vorherige Fenster
+  zurück. Danach Aufnahme + Editor oder nur speichern (`delayedCaptureAction`: `edit`/`save`, mit Benachrichtigung).
+  Bei offenem Editor holt der Hotkey nur den Editor nach vorne. Alles im Einstellungsfenster (Hotkeys) einstellbar.
+- **Letzten Bereich übernehmen:** neuer Knopf in der Editor-Werkzeugleiste direkt nach den Werkzeugen (Bereichsecken
+  mit Rückwärtspfeil), Kürzel **Strg+L** (L allein bleibt das Linien-Werkzeug). Er setzt den zuletzt gewählten Bereich
+  an derselben Bildschirmstelle – ein Rückgängig-Schritt über denselben Befehl wie das Aufziehen; ragt er teilweise
+  hinaus, wird er auf das Bild begrenzt. Gemerkt wird beim Schließen bzw. Ausgeben des Editors (nicht beim Verwerfen)
+  in `lastSelection` (Bildschirmkoordinaten des virtuellen Desktops: Bildpixel + Ursprung des virtuellen Bildschirms),
+  und zwar nur, wenn die Monitor-Anordnung der Aufnahme der aktuellen entspricht (Vollbild-Editor) und der Bereich in
+  dieser Sitzung geändert wurde – eine alte Aufnahme aus der History, die nur angesehen wird, überschreibt ihn nicht.
+  Ausgegraut (Tooltip nennt den Grund), wenn noch keiner gemerkt ist, die Anordnung abweicht (Fenster-Editor) oder der
+  Bereich das Bild nicht schneidet. Ungültige Werte in der Datei werden verworfen.
+- **Lupe im Editor verstellen:** Solange die Lupe zu sehen ist, ändert das Mausrad den Zoom (ganze Schritte, 4–16;
+  im Fenster-Editor **Alt+Rad**, weil das Rad dort scrollt bzw. mit Strg die Ansicht zoomt; das Loslassen von Alt
+  aktiviert danach nicht das Fenstermenü) und **+/-** (Haupttastatur und Ziffernblock) die Größe in 10er-Schritten
+  im Bereich des Schiebereglers (80–400 px; Werte außerhalb werden in den Bereich geführt). Nicht während einer
+  Texteingabe. Die Lupe wird sofort neu aufgebaut und platziert. Die Werte gelten auch für die nächsten Aufnahmen:
+  gespeichert wird gesammelt nach 1 s Ruhe bzw. beim Schließen des Editors; ein offenes Einstellungsfenster übernimmt
+  die neuen Werte (statt sie beim Übernehmen mit den alten zu überschreiben).
+- **Tastenhilfe unter der Lupe:** zweite, kleinere Zeile mit der geltenden Belegung und den aktuellen Werten (z. B.
+  „Rad: Zoom 8×   +/-: Größe 160 px“, im Fenster-Editor „Alt+Rad: …“); abschaltbar im Einstellungsfenster
+  („Tastenhilfe unter der Lupe anzeigen“, `showMagnifierKeyHints`, Standard an).
+- **Tray-Symbol zeigt die Hotkeys:** Der Tooltip listet je eingestelltem Hotkey eine Zeile (Aufnahme, nur speichern,
+  verzögerte Aufnahme, History) statt des festen Textes „Druck: Aufnahme“, und das Kontextmenü zeigt die Tasten rechts
+  neben den Einträgen. Beides folgt geänderten Einstellungen sofort.
+- Testschalter `--open <json> --test-magnifier` (Lupe per Code verstellen, Tastenhilfe und letzten Bereich prüfen,
+  speichert keine Einstellungen).
+- Intern: `PrintScreenFilter` heißt jetzt `HotkeyFilter` und gilt für beliebige Tasten (je Kombination „immer“ oder
+  „nur bei Remote-Fenster“, threadsicheres Remote-Flag); die Ablauflogik der verzögerten Aufnahme steckt UI-frei in
+  `DelayedCaptureController`. Das Neu-Registrieren der Hotkeys vergleicht alle hotkey-relevanten Einstellungen.
 - **Hilfslinien beim Bereich:** Beim Wählen des Bereichs (vor der ersten Auswahl, beim Aufziehen, beim Ziehen der
   Anfasser und bei der Tastatur-Auswahl – also immer, wenn die Lupe sichtbar ist) geht durch den Zielpixel je ein
   dezenter waagerechter und senkrechter Strich über die ganze Fläche, im Vollbild über alle Monitore. Die Linien sind
@@ -9,6 +86,7 @@
 - **Stern „permanent“ gelb:** Ist eine Aufnahme permanent markiert, ist der Stern in der Editor-Werkzeugleiste gelb
   gefüllt (wie das Abzeichen in der History). Der blaue Hintergrund des Knopfs entfällt – er verschwand ohnehin,
   solange die Maus über dem Knopf war.
+
 
 ## 0.8.0
 

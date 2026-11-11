@@ -137,6 +137,13 @@ public class SettingsPhase5Tests {
             s.HotkeyCaptureEdit = "Ctrl+Alt+PrintScreen";
             s.HotkeyCaptureSave = "Alt+PrintScreen";
             s.HotkeyHistory = "";
+            s.HotkeyCaptureDelayed = "Ctrl+Alt+D";
+            s.HotkeyRemotePrintScreen = "Ctrl+Shift+PrintScreen";
+            s.CaptureHotkeysInRemoteSessions = false;
+            s.RemoteSessionWindowClasses = "TscShellContainerClass;VMwareRemote";
+            s.CaptureDelaySeconds = 10;
+            s.CaptureDelayAskEachTime = true;
+            s.DelayedCaptureAction = DelayedCaptureActions.Save;
             s.MagnifierZoom = 12;
             s.MagnifierSize = 240;
             s.DefaultColor = "#FF1E88E5";
@@ -162,6 +169,8 @@ public class SettingsPhase5Tests {
             s.CheckForUpdates = false;
             s.NotifyOnSaveOnly = false;
             s.HistoryWindow = new WindowPlacement { Left = -1200, Top = 40, Width = 900, Height = 700, Maximized = true };
+            s.ShowMagnifierKeyHints = false;
+            s.LastSelection = new PixelRect(-1500, 30, 640, 480);
             service.Save();
 
             SettingsService reloaded = new SettingsService(path);

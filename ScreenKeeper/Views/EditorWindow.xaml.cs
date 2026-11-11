@@ -57,6 +57,9 @@ public partial class EditorWindow : Window, IEditorHost {
         this.mode = mode;
         this.startTimestamp = startTimestamp != 0 ? startTimestamp : Stopwatch.GetTimestamp();
         viewModel = new EditorViewModel(doc, original, this);
+        // Vollbild wird genau dann gewählt, wenn die Monitor-Anordnung der Aufnahme der aktuellen entspricht – nur dann
+        // passen gemerkte Bildschirmkoordinaten („Letzten Bereich“)
+        viewModel.IsSameLayout = mode == EditorMode.Fullscreen;
         DataContext = viewModel;
 
         surface.Width = original.PixelWidth;
@@ -88,6 +91,7 @@ public partial class EditorWindow : Window, IEditorHost {
         viewModel.OverlayChanged += (s, e) => updateOverlay();
         viewModel.DocumentChanged += onDocumentChanged;
         viewModel.DuplicateRequested += onDuplicateRequested;
+        viewModel.CommentEditRequested += onCommentEditRequested;
         attachInput();
         attachTextEditor();
     }
@@ -262,11 +266,28 @@ public partial class EditorWindow : Window, IEditorHost {
         }
     }
 
+    /// <summary>
+    /// Kommentar-Dialog über dem Editor (im Vollbild auf dem Monitor der Werkzeugleiste); Übernehmen ist ein
+    /// Rückgängig-Schritt, gespeichert wird mit dem Dokument beim Schließen.
+    /// </summary>
+    private void onCommentEditRequested(object? sender, EventArgs e) {
+        if(warmUp || closed) return;
+        toolbar.ClosePopups();
+        Point? anchor = null;
+        if(toolbar.IsVisible && PresentationSource.FromVisual(toolbar) != null) {
+            anchor = toolbar.PointToScreen(new Point(toolbar.ActualWidth / 2, toolbar.ActualHeight / 2));
+        }
+        string? text = CommentDialog.Ask(this, viewModel.Comment, anchor);
+        if(closed) return;
+        if(text != null && viewModel.SetComment(text)) Log.Info($"Editor: Kommentar {(viewModel.HasComment ? "gesetzt" : "entfernt")}");
+        BringToFront();
+    }
+
     private void onClosing(object? sender, CancelEventArgs e) {
         if(warmUp) return;
         // übernimmt auch einen gerade bearbeiteten Text
         viewModel.CancelGesture();
-        storeToolOptions();
+        storeSettings();
         if(discarded) {
             // nichts speichern – sonst entstünden JSON und Vorschaubild neu; gelöscht wird nach dem Schließen
             Log.Info($"Bearbeitungsstand verworfen: {jsonPath}");
@@ -287,14 +308,27 @@ public partial class EditorWindow : Window, IEditorHost {
     }
 
     /// <summary>
-    /// Zuletzt verwendete Werkzeug-Optionen in den Einstellungen merken (nicht im Testmodus).
+    /// Beim Schließen in den Einstellungen merken (ein Speichervorgang für alles, nicht im Testmodus): zuletzt verwendete
+    /// Werkzeug-Optionen, den gewählten Bereich für „Letzten Bereich“ (nicht beim Verwerfen) und noch nicht gespeicherte
+    /// Lupen-Werte.
     /// </summary>
-    private void storeToolOptions() {
+    private void storeSettings() {
+        magnifierSaveTimer?.Stop();
+        bool magnifierChanged = magnifierSavePending;
+        magnifierSavePending = false;
         if(testMode) return;
         try {
-            if(viewModel.StoreOptions(AppServices.Settings.Settings)) AppServices.Settings.Save();
+            AppSettings settings = AppServices.Settings.Settings;
+            bool changed = viewModel.StoreOptions(settings) | magnifierChanged;
+            PixelRect? remember = viewModel.GetSelectionToRemember(discarded);
+            if(remember.HasValue && settings.LastSelection != remember) {
+                settings.LastSelection = remember;
+                changed = true;
+                Log.Info($"Letzter Bereich gemerkt: {remember.Value.Width}×{remember.Value.Height} bei {remember.Value.X},{remember.Value.Y} (Bildschirm)");
+            }
+            if(changed) AppServices.Settings.Save();
         } catch(Exception ex) {
-            Log.Error(ex, "Werkzeug-Optionen konnten nicht gespeichert werden");
+            Log.Error(ex, "Einstellungen des Editors konnten nicht gespeichert werden");
         }
     }
 
@@ -354,12 +388,6 @@ public partial class EditorWindow : Window, IEditorHost {
         viewModel.DevicePixelsPerImagePixel = transform.Zoom * deviceScale;
         if(mode == EditorMode.Windowed) Title = $"{Strings.EditorTitle} – {Math.Round(transform.Zoom * deviceScale * 100)} %";
         updateOverlay();
-    }
-
-    private void configureMagnifier() {
-        AppSettings settings = AppServices.Settings.Settings;
-        int zoom = Math.Clamp(settings.MagnifierZoom, AppSettings.MinMagnifierZoom, AppSettings.MaxMagnifierZoom);
-        magnifier.Configure(original, zoom, settings.MagnifierSize, deviceScale);
     }
 
     /// <summary>

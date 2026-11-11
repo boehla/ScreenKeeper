@@ -9,22 +9,29 @@ using ScreenKeeper.Services.Native;
 namespace ScreenKeeper.Views;
 
 /// <summary>
-/// Tray-Symbol (WinForms-NotifyIcon) mit WPF-Kontextmenü: Aufnahme, History öffnen, Einstellungen, Beenden – und nur
-/// bei einer neuen Version „Update auf x installieren“. Doppelklick öffnet die History.
+/// Tray-Symbol (WinForms-NotifyIcon) mit WPF-Kontextmenü: Aufnahme, Verzögerte Aufnahme, History öffnen, Einstellungen,
+/// Beenden – und nur bei einer neuen Version „Update auf x installieren“. Doppelklick öffnet die History; während der
+/// verzögerten Aufnahme zeigt der Tooltip den Countdown, ein Klick bricht ihn ab.
 /// </summary>
 public sealed class TrayIcon : IDisposable {
     private readonly System.Windows.Forms.NotifyIcon notifyIcon;
     private readonly System.Drawing.Icon icon;
     private readonly ContextMenu menu;
+    private MenuItem? captureItem;
+    private MenuItem? delayedItem;
+    private MenuItem? historyItem;
     private MenuItem? updateItem;
     private Separator? updateSeparator;
+    private AppSettings? hotkeySettings;
+    private bool updateAvailable;
+    private int? countdown;
 
     public TrayIcon() {
         icon = loadIcon();
         menu = buildMenu();
         notifyIcon = new System.Windows.Forms.NotifyIcon {
             Icon = icon,
-            Text = truncate(Strings.TrayTooltip, 127),
+            Text = truncate(Strings.TrayTitle, TrayText.MaxLength),
             Visible = true
         };
         notifyIcon.MouseUp += onMouseUp;
@@ -32,6 +39,12 @@ public sealed class TrayIcon : IDisposable {
     }
 
     public event EventHandler? CaptureRequested;
+
+    /// <summary>Menüeintrag „Verzögerte Aufnahme“.</summary>
+    public event EventHandler? DelayedCaptureRequested;
+
+    /// <summary>Klick (links oder rechts) auf das Symbol – bricht einen laufenden Countdown ab.</summary>
+    public event EventHandler? Clicked;
 
     public event EventHandler? HistoryRequested;
 
@@ -51,7 +64,26 @@ public sealed class TrayIcon : IDisposable {
             updateItem.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
         }
         if(updateSeparator != null) updateSeparator.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
-        notifyIcon.Text = truncate(visible ? Strings.TrayTooltip + Strings.TrayUpdateSuffix : Strings.TrayTooltip, 127);
+        updateAvailable = visible;
+        updateText();
+    }
+
+    /// <summary>
+    /// Eingestellte Hotkeys im Tooltip (eine Zeile je Hotkey) und rechts in den Menüeinträgen anzeigen; nach jeder
+    /// Änderung der Einstellungen erneut aufrufen.
+    /// </summary>
+    public void SetHotkeys(AppSettings settings) {
+        hotkeySettings = settings;
+        if(captureItem != null) captureItem.InputGestureText = TrayText.GetGesture(settings.HotkeyCaptureEdit);
+        if(delayedItem != null) delayedItem.InputGestureText = TrayText.GetGesture(settings.HotkeyCaptureDelayed);
+        if(historyItem != null) historyItem.InputGestureText = TrayText.GetGesture(settings.HotkeyHistory);
+        updateText();
+    }
+
+    /// <summary>Countdown der verzögerten Aufnahme im Tooltip anzeigen; null = normaler Tooltip.</summary>
+    public void SetCountdown(int? seconds) {
+        countdown = seconds;
+        updateText();
     }
 
     /// <summary>Kurze Benachrichtigung am Tray-Symbol.</summary>
@@ -71,8 +103,12 @@ public sealed class TrayIcon : IDisposable {
 
     private ContextMenu buildMenu() {
         ContextMenu contextMenu = new ContextMenu();
-        contextMenu.Items.Add(createItem(Strings.MenuCapture, () => CaptureRequested?.Invoke(this, EventArgs.Empty), true));
-        contextMenu.Items.Add(createItem(Strings.MenuHistory, () => HistoryRequested?.Invoke(this, EventArgs.Empty), false));
+        captureItem = createItem(Strings.MenuCapture, () => CaptureRequested?.Invoke(this, EventArgs.Empty), true);
+        delayedItem = createItem(Strings.MenuCaptureDelayed, () => DelayedCaptureRequested?.Invoke(this, EventArgs.Empty), false);
+        historyItem = createItem(Strings.MenuHistory, () => HistoryRequested?.Invoke(this, EventArgs.Empty), false);
+        contextMenu.Items.Add(captureItem);
+        contextMenu.Items.Add(delayedItem);
+        contextMenu.Items.Add(historyItem);
         contextMenu.Items.Add(createItem(Strings.MenuSettings, () => SettingsRequested?.Invoke(this, EventArgs.Empty), false));
         updateSeparator = new Separator { Visibility = Visibility.Collapsed };
         contextMenu.Items.Add(updateSeparator);
@@ -93,7 +129,14 @@ public sealed class TrayIcon : IDisposable {
         return item;
     }
 
+    private void updateText() {
+        string tooltip = hotkeySettings != null ? TrayText.BuildTooltip(hotkeySettings, updateAvailable) : Strings.TrayTitle + (updateAvailable ? Strings.TrayUpdateSuffix : "");
+        string text = countdown.HasValue ? Strings.Format(Strings.TrayCountdown, countdown.Value) : tooltip;
+        notifyIcon.Text = truncate(text, TrayText.MaxLength);
+    }
+
     private void onMouseUp(object? sender, System.Windows.Forms.MouseEventArgs e) {
+        if(e.Button == System.Windows.Forms.MouseButtons.Left || e.Button == System.Windows.Forms.MouseButtons.Right) Clicked?.Invoke(this, EventArgs.Empty);
         if(e.Button != System.Windows.Forms.MouseButtons.Right) return;
         menu.IsOpen = true;
     }

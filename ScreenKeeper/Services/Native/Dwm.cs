@@ -14,4 +14,8 @@ public static class Dwm {
 
     [DllImport("dwmapi.dll")]
     public static extern int DwmGetWindowAttribute(IntPtr hwnd, int dwAttribute, out int pvAttribute, int cbAttribute);
+
+    /// <summary>Wartet, bis die Desktop-Komposition das nächste Bild ausgegeben hat.</summary>
+    [DllImport("dwmapi.dll")]
+    public static extern int DwmFlush();
 }

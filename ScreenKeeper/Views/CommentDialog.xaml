@@ -1,0 +1,30 @@
+﻿<Window x:Class="ScreenKeeper.Views.CommentDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:ScreenKeeper.Resources"
+        Title="{loc:Str CommentDialogTitle}"
+        Width="480" Height="300" MinWidth="320" MinHeight="200"
+        WindowStyle="ToolWindow"
+        ResizeMode="CanResizeWithGrip"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        UseLayoutRounding="True">
+    <DockPanel Margin="12">
+        <TextBlock DockPanel.Dock="Top" Margin="0,0,0,6" TextWrapping="Wrap" Text="{loc:Str CommentDialogLabel}" />
+        <DockPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button x:Name="applyButton" MinWidth="90" Padding="10,3" Margin="0,0,8,0" Content="{loc:Str CommentDialogApply}" ToolTip="Strg+Enter" Click="onApplyClick" />
+                <Button MinWidth="90" Padding="10,3" IsCancel="True" Content="{loc:Str CommentDialogCancel}" ToolTip="Esc" />
+            </StackPanel>
+            <TextBlock VerticalAlignment="Center" Margin="0,0,12,0" Foreground="Gray" TextWrapping="Wrap" Text="{loc:Str CommentDialogHint}" />
+        </DockPanel>
+        <TextBox x:Name="commentBox"
+                 AcceptsReturn="True"
+                 AcceptsTab="False"
+                 TextWrapping="Wrap"
+                 VerticalScrollBarVisibility="Auto"
+                 HorizontalScrollBarVisibility="Disabled"
+                 SpellCheck.IsEnabled="False"
+                 Padding="2" />
+    </DockPanel>
+</Window>

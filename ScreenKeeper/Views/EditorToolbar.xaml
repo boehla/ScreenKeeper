@@ -208,6 +208,10 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
+            <!-- Letzten Bereich übernehmen (Bereichsecken mit Rückwärtspfeil); ausgegraut mit Grund im Tooltip -->
+            <Button Style="{StaticResource ToolbarButton}" Command="{Binding ApplyLastSelectionCommand}" ToolTip="{Binding LastSelectionToolTip}">
+                <Path Style="{StaticResource Icon}" Data="M3,7 V3 H7 M13,3 H17 V7 M17,13 V17 H13 M7,17 H3 V13 M7.5,8 A3.5,3.5 0 1 1 6.5,11 M7.5,8 V5.5 M7.5,8 H10" />
+            </Button>
 
             <!-- Abschnitt „options“: nur die zum Werkzeug bzw. ausgewählten Objekt passenden Optionen -->
             <StackPanel x:Name="options" Orientation="Horizontal">
@@ -402,12 +406,18 @@
                 <Path Style="{StaticResource ClosingIcon}" Data="M2,3 H18 V13 H2 Z M10,13 V16 M6,17 H14" />
             </Button>
             <Rectangle Style="{StaticResource Separator}" />
-            <!-- Aufnahme: Kopie anlegen, permanent -->
+            <!-- Aufnahme: Kopie anlegen, permanent, Kommentar (blau hinterlegt, wenn vorhanden; Tooltip zeigt ihn) -->
             <Button Style="{StaticResource ToolbarButton}" Command="{Binding DuplicateCommand}" ToolTip="{loc:Str ToolbarDuplicate}">
                 <Path Style="{StaticResource Icon}" Data="M6,6 H17 V17 H6 Z M3,13 V3 H13 M11.5,9 V14 M9,11.5 H14" />
             </Button>
             <Button Style="{StaticResource ToolbarButton}" Command="{Binding TogglePermanentCommand}" ToolTip="{loc:Str ToolbarPermanent}">
                 <Path Style="{StaticResource PermanentStarIcon}" Data="M10,2.5 L12.3,7.3 L17.5,7.9 L13.6,11.5 L14.7,16.7 L10,14.1 L5.3,16.7 L6.4,11.5 L2.5,7.9 L7.7,7.3 Z" />
+            </Button>
+            <Button Style="{StaticResource StateButton}" Tag="{Binding HasComment}" Command="{Binding EditCommentCommand}">
+                <Button.ToolTip>
+                    <TextBlock Text="{Binding CommentToolTip}" TextWrapping="Wrap" MaxWidth="420" />
+                </Button.ToolTip>
+                <Path Style="{StaticResource Icon}" Data="M3,3.5 H17 V13.5 H9 L5,17 V13.5 H3 Z M6,7 H14 M6,10 H11.5" />
             </Button>
             <Rectangle Style="{StaticResource Separator}" />
             <Button Style="{StaticResource ToolbarButton}" Command="{Binding UndoCommand}" ToolTip="{loc:Str ToolbarUndo}">

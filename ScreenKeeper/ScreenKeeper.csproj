@@ -11,7 +11,7 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace>ScreenKeeper</RootNamespace>
     <AssemblyName>ScreenKeeper</AssemblyName>
-    <Version>0.8.0</Version>
+    <Version>0.9.0</Version>
     <Product>ScreenKeeper</Product>
     <Description>Screenshot-Tool mit unveränderlichem Original und nachträglich änderbarer Bearbeitung</Description>
     <NeutralLanguage>de</NeutralLanguage>
@@ -32,6 +32,8 @@
 
   <ItemGroup>
     <Resource Include="ScreenKeeper.ico" />
+    <!-- Inhalt der AGENTS.md im Ablageordner (Services\AgentsFile.cs) -->
+    <EmbeddedResource Include="Resources\AGENTS.template.md" LogicalName="ScreenKeeper.AGENTS.template.md" />
   </ItemGroup>
 
 </Project>

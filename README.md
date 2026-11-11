@@ -9,15 +9,23 @@ Backup. Bereich, Zeichnungen und virtuelle Maus liegen getrennt davon in einer J
 ## Funktionen
 
 - **Hotkeys** (frei konfigurierbar): Druck = Aufnahme + Editor, Strg+Druck = nur speichern, Shift+Druck = History.
-  Fällt `RegisterHotKey` aus (z. B. weil Greenshot läuft), greift ein Tastatur-Hook.
+  Fällt `RegisterHotKey` aus (z. B. weil Greenshot läuft), greift ein Tastatur-Hook. Die Hotkeys funktionieren auch,
+  während ein Remotedesktop-Fenster (auch im Vollbild) aktiv ist; optional reicht ein eigener Hotkey Druck an die
+  Sitzung durch.
+- **Verzögerte Aufnahme** (eigener Hotkey, Tray-Menü): Countdown mit kleinem Overlay, um aufgeklappte Menüs, Tooltips
+  und Hover-Zustände aufzunehmen; Esc bricht ab.
 - **Vollbild-Editor** 1:1 über alle Monitore: Bereich aufziehen, 8 Anfasser, Lupe mit Pixelraster, Fadenkreuz,
-  Koordinaten und Farbwert, Pfeiltasten bewegen um genau 1 Pixel (Shift: 10).
+  Koordinaten und Farbwert (Zoom per Mausrad, Größe per +/- direkt im Editor), Pfeiltasten bewegen um genau 1 Pixel
+  (Shift: 10); **„Letzten Bereich“** (Strg+L) setzt den zuletzt gewählten Bereich an derselben Bildschirmstelle.
 - **Zeichenwerkzeuge** als nachträglich änderbare Objekte: Rechteck, Ellipse, Linie, Pfeil, Freihand, Text, Textmarker,
   Verpixeln, Weichzeichnen, Nummern-Stempel, virtuelle Maus. Verpixeln und Weichzeichnen sind nicht destruktiv.
 - **Rückgängig / Wiederholen** für alles, auch für den Bereich.
+- **Kommentar** je Aufnahme: freier, mehrzeiliger Text über den Sprechblasen-Knopf im Editor oder in der History
+  (Taste K), in der History angezeigt und durchsuchbar.
 - **Ausgabe:** Bereich, aktueller Monitor oder ganzer Bildschirm in die Zwischenablage (Bitmap und PNG), als PNG speichern
   oder „Speichern unter“ als PNG/JPG.
-- **History:** alle Aufnahmen nach Tagen gruppiert, Datumsfilter, Nachladen beim Scrollen, Bearbeiten, erneut kopieren,
+- **History:** alle Aufnahmen nach Tagen gruppiert, Datumsfilter, Suche (Name, Programm, Fenstertitel, Kommentar),
+  Nachladen beim Scrollen, Bearbeiten, erneut kopieren,
   im Explorer anzeigen, Löschen in den Papierkorb. Aufnahmen bleiben auch bei geänderter Monitor-Anordnung bearbeitbar
   (Fenster-Modus mit Zoom).
 - **Einstellungen:** Ablageordner, Dateinamen-Muster, Exportordner, Hotkeys mit Konfliktprüfung, Lupe, Standardfarben,
@@ -73,7 +81,8 @@ dotnet test ScreenKeeper.Tests\ScreenKeeper.Tests.csproj
 ## Datenformat
 
 Neben jedem Original-PNG liegt eine JSON-Datei mit Monitoren, Fenstern, Mauszeiger, Bereich und Zeichnungen, alle
-Koordinaten in Bildpixeln. Details in [SPEC.md](SPEC.md), Abschnitt 4.
+Koordinaten in Bildpixeln. Details in [SPEC.md](SPEC.md), Abschnitt 4. Zusätzlich liegt im Ablageordner eine
+automatisch gepflegte `AGENTS.md`, die das Format für KI-Agenten und Skripte beschreibt.
 
 ## Releases
 

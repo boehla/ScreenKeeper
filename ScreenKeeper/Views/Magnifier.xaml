@@ -19,6 +19,8 @@
                 <Border x:Name="colorSwatch" Width="10" Height="10" Margin="0,0,6,0" BorderBrush="#FFE0E0E0" BorderThickness="1" VerticalAlignment="Center" />
                 <TextBlock x:Name="infoText" Foreground="White" FontFamily="Consolas" FontSize="12" VerticalAlignment="Center" />
             </StackPanel>
+            <!-- Tastenhilfe: geltende Belegung und aktuelle Werte (abschaltbar in den Einstellungen) -->
+            <TextBlock x:Name="hintText" Foreground="#FFB0B0B0" FontFamily="Consolas" FontSize="10" Margin="6,-2,6,4" HorizontalAlignment="Center" Visibility="Collapsed" />
         </StackPanel>
     </Border>
 </UserControl>

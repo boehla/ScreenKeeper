@@ -1,0 +1,28 @@
+﻿<Window x:Class="ScreenKeeper.Views.CountdownOverlay"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:ScreenKeeper.Resources"
+        Title="{loc:Str CountdownTitle}"
+        Width="230" Height="72"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        Topmost="True"
+        Focusable="False"
+        IsHitTestVisible="False"
+        UseLayoutRounding="True">
+    <!-- Dezent, klick-durchlässig, nimmt nie den Fokus und erscheint in keiner Aufnahme (siehe Code) -->
+    <Border CornerRadius="8" Background="#D8202020" BorderBrush="#40FFFFFF" BorderThickness="1" Padding="14,6">
+        <DockPanel LastChildFill="True">
+            <TextBlock x:Name="secondsText" DockPanel.Dock="Right" Margin="12,0,0,0" VerticalAlignment="Center"
+                       FontSize="30" FontWeight="SemiBold" Foreground="White" Text="3 s" />
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock FontSize="14" Foreground="White" Text="{loc:Str CountdownTitle}" />
+                <TextBlock Margin="0,2,0,0" FontSize="12" Foreground="#FFBDBDBD" Text="{loc:Str CountdownHint}" />
+            </StackPanel>
+        </DockPanel>
+    </Border>
+</Window>

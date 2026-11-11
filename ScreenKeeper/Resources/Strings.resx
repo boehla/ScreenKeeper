@@ -41,8 +41,20 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="TrayTooltip" xml:space="preserve">
-    <value>ScreenKeeper – Druck: Aufnahme</value>
+  <data name="TrayTitle" xml:space="preserve">
+    <value>ScreenKeeper</value>
+  </data>
+  <data name="TrayHotkeyCapture" xml:space="preserve">
+    <value>Aufnahme</value>
+  </data>
+  <data name="TrayHotkeySave" xml:space="preserve">
+    <value>nur speichern</value>
+  </data>
+  <data name="TrayHotkeyDelayed" xml:space="preserve">
+    <value>verzögerte Aufnahme</value>
+  </data>
+  <data name="TrayHotkeyHistory" xml:space="preserve">
+    <value>History</value>
   </data>
   <data name="MenuCapture" xml:space="preserve">
     <value>Aufnahme</value>
@@ -396,7 +408,7 @@ Ordner: {2}</value>
     <value>Alle</value>
   </data>
   <data name="HistorySearchPlaceholder" xml:space="preserve">
-    <value>Suche: Name, Programm, Fenstertitel</value>
+    <value>Suche: Name, Programm, Titel, Kommentar</value>
   </data>
   <data name="HistoryStatusLoading" xml:space="preserve">
     <value>Aufnahmen werden geladen …</value>
@@ -769,5 +781,149 @@ Trotzdem speichern?</value>
   </data>
   <data name="HistoryDiscarded" xml:space="preserve">
     <value>Aufnahme {0} im Editor verworfen und in den Papierkorb verschoben.</value>
+  </data>
+  <data name="UndoComment" xml:space="preserve">
+    <value>Kommentar ändern</value>
+  </data>
+  <data name="ToolbarComment" xml:space="preserve">
+    <value>Kommentar hinzufügen (freier Text, in der History durchsuchbar)</value>
+  </data>
+  <data name="ToolbarCommentExisting" xml:space="preserve">
+    <value>Kommentar bearbeiten:
+{0}</value>
+  </data>
+  <data name="CommentDialogTitle" xml:space="preserve">
+    <value>Kommentar</value>
+  </data>
+  <data name="CommentDialogLabel" xml:space="preserve">
+    <value>Freier Text zur Aufnahme – wird mit ihr gespeichert und in der History durchsucht.</value>
+  </data>
+  <data name="CommentDialogHint" xml:space="preserve">
+    <value>Strg+Enter übernimmt, Esc bricht ab. Leerer Text entfernt den Kommentar.</value>
+  </data>
+  <data name="CommentDialogApply" xml:space="preserve">
+    <value>Übernehmen</value>
+  </data>
+  <data name="CommentDialogCancel" xml:space="preserve">
+    <value>Abbrechen</value>
+  </data>
+  <data name="HistoryEditComment" xml:space="preserve">
+    <value>Kommentar bearbeiten …</value>
+  </data>
+  <data name="HistoryEditCommentTooltip" xml:space="preserve">
+    <value>Kommentar der Aufnahme bearbeiten (K)</value>
+  </data>
+  <data name="HistoryCommentTooltip" xml:space="preserve">
+    <value>Kommentar:
+{0}</value>
+  </data>
+  <data name="HistoryCommentSaved" xml:space="preserve">
+    <value>Kommentar von {0} gespeichert.</value>
+  </data>
+  <data name="HistoryCommentRemoved" xml:space="preserve">
+    <value>Kommentar von {0} entfernt.</value>
+  </data>
+  <data name="HistoryCommentFailed" xml:space="preserve">
+    <value>Der Kommentar konnte nicht gespeichert werden: {0}</value>
+  </data>
+  <data name="MenuCaptureDelayed" xml:space="preserve">
+    <value>Verzögerte Aufnahme</value>
+  </data>
+  <data name="TrayCountdown" xml:space="preserve">
+    <value>ScreenKeeper – Aufnahme in {0} s (Klick bricht ab)</value>
+  </data>
+  <data name="SettingsHotkeyCaptureDelayed" xml:space="preserve">
+    <value>Verzögerte Aufnahme</value>
+  </data>
+  <data name="SettingsHotkeyRemotePrintScreen" xml:space="preserve">
+    <value>Druck an Remotesitzung durchreichen</value>
+  </data>
+  <data name="SettingsHotkeyStatusRemoteOnly" xml:space="preserve">
+    <value>nur im Remotedesktop</value>
+  </data>
+  <data name="SettingsRemoteSessions" xml:space="preserve">
+    <value>Hotkeys auch in Remotedesktop-Sitzungen abfangen</value>
+  </data>
+  <data name="SettingsRemoteSessionsTooltip" xml:space="preserve">
+    <value>Ein aktives Remotedesktop-Fenster (z. B. im Vollbild) fängt sonst alle Tasten ab, die ScreenKeeper-Hotkeys kommen dann nicht an.
+Mit dieser Einstellung setzt ScreenKeeper seinen Tastatur-Hook beim Aktivieren des Fensters neu und fängt genau die eingestellten Kombinationen ab; alle anderen Tasten (Win, Alt+Tab …) gehen unverändert an die Sitzung.</value>
+  </data>
+  <data name="SettingsRemotePrintScreenHelp" xml:space="preserve">
+    <value>„Druck an Remotesitzung durchreichen“ schickt im Remotedesktop stattdessen ein einfaches Druck an die Sitzung (z. B. für ein Screenshot-Programm dort). Wirkt nur, solange ein Remotedesktop-Fenster vorne ist und die Erfassung oben eingeschaltet ist.</value>
+  </data>
+  <data name="SettingsDelayedCapture" xml:space="preserve">
+    <value>Verzögerte Aufnahme</value>
+  </data>
+  <data name="SettingsDelayedHelp" xml:space="preserve">
+    <value>Für aufgeklappte Menüs, Tooltips und Hover-Zustände: Hotkey drücken, Menü öffnen – nach Ablauf wird aufgenommen. Esc oder ein Klick aufs Tray-Symbol bricht ab, der Hotkey erneut löst sofort aus.</value>
+  </data>
+  <data name="SettingsDelaySecondsPrefix" xml:space="preserve">
+    <value>Verzögerung:</value>
+  </data>
+  <data name="SettingsDelaySecondsUnit" xml:space="preserve">
+    <value>Sekunden</value>
+  </data>
+  <data name="SettingsDelaySecondsInvalid" xml:space="preserve">
+    <value>Bitte eine ganze Zahl von {0} bis {1} eingeben.</value>
+  </data>
+  <data name="SettingsDelayAsk" xml:space="preserve">
+    <value>Jedes Mal nach der Verzögerung fragen</value>
+  </data>
+  <data name="SettingsDelayAction" xml:space="preserve">
+    <value>Danach:</value>
+  </data>
+  <data name="DelayedActionEdit" xml:space="preserve">
+    <value>Aufnahme + Editor</value>
+  </data>
+  <data name="DelayedActionSave" xml:space="preserve">
+    <value>Aufnahme nur speichern</value>
+  </data>
+  <data name="DelayDialogTitle" xml:space="preserve">
+    <value>Verzögerte Aufnahme</value>
+  </data>
+  <data name="DelayDialogLabel" xml:space="preserve">
+    <value>Aufnahme in … Sekunden:</value>
+  </data>
+  <data name="DelayDialogStart" xml:space="preserve">
+    <value>Starten</value>
+  </data>
+  <data name="DelayDialogCancel" xml:space="preserve">
+    <value>Abbrechen</value>
+  </data>
+  <data name="DelayDialogHint" xml:space="preserve">
+    <value>Enter oder der Hotkey startet, Esc bricht ab. Danach ist das vorherige Fenster wieder vorne.</value>
+  </data>
+  <data name="DelayDialogQuick" xml:space="preserve">
+    <value>{0} s</value>
+  </data>
+  <data name="CountdownTitle" xml:space="preserve">
+    <value>Aufnahme in</value>
+  </data>
+  <data name="CountdownHint" xml:space="preserve">
+    <value>Esc = abbrechen</value>
+  </data>
+  <data name="ToolbarLastSelection" xml:space="preserve">
+    <value>Letzten Bereich übernehmen: den zuletzt gewählten Bereich an derselben Bildschirmstelle setzen (Strg+L)</value>
+  </data>
+  <data name="ToolbarLastSelectionNone" xml:space="preserve">
+    <value>Letzten Bereich übernehmen (Strg+L) – noch kein Bereich gemerkt</value>
+  </data>
+  <data name="ToolbarLastSelectionOtherLayout" xml:space="preserve">
+    <value>Letzten Bereich übernehmen (Strg+L) – nicht möglich: Die Aufnahme hat eine andere Monitor-Anordnung als jetzt</value>
+  </data>
+  <data name="ToolbarLastSelectionOutside" xml:space="preserve">
+    <value>Letzten Bereich übernehmen (Strg+L) – nicht möglich: Der gemerkte Bereich liegt außerhalb dieser Aufnahme</value>
+  </data>
+  <data name="MagnifierKeyHintsFullscreen" xml:space="preserve">
+    <value>Rad: Zoom {0}×   +/-: Größe {1} px</value>
+  </data>
+  <data name="MagnifierKeyHintsWindowed" xml:space="preserve">
+    <value>Alt+Rad: Zoom {0}×   +/-: Größe {1} px</value>
+  </data>
+  <data name="SettingsMagnifierKeyHints" xml:space="preserve">
+    <value>Tastenhilfe unter der Lupe anzeigen</value>
+  </data>
+  <data name="SettingsMagnifierKeyHintsTooltip" xml:space="preserve">
+    <value>Zoom und Größe der Lupe lassen sich auch direkt im Editor ändern: Mausrad (im Fenstermodus Alt+Mausrad) bzw. + und -</value>
   </data>
 </root>

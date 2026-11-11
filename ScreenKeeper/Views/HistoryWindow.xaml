@@ -90,6 +90,16 @@
                     <TextBlock Margin="0,2,0,0" Foreground="#FF555555" TextTrimming="CharacterEllipsis"
                                Text="{Binding ForegroundText}" ToolTip="{Binding ForegroundToolTip}"
                                Visibility="{Binding HasForeground, Converter={StaticResource BoolToVisibility}}" />
+                    <!-- Kommentar: einzeilig gekürzt, Tooltip mit dem ganzen Text -->
+                    <DockPanel Margin="0,3,0,0" Background="Transparent" Visibility="{Binding HasComment, Converter={StaticResource BoolToVisibility}}">
+                        <DockPanel.ToolTip>
+                            <TextBlock Text="{Binding CommentToolTip}" TextWrapping="Wrap" MaxWidth="480" />
+                        </DockPanel.ToolTip>
+                        <Path DockPanel.Dock="Left" Width="16" Height="16" Margin="0,1,5,0" VerticalAlignment="Top" Stretch="None"
+                              Stroke="#FF1E88E5" StrokeThickness="1.3" StrokeLineJoin="Round"
+                              Data="M2,2.5 H14 V10.5 H7.5 L4.5,13.5 V10.5 H2 Z M4.5,5.5 H11.5 M4.5,8 H9.5" />
+                        <TextBlock Foreground="#FF1E3A5F" FontStyle="Italic" TextTrimming="CharacterEllipsis" Text="{Binding CommentText}" />
+                    </DockPanel>
                     <StackPanel Margin="0,6,0,0" Orientation="Horizontal">
                         <Border Style="{StaticResource Badge}" Background="#FFF9A825" Visibility="{Binding IsPermanent, Converter={StaticResource BoolToVisibility}}">
                             <TextBlock Foreground="White" Text="{loc:Str HistoryBadgePermanent}" />
@@ -133,6 +143,7 @@
             <MenuItem Header="{loc:Str HistoryCopy}" Command="{Binding CopyCommand}" InputGestureText="Strg+C" />
             <MenuItem Header="{loc:Str HistoryDuplicate}" Command="{Binding DuplicateCommand}" InputGestureText="Strg+D" />
             <MenuItem Header="{loc:Str HistoryPermanent}" Command="{Binding TogglePermanentCommand}" InputGestureText="P" />
+            <MenuItem Header="{loc:Str HistoryEditComment}" Command="{Binding EditCommentCommand}" InputGestureText="K" />
             <MenuItem Header="{loc:Str HistoryShowInExplorer}" Command="{Binding ShowInExplorerCommand}" />
             <Separator />
             <MenuItem Header="{loc:Str HistoryDelete}" Command="{Binding DeleteCommand}" InputGestureText="Entf" />
@@ -159,6 +170,7 @@
                     <Button Style="{StaticResource ToolButton}" Content="{loc:Str HistoryCopy}" Command="{Binding CopyCommand}" ToolTip="{loc:Str HistoryCopyTooltip}" />
                     <Button Style="{StaticResource ToolButton}" Content="{loc:Str HistoryDuplicate}" Command="{Binding DuplicateCommand}" ToolTip="{loc:Str HistoryDuplicateTooltip}" />
                     <Button Style="{StaticResource ToolButton}" Content="{loc:Str HistoryPermanent}" Command="{Binding TogglePermanentCommand}" ToolTip="{loc:Str HistoryPermanentTooltip}" />
+                    <Button Style="{StaticResource ToolButton}" Content="{loc:Str HistoryEditComment}" Command="{Binding EditCommentCommand}" ToolTip="{loc:Str HistoryEditCommentTooltip}" />
                     <Button Style="{StaticResource ToolButton}" Content="{loc:Str HistoryShowInExplorer}" Command="{Binding ShowInExplorerCommand}" />
                     <Button Style="{StaticResource ToolButton}" Content="{loc:Str HistoryDelete}" Command="{Binding DeleteCommand}" ToolTip="{loc:Str HistoryDeleteTooltip}" />
                 </WrapPanel>
@@ -177,7 +189,7 @@
                 <Button Style="{StaticResource QuickButton}" Margin="0,2,4,2" Content="{loc:Str HistoryQuick30Days}" Command="{Binding QuickRangeCommand}" CommandParameter="Last30Days" />
                 <Button Style="{StaticResource QuickButton}" Margin="0,2,4,2" Content="{loc:Str HistoryQuickAll}" Command="{Binding QuickRangeCommand}" CommandParameter="All" />
                 <ToggleButton Margin="0,2,14,2" Padding="10,4" Content="{loc:Str HistoryFilterPermanent}" IsChecked="{Binding FilterPermanent}" ToolTip="{loc:Str HistoryFilterPermanentTooltip}" />
-                <Grid Width="200" Margin="0,2">
+                <Grid Width="250" Margin="0,2">
                     <TextBox x:Name="searchBox" VerticalContentAlignment="Center" Padding="4,2" Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged, Delay=300}" />
                     <TextBlock Margin="8,0" VerticalAlignment="Center" Foreground="Gray" IsHitTestVisible="False" Text="{loc:Str HistorySearchPlaceholder}">
                         <TextBlock.Style>
@@ -236,6 +248,7 @@
                     <KeyBinding Key="C" Modifiers="Control" Command="{Binding CopyCommand}" />
                     <KeyBinding Key="D" Modifiers="Control" Command="{Binding DuplicateCommand}" />
                     <KeyBinding Key="P" Command="{Binding TogglePermanentCommand}" />
+                    <KeyBinding Key="K" Command="{Binding EditCommentCommand}" />
                     <KeyBinding Key="Delete" Command="{Binding DeleteCommand}" />
                 </ListBox.InputBindings>
             </ListBox>

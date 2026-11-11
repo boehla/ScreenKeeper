@@ -1,0 +1,27 @@
+﻿<Window x:Class="ScreenKeeper.Views.DelayDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:ScreenKeeper.Resources"
+        Title="{loc:Str DelayDialogTitle}"
+        SizeToContent="WidthAndHeight"
+        ResizeMode="NoResize"
+        WindowStyle="ToolWindow"
+        ShowInTaskbar="False"
+        Topmost="True"
+        WindowStartupLocation="CenterScreen"
+        UseLayoutRounding="True">
+    <StackPanel Margin="14" MaxWidth="340">
+        <TextBlock Margin="0,0,0,6" Text="{loc:Str DelayDialogLabel}" />
+        <StackPanel Orientation="Horizontal">
+            <TextBox x:Name="secondsBox" Width="60" Padding="3,2" VerticalContentAlignment="Center" />
+            <Button x:Name="quick2" Margin="12,0,0,0" Padding="10,2" Tag="2" Click="onQuickClick" />
+            <Button x:Name="quick5" Margin="6,0,0,0" Padding="10,2" Tag="5" Click="onQuickClick" />
+            <Button x:Name="quick10" Margin="6,0,0,0" Padding="10,2" Tag="10" Click="onQuickClick" />
+        </StackPanel>
+        <TextBlock Margin="0,8,0,0" Foreground="Gray" TextWrapping="Wrap" Text="{loc:Str DelayDialogHint}" />
+        <StackPanel Margin="0,12,0,0" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button MinWidth="90" Padding="10,3" IsDefault="True" Content="{loc:Str DelayDialogStart}" Click="onStartClick" />
+            <Button MinWidth="90" Margin="8,0,0,0" Padding="10,3" Content="{loc:Str DelayDialogCancel}" ToolTip="Esc" Click="onCancelClick" />
+        </StackPanel>
+    </StackPanel>
+</Window>

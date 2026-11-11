@@ -48,8 +48,17 @@ public sealed class SettingsViewModel : ViewModelBase {
     private string hotkeyCaptureEdit = "";
     private string hotkeyCaptureSave = "";
     private string hotkeyHistory = "";
+    private string hotkeyCaptureDelayed = "";
+    private string hotkeyRemotePrintScreen = "";
+    private bool captureHotkeysInRemoteSessions;
+    private string captureDelaySecondsText = "";
+    private bool captureDelayAskEachTime;
+    private string delayedCaptureAction = "";
     private int magnifierZoom;
     private int magnifierSize;
+    private int loadedMagnifierZoom;
+    private int loadedMagnifierSize;
+    private bool showMagnifierKeyHints;
     private string defaultColor = "";
     private string highlightColor = "";
     private double defaultThickness;
@@ -73,6 +82,7 @@ public sealed class SettingsViewModel : ViewModelBase {
         this.isSnippingEnabled = isSnippingEnabled;
         this.clock = clock ?? (() => DateTime.Now);
         load(settings.Settings);
+        settings.Changed += onSettingsChanged;
 
         Palette = buildPalette(defaultColor);
         HighlightPalette = buildPalette(highlightColor);
@@ -87,6 +97,11 @@ public sealed class SettingsViewModel : ViewModelBase {
             new NamedValue(CursorKinds.Arrow, Strings.CursorKindArrow),
             new NamedValue(CursorKinds.Hand, Strings.CursorKindHand),
             new NamedValue(CursorKinds.IBeam, Strings.CursorKindIBeam)
+        };
+
+        DelayedCaptureActionChoices = new[] {
+            new NamedValue(DelayedCaptureActions.Edit, Strings.DelayedActionEdit),
+            new NamedValue(DelayedCaptureActions.Save, Strings.DelayedActionSave)
         };
 
         OkCommand = new RelayCommand(() => {
@@ -151,6 +166,8 @@ public sealed class SettingsViewModel : ViewModelBase {
     public IReadOnlyList<double> StampSizes { get; }
 
     public IReadOnlyList<NamedValue> CursorKindChoices { get; }
+
+    public IReadOnlyList<NamedValue> DelayedCaptureActionChoices { get; }
 
     public string SettingsFilePath => settings.FilePath;
 
@@ -274,11 +291,54 @@ public sealed class SettingsViewModel : ViewModelBase {
         set => SetHotkey(HotkeyAction.ShowHistory, value);
     }
 
+    public string HotkeyCaptureDelayed {
+        get => hotkeyCaptureDelayed;
+        set => SetHotkey(HotkeyAction.CaptureDelayed, value);
+    }
+
+    /// <summary>Im Remotedesktop ein reines Druck an die Sitzung durchreichen (leer = aus).</summary>
+    public string HotkeyRemotePrintScreen {
+        get => hotkeyRemotePrintScreen;
+        set => SetHotkey(HotkeyAction.RemotePrintScreen, value);
+    }
+
+    /// <summary>Hotkeys auch bei aktivem Remotedesktop-Fenster abfangen.</summary>
+    public bool CaptureHotkeysInRemoteSessions {
+        get => captureHotkeysInRemoteSessions;
+        set => SetProperty(ref captureHotkeysInRemoteSessions, value);
+    }
+
+    public string CaptureDelaySecondsText {
+        get => captureDelaySecondsText;
+        set {
+            if(!SetProperty(ref captureDelaySecondsText, value ?? "")) return;
+            OnPropertyChanged(nameof(CaptureDelaySecondsError));
+            OnPropertyChanged(nameof(HasErrors));
+        }
+    }
+
+    public string? CaptureDelaySecondsError => TryParseDelaySeconds(captureDelaySecondsText, out _) ? null : Strings.Format(Strings.SettingsDelaySecondsInvalid, AppSettings.MinCaptureDelaySeconds, AppSettings.MaxCaptureDelaySeconds);
+
+    public bool CaptureDelayAskEachTime {
+        get => captureDelayAskEachTime;
+        set => SetProperty(ref captureDelayAskEachTime, value);
+    }
+
+    /// <summary>Nach dem Countdown: <see cref="DelayedCaptureActions.Edit"/> oder <see cref="DelayedCaptureActions.Save"/>.</summary>
+    public string DelayedCaptureAction {
+        get => delayedCaptureAction;
+        set => SetProperty(ref delayedCaptureAction, value ?? DelayedCaptureActions.Edit);
+    }
+
     public string HotkeyCaptureEditStatus => getStatusText(HotkeyAction.CaptureEdit);
 
     public string HotkeyCaptureSaveStatus => getStatusText(HotkeyAction.CaptureSave);
 
     public string HotkeyHistoryStatus => getStatusText(HotkeyAction.ShowHistory);
+
+    public string HotkeyCaptureDelayedStatus => getStatusText(HotkeyAction.CaptureDelayed);
+
+    public string HotkeyRemotePrintScreenStatus => getStatusText(HotkeyAction.RemotePrintScreen);
 
     /// <summary>„Status Druck-Taste: über RegisterHotKey / über Tastatur-Hook / nicht verfügbar“.</summary>
     public string PrintScreenStatus => Strings.Format(Strings.SettingsPrintStatus, getPrintScreenState());
@@ -307,6 +367,36 @@ public sealed class SettingsViewModel : ViewModelBase {
     public int MagnifierSize {
         get => magnifierSize;
         set => SetProperty(ref magnifierSize, Math.Clamp(value, AppSettings.MinMagnifierSize, AppSettings.MaxMagnifierSize));
+    }
+
+    /// <summary>Unter der Lupe die Tastenhilfe (Rad: Zoom, +/-: Größe) anzeigen.</summary>
+    public bool ShowMagnifierKeyHints {
+        get => showMagnifierKeyHints;
+        set => SetProperty(ref showMagnifierKeyHints, value);
+    }
+
+    /// <summary>
+    /// Vom Fenster beim Schließen: nicht mehr auf Änderungen der Einstellungen hören.
+    /// </summary>
+    public void Detach() {
+        settings.Changed -= onSettingsChanged;
+    }
+
+    /// <summary>
+    /// Die Einstellungen wurden gespeichert (auch von außen, z. B. vom Editor nach dem Verstellen der Lupe): Lupen-Zoom und
+    /// -Größe nachziehen, wenn sie sich seit dem Laden geändert haben – sonst schriebe „Übernehmen“ die alten Werte zurück.
+    /// Ungespeicherte Änderungen des Benutzers an den Schiebereglern bleiben, solange die Datei denselben Wert hat.
+    /// </summary>
+    private void onSettingsChanged(object? sender, EventArgs e) {
+        AppSettings source = settings.Settings;
+        if(source.MagnifierZoom != loadedMagnifierZoom) {
+            loadedMagnifierZoom = source.MagnifierZoom;
+            MagnifierZoom = source.MagnifierZoom;
+        }
+        if(source.MagnifierSize != loadedMagnifierSize) {
+            loadedMagnifierSize = source.MagnifierSize;
+            MagnifierSize = source.MagnifierSize;
+        }
     }
 
     public string DefaultColor {
@@ -376,13 +466,15 @@ public sealed class SettingsViewModel : ViewModelBase {
         private set => SetProperty(ref savedMessage, value);
     }
 
-    public bool HasErrors => StorageFolderError != null || ExportFolderError != null || FileNamePatternError != null || RetentionError != null;
+    public bool HasErrors => StorageFolderError != null || ExportFolderError != null || FileNamePatternError != null || RetentionError != null || CaptureDelaySecondsError != null;
 
     public string GetHotkey(HotkeyAction action) {
         switch(action) {
             case HotkeyAction.CaptureEdit: return hotkeyCaptureEdit;
             case HotkeyAction.CaptureSave: return hotkeyCaptureSave;
             case HotkeyAction.ShowHistory: return hotkeyHistory;
+            case HotkeyAction.CaptureDelayed: return hotkeyCaptureDelayed;
+            case HotkeyAction.RemotePrintScreen: return hotkeyRemotePrintScreen;
         }
         return "";
     }
@@ -397,9 +489,17 @@ public sealed class SettingsViewModel : ViewModelBase {
             case HotkeyAction.CaptureSave:
                 changed = SetProperty(ref hotkeyCaptureSave, value, nameof(HotkeyCaptureSave));
                 break;
-            default:
+            case HotkeyAction.ShowHistory:
                 changed = SetProperty(ref hotkeyHistory, value, nameof(HotkeyHistory));
                 break;
+            case HotkeyAction.CaptureDelayed:
+                changed = SetProperty(ref hotkeyCaptureDelayed, value, nameof(HotkeyCaptureDelayed));
+                break;
+            case HotkeyAction.RemotePrintScreen:
+                changed = SetProperty(ref hotkeyRemotePrintScreen, value, nameof(HotkeyRemotePrintScreen));
+                break;
+            default:
+                return;
         }
         if(!changed) return;
         // Sofort-Prüfung ohne Probe-Registrierung (die erfolgt beim Speichern)
@@ -420,6 +520,7 @@ public sealed class SettingsViewModel : ViewModelBase {
         if(warnings.Count > 0 && Host != null && !Host.Confirm(Strings.Format(Strings.SettingsHotkeyWarningConfirm, string.Join(Environment.NewLine + Environment.NewLine, warnings)))) return false;
 
         TryParseRetention(retentionDaysText, out int retentionDays);
+        TryParseDelaySeconds(captureDelaySecondsText, out int delaySeconds);
         AppSettings target = settings.Settings;
         target.StorageFolder = storageFolder.Trim();
         target.FileNamePattern = string.IsNullOrWhiteSpace(fileNamePattern) ? AppSettings.DefaultFileNamePattern : fileNamePattern;
@@ -427,8 +528,15 @@ public sealed class SettingsViewModel : ViewModelBase {
         target.HotkeyCaptureEdit = normalizeHotkey(hotkeyCaptureEdit);
         target.HotkeyCaptureSave = normalizeHotkey(hotkeyCaptureSave);
         target.HotkeyHistory = normalizeHotkey(hotkeyHistory);
+        target.HotkeyCaptureDelayed = normalizeHotkey(hotkeyCaptureDelayed);
+        target.HotkeyRemotePrintScreen = normalizeHotkey(hotkeyRemotePrintScreen);
+        target.CaptureHotkeysInRemoteSessions = captureHotkeysInRemoteSessions;
+        target.CaptureDelaySeconds = delaySeconds;
+        target.CaptureDelayAskEachTime = captureDelayAskEachTime;
+        target.DelayedCaptureAction = delayedCaptureAction;
         target.MagnifierZoom = magnifierZoom;
         target.MagnifierSize = magnifierSize;
+        target.ShowMagnifierKeyHints = showMagnifierKeyHints;
         target.DefaultColor = defaultColor;
         target.HighlightColor = highlightColor;
         target.DefaultThickness = defaultThickness;
@@ -470,6 +578,8 @@ public sealed class SettingsViewModel : ViewModelBase {
         OnPropertyChanged(nameof(HotkeyCaptureEditStatus));
         OnPropertyChanged(nameof(HotkeyCaptureSaveStatus));
         OnPropertyChanged(nameof(HotkeyHistoryStatus));
+        OnPropertyChanged(nameof(HotkeyCaptureDelayedStatus));
+        OnPropertyChanged(nameof(HotkeyRemotePrintScreenStatus));
         OnPropertyChanged(nameof(PrintScreenStatus));
     }
 
@@ -497,6 +607,14 @@ public sealed class SettingsViewModel : ViewModelBase {
         return days >= 0 && days <= AppSettings.MaxRetentionDays;
     }
 
+    /// <summary>Verzögerung in Sekunden: ganze Zahl im erlaubten Bereich (leer ist ungültig).</summary>
+    public static bool TryParseDelaySeconds(string? text, out int seconds) {
+        seconds = 0;
+        if(string.IsNullOrWhiteSpace(text)) return false;
+        if(!int.TryParse(text.Trim(), NumberStyles.Integer, CultureInfo.CurrentCulture, out seconds)) return false;
+        return seconds >= AppSettings.MinCaptureDelaySeconds && seconds <= AppSettings.MaxCaptureDelaySeconds;
+    }
+
     private void load(AppSettings source) {
         storageFolder = source.StorageFolder;
         fileNamePattern = source.FileNamePattern;
@@ -507,8 +625,17 @@ public sealed class SettingsViewModel : ViewModelBase {
         hotkeyCaptureEdit = source.HotkeyCaptureEdit;
         hotkeyCaptureSave = source.HotkeyCaptureSave;
         hotkeyHistory = source.HotkeyHistory;
+        hotkeyCaptureDelayed = source.HotkeyCaptureDelayed;
+        hotkeyRemotePrintScreen = source.HotkeyRemotePrintScreen;
+        captureHotkeysInRemoteSessions = source.CaptureHotkeysInRemoteSessions;
+        captureDelaySecondsText = source.CaptureDelaySeconds.ToString(CultureInfo.CurrentCulture);
+        captureDelayAskEachTime = source.CaptureDelayAskEachTime;
+        delayedCaptureAction = source.DelayedCaptureAction;
         magnifierZoom = source.MagnifierZoom;
         magnifierSize = source.MagnifierSize;
+        loadedMagnifierZoom = source.MagnifierZoom;
+        loadedMagnifierSize = source.MagnifierSize;
+        showMagnifierKeyHints = source.ShowMagnifierKeyHints;
         defaultColor = normalizeColor(source.DefaultColor);
         highlightColor = normalizeColor(source.HighlightColor);
         defaultThickness = source.DefaultThickness;
@@ -534,7 +661,9 @@ public sealed class SettingsViewModel : ViewModelBase {
         return new List<(HotkeyAction Action, string Text)> {
             (HotkeyAction.CaptureEdit, hotkeyCaptureEdit),
             (HotkeyAction.CaptureSave, hotkeyCaptureSave),
-            (HotkeyAction.ShowHistory, hotkeyHistory)
+            (HotkeyAction.ShowHistory, hotkeyHistory),
+            (HotkeyAction.CaptureDelayed, hotkeyCaptureDelayed),
+            (HotkeyAction.RemotePrintScreen, hotkeyRemotePrintScreen)
         };
     }
 
@@ -547,6 +676,8 @@ public sealed class SettingsViewModel : ViewModelBase {
         string current = action switch {
             HotkeyAction.CaptureEdit => settings.Settings.HotkeyCaptureEdit,
             HotkeyAction.CaptureSave => settings.Settings.HotkeyCaptureSave,
+            HotkeyAction.CaptureDelayed => settings.Settings.HotkeyCaptureDelayed,
+            HotkeyAction.RemotePrintScreen => settings.Settings.HotkeyRemotePrintScreen,
             _ => settings.Settings.HotkeyHistory
         };
         if(HotkeyBinding.TryParse(current, out HotkeyBinding? applied) && applied == binding) return (HotkeyProbeResult.Available, 0);
@@ -568,6 +699,7 @@ public sealed class SettingsViewModel : ViewModelBase {
             case HotkeyState.Failed: return Strings.Format(Strings.SettingsHotkeyStatusFailed, status.Error);
             case HotkeyState.Invalid: return Strings.SettingsHotkeyStatusInvalid;
             case HotkeyState.Suspended: return Strings.SettingsHotkeyStatusSuspended;
+            case HotkeyState.RemoteOnly: return Strings.SettingsHotkeyStatusRemoteOnly;
         }
         return Strings.SettingsHotkeyStatusOff;
     }

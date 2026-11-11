@@ -35,7 +35,7 @@ Ein Screenshot-Tool für Windows als Ersatz für Greenshot. Kernidee:
 
 ### 3.1 Tray und Hotkeys
 
-- Läuft im Hintergrund mit Tray-Symbol. Kontextmenü: *Aufnahme*, *History öffnen*, *Einstellungen*, *Beenden*. Doppelklick öffnet die History.
+- Läuft im Hintergrund mit Tray-Symbol. Kontextmenü: *Aufnahme*, *Verzögerte Aufnahme* (ab 0.9), *History öffnen*, *Einstellungen*, *Beenden*. Doppelklick öffnet die History.
 - Hotkeys sind **frei konfigurierbar**. Standardbelegung:
 
 | Hotkey | Aktion |
@@ -45,6 +45,8 @@ Ein Screenshot-Tool für Windows als Ersatz für Greenshot. Kernidee:
 | Shift+Druck | History öffnen |
 
 - Registrierung über `RegisterHotKey`. Ist die Druck-Taste dort nicht registrierbar, wird sie über einen Low-Level-Tastatur-Hook (`WH_KEYBOARD_LL`) abgefangen.
+- Remotedesktop (ab 0.9): Ist ein Fenster mit einer Klasse aus `remoteSessionWindowClasses` (Standard `TscShellContainerClass`) im Vordergrund, laufen alle eingestellten Hotkeys über den Low-Level-Hook; er wird beim Aktivieren des Fensters (per `SetWinEventHook(EVENT_SYSTEM_FOREGROUND)`) sofort und nach 250 ms erneut gesetzt, damit er vor dem Hook von mstsc liegt. Nur die eingestellten Kombinationen werden geschluckt. Außerhalb davon bleibt alles wie bisher (WM_HOTKEY). Abschaltbar (`captureHotkeysInRemoteSessions`). Optionaler Durchreich-Hotkey (`hotkeyRemotePrintScreen`): schickt dort per `SendInput` ein reines Druck an die Sitzung.
+- Verzögerte Aufnahme (ab 0.9, Hotkey `hotkeyCaptureDelayed`, Tray-Menü): Countdown (`captureDelaySeconds`, 1–60) mit Overlay (fokuslos, von der Aufnahme ausgenommen) oder vorher Abfrage (`captureDelayAskEachTime`); danach Editor oder nur speichern (`delayedCaptureAction`). Esc/Tray-Klick/andere Aufnahme bricht ab, der Hotkey erneut löst sofort aus.
 - Erkennen und **nur als Hinweis anzeigen** (nicht selbst ändern):
   - Windows-Einstellung „Druck-Taste öffnet Bildschirmausschnitt“ (`HKCU\Control Panel\Keyboard\PrintScreenKeyForSnippingEnabled = 1`)
   - laufendes Greenshot oder ein anderes Programm, das den Hotkey belegt.
@@ -82,6 +84,12 @@ Ein Screenshot-Tool für Windows als Ersatz für Greenshot. Kernidee:
   - Vergrößerung standardmäßig 8-fach (einstellbar 4–16), Pixelraster, Fadenkreuz
   - Anzeige: Position (x, y), Bereichsgröße (B × H), Farbwert des Pixels unter dem Fadenkreuz (Hex)
   - Lupe weicht dem Cursor aus, damit sie nie den Zielpunkt verdeckt, und bleibt innerhalb des Monitors
+  - Ab 0.9 direkt im Editor verstellbar: Mausrad (Fenster-Modus Alt+Mausrad) = Zoom in ganzen Schritten, +/- = Größe in
+    10er-Schritten (80–400 px); gespeichert gesammelt nach 1 s Ruhe bzw. beim Schließen. Optionale Tastenhilfe als
+    zweite Zeile unter der Lupe (Einstellung, Standard an).
+- **Letzten Bereich** (ab 0.9, Knopf + Strg+L): zuletzt gewählten Bereich in Bildschirmkoordinaten merken (beim
+  Schließen, nur bei gleicher Monitor-Anordnung und geändertem Bereich, nicht beim Verwerfen) und auf eine neue Aufnahme
+  übernehmen (ein Rückgängig-Schritt, auf das Bild begrenzt).
 - **Tastatur:**
   - Pfeiltasten bewegen den Cursor (bzw. die aktive Kante) um **1 Pixel**, Shift+Pfeiltaste um 10 Pixel
   - Leertaste / Enter setzt den Startpunkt bzw. Endpunkt, wenn der Bereich per Tastatur gewählt wird
@@ -131,7 +139,8 @@ Ein Screenshot-Tool für Windows als Ersatz für Greenshot. Kernidee:
 
 - Hauptfenster mit Vorschaubildern der Aufnahmen, neueste zuerst, nach Tagen gruppiert; Datumsfilter; Nachladen beim Scrollen (Ordner können tausende Dateien enthalten).
 - Anzeige je Eintrag: Vorschaubild, Uhrzeit, Kennzeichen „bearbeitet“ (Bereich oder Zeichnungen vorhanden).
-- Aktionen: **Bearbeiten** (Doppelklick), erneut in Zwischenablage, im Explorer anzeigen, löschen (**in den Papierkorb**, alle zugehörigen Dateien).
+- Aktionen: **Bearbeiten** (Doppelklick), erneut in Zwischenablage, im Explorer anzeigen, löschen (**in den Papierkorb**, alle zugehörigen Dateien), **Kommentar bearbeiten** (ab 0.9).
+- **Kommentar** (ab 0.9): freier, mehrzeiliger Text je Aufnahme, im Editor (Knopf in der Werkzeugleiste, ein Rückgängig-Schritt) und in der History bearbeitbar, in der History angezeigt und von der Textsuche erfasst.
 - **Bearbeiten öffnet denselben Editor** wie bei einer neuen Aufnahme, mit allen gespeicherten Daten:
   - Ist die aktuelle Monitor-Anordnung gleich der aufgenommenen → Vollbild 1:1 über die Monitore.
   - Sonst → maximiertes Fenster mit Zoom (Strg+Mausrad) und Verschieben (Leertaste+Ziehen bzw. mittlere Maustaste). Alle Funktionen gleich.
@@ -140,7 +149,7 @@ Ein Screenshot-Tool für Windows als Ersatz für Greenshot. Kernidee:
 
 ### 3.5 Einstellungen
 
-Ablageordner · Dateinamen-Muster · Exportordner · Hotkeys (mit Konfliktprüfung) · Lupe (Zoom, Größe) · Standardfarben und Strichstärke · Mauszeiger standardmäßig sichtbar · Autostart mit Windows (`HKCU\...\Run`) · Aufbewahrungsdauer · Tray-Benachrichtigung bei „nur speichern“ ein/aus.
+Ablageordner · Dateinamen-Muster · Exportordner · Hotkeys (mit Konfliktprüfung) · Lupe (Zoom, Größe, Tastenhilfe) · Standardfarben und Strichstärke · Mauszeiger standardmäßig sichtbar · Autostart mit Windows (`HKCU\...\Run`) · Aufbewahrungsdauer · Tray-Benachrichtigung bei „nur speichern“ ein/aus · Hotkeys in Remotedesktop-Sitzungen abfangen · verzögerte Aufnahme (Sekunden, jedes Mal fragen, danach Editor oder nur speichern).
 
 ---
 
@@ -176,6 +185,8 @@ Ablageordner · Dateinamen-Muster · Exportordner · Hotkeys (mit Konfliktprüfu
 
 - `monitors[].bounds` und `windows[].bounds` sind **ebenfalls in Bildpixeln** (umgerechnet über `virtualScreen`); `virtualScreen` hält die ursprünglichen Bildschirmkoordinaten fest.
 - `annotations` ist eine polymorphe Liste (`type`-Diskriminator) in Zeichenreihenfolge.
+- Optional (ab 0.9, `formatVersion` bleibt 1): `"comment": "…"` – Kommentar zur Aufnahme; fehlt das Feld oder ist es leer, gibt es keinen Kommentar (leer wird nicht geschrieben).
+- Im Ablageordner liegt eine automatisch gepflegte `AGENTS.md` (Inhalt im Programm eingebettet, mit Programmversion), die Ordnerstruktur, Dateinamen und dieses Format für KI-Agenten und Skripte beschreibt. Sie wird nur geschrieben, wenn sie fehlt oder abweicht; History, Aufräumen und Export ignorieren sie.
 
 ---
 

@@ -118,10 +118,25 @@ public partial class EditorWindow {
     }
 
     private void onViewportMouseWheel(object sender, MouseWheelEventArgs e) {
-        if(mode != EditorMode.Windowed) return;
+        ModifierKeys modifiers = Keyboard.Modifiers;
+        if(mode != EditorMode.Windowed) {
+            // Vollbild: das Rad ist sonst frei → Lupen-Zoom (ohne Zusatztaste, Alt+Rad wie im Fenstermodus ebenfalls)
+            if(modifiers != ModifierKeys.None && modifiers != ModifierKeys.Alt) return;
+            if(!isMagnifierShown || e.Delta == 0) return;
+            e.Handled = true;
+            if(modifiers == ModifierKeys.Alt) altWheelUsed = true;
+            changeMagnifierZoom(Math.Sign(e.Delta));
+            return;
+        }
         e.Handled = true;
         Point view = e.GetPosition(viewport);
-        ModifierKeys modifiers = Keyboard.Modifiers;
+        if((modifiers & ModifierKeys.Alt) != 0) {
+            // Fenstermodus: Rad scrollt bzw. zoomt die Ansicht, Alt+Rad ändert den Lupen-Zoom. Das Loslassen von Alt darf
+            // danach nicht das Fenstermenü aktivieren (siehe onPreviewKeyUp).
+            altWheelUsed = true;
+            if(isMagnifierShown && e.Delta != 0) changeMagnifierZoom(Math.Sign(e.Delta));
+            return;
+        }
         if((modifiers & ModifierKeys.Control) != 0) {
             double zoom = Math.Clamp(transform.Zoom * Math.Pow(wheelZoomStep, e.Delta / 120.0), minZoom, maxZoom);
             transform.ZoomAt(view, zoom);
@@ -172,6 +187,8 @@ public partial class EditorWindow {
         // Während der Textbearbeitung gehören alle Tasten dem Textfeld (Enter/Esc behandelt es selbst)
         if(viewModel.IsTextEditing) return;
         Key key = e.Key == Key.System ? e.SystemKey : e.Key;
+        // Alt erneut gedrückt (ohne Rad): normales Verhalten beim Loslassen
+        if((key == Key.LeftAlt || key == Key.RightAlt) && !e.IsRepeat) altWheelUsed = false;
         ModifierKeys modifiers = Keyboard.Modifiers;
         // Alt-Kombinationen (Alt+F4 …) bleiben beim System
         if((modifiers & ModifierKeys.Alt) != 0) return;
@@ -224,6 +241,23 @@ public partial class EditorWindow {
                 if(!control) return;
                 e.Handled = true;
                 execute(viewModel.RedoCommand);
+                return;
+            case Key.L:
+                // Strg+L: letzten Bereich übernehmen (L allein wählt das Linien-Werkzeug, siehe oben)
+                if(!control) return;
+                e.Handled = true;
+                if(e.IsRepeat || pointerCaptured || isPanning) return;
+                execute(viewModel.ApplyLastSelectionCommand);
+                updateCursorAtMouse();
+                return;
+            case Key.OemPlus:
+            case Key.Add:
+            case Key.OemMinus:
+            case Key.Subtract:
+                // +/-: Lupengröße, nur solange die Lupe zu sehen ist
+                if(control || !isMagnifierShown) return;
+                e.Handled = true;
+                changeMagnifierSize(key == Key.OemPlus || key == Key.Add ? 1 : -1);
                 return;
             case Key.C:
                 if(!control) return;
@@ -278,6 +312,13 @@ public partial class EditorWindow {
     }
 
     private void onPreviewKeyUp(object sender, KeyEventArgs e) {
+        Key key = e.Key == Key.System ? e.SystemKey : e.Key;
+        if(altWheelUsed && (key == Key.LeftAlt || key == Key.RightAlt)) {
+            // Alt wurde für Alt+Rad benutzt: das Loslassen nicht an Windows weitergeben (würde das Fenstermenü aktivieren)
+            altWheelUsed = false;
+            e.Handled = true;
+            return;
+        }
         if(e.Key != Key.Space || !spaceHeld) return;
         e.Handled = true;
         spaceHeld = false;

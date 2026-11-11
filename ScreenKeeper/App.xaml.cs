@@ -22,6 +22,11 @@ public partial class App : Application {
     private RetentionService? retention;
     private HistoryWindow? historyWindow;
     private SettingsWindow? settingsWindow;
+    private readonly DelayedCaptureController delayed = new DelayedCaptureController();
+    private DispatcherTimer? countdownTimer;
+    private CountdownOverlay? countdownOverlay;
+    private DelayDialog? delayDialog;
+    private IntPtr delayPreviousWindow;
     private string appliedHotkeys = "";
     private bool headless;
 
@@ -100,7 +105,10 @@ public partial class App : Application {
         AppServices.Workflow.WriteFailed += (s, failure) => tray?.ShowBalloon(Strings.ErrorTitle, Strings.Format(Strings.ErrorPngWriteFailed, failure.Path, failure.Error.Message), true);
 
         tray = new TrayIcon();
+        tray.SetHotkeys(AppServices.Settings.Settings);
         tray.CaptureRequested += onTrayCapture;
+        tray.DelayedCaptureRequested += onTrayDelayedCapture;
+        tray.Clicked += (s, e) => cancelDelayed("Klick aufs Tray-Symbol");
         tray.HistoryRequested += (s, e) => ShowHistory();
         tray.SettingsRequested += (s, e) => ShowSettings();
         tray.ExitRequested += (s, e) => exit();
@@ -121,6 +129,7 @@ public partial class App : Application {
         retention = new RetentionService(AppServices.Storage, AppServices.Settings);
         retention.Completed += (s, result) => historyWindow?.Reload();
         retention.Start();
+        ensureAgentsFile();
         startUpdates();
         Dispatcher.BeginInvoke(new Action(warmUpEditor), DispatcherPriority.ApplicationIdle);
     }
@@ -170,7 +179,7 @@ public partial class App : Application {
     private IReadOnlyList<string> applyHotkeys() {
         if(hotkeys == null) return Array.Empty<string>();
         AppSettings settings = AppServices.Settings.Settings;
-        appliedHotkeys = $"{settings.HotkeyCaptureEdit}|{settings.HotkeyCaptureSave}|{settings.HotkeyHistory}";
+        appliedHotkeys = settings.GetHotkeySignature();
         return hotkeys.Apply(settings);
     }
 
@@ -180,12 +189,30 @@ public partial class App : Application {
     /// </summary>
     private void onSettingsChanged(object? sender, EventArgs e) {
         AppSettings settings = AppServices.Settings.Settings;
-        if(hotkeys != null && appliedHotkeys != $"{settings.HotkeyCaptureEdit}|{settings.HotkeyCaptureSave}|{settings.HotkeyHistory}") {
+        if(hotkeys != null && appliedHotkeys != settings.GetHotkeySignature()) {
             IReadOnlyList<string> problems = applyHotkeys();
             if(problems.Count > 0) tray?.ShowBalloon(Strings.HintTitle, string.Join(Environment.NewLine, problems), true);
         }
+        // Tooltip und Menü des Tray-Symbols zeigen die eingestellten Hotkeys
+        tray?.SetHotkeys(settings);
         retention?.Reevaluate();
         AppServices.Updates.Reevaluate();
+        // Ablageordner kann gewechselt haben
+        ensureAgentsFile();
+    }
+
+    /// <summary>
+    /// AGENTS.md im Ablageordner anlegen bzw. aktualisieren (im Hintergrund; Fehler protokolliert der Dienst selbst).
+    /// </summary>
+    private static void ensureAgentsFile() {
+        IStorageService storage = AppServices.Storage;
+        Task.Run(() => {
+            try {
+                storage.EnsureAgentsFile();
+            } catch(Exception ex) {
+                Log.Error(ex, "AGENTS.md konnte nicht geprüft werden");
+            }
+        });
     }
 
     private void exit() {
@@ -196,16 +223,164 @@ public partial class App : Application {
 
     private void onHotkeyPressed(object? sender, HotkeyAction action) {
         switch(action) {
-            case HotkeyAction.CaptureEdit: captureAndEdit(); break;
-            case HotkeyAction.CaptureSave: captureSaveOnly(); break;
+            case HotkeyAction.CaptureEdit:
+                cancelDelayed("andere Aufnahme");
+                captureAndEdit();
+                break;
+            case HotkeyAction.CaptureSave:
+                cancelDelayed("andere Aufnahme");
+                captureSaveOnly();
+                break;
             case HotkeyAction.ShowHistory: ShowHistory(); break;
+            case HotkeyAction.CaptureDelayed: startDelayed(); break;
+            case HotkeyAction.CancelDelayed: cancelDelayed("Esc"); break;
         }
     }
 
     private async void onTrayCapture(object? sender, EventArgs e) {
+        cancelDelayed("andere Aufnahme");
         // Kontextmenü erst verschwinden lassen, damit es nicht mit aufgenommen wird
         await Task.Delay(menuCaptureDelayMs);
         captureAndEdit();
+    }
+
+    private async void onTrayDelayedCapture(object? sender, EventArgs e) {
+        await Task.Delay(menuCaptureDelayMs);
+        startDelayed();
+    }
+
+    /// <summary>
+    /// Delay-Hotkey bzw. Tray-Eintrag: je nach Zustand Dialog öffnen, Countdown starten, Dialog bestätigen oder sofort
+    /// aufnehmen. Ist ein Editor offen, wird er wie bei den anderen Aufnahme-Hotkeys nur nach vorne geholt.
+    /// </summary>
+    private void startDelayed() {
+        EditorWindow? editor = AppServices.Workflow.OpenEditor;
+        if(!delayed.IsActive && editor != null) {
+            Log.Info("Verzögerte Aufnahme übersprungen: Editor ist offen");
+            editor.BringToFront();
+            return;
+        }
+        AppSettings settings = AppServices.Settings.Settings;
+        applyDelayed(delayed.HotkeyPressed(settings.CaptureDelayAskEachTime, settings.CaptureDelaySeconds));
+    }
+
+    private void cancelDelayed(string reason) {
+        if(!delayed.IsActive) return;
+        Log.Info($"Verzögerte Aufnahme abgebrochen ({reason})");
+        applyDelayed(delayed.Cancel());
+    }
+
+    private void applyDelayed(DelayedCaptureEffect effect) {
+        switch(effect) {
+            case DelayedCaptureEffect.ShowDialog:
+                showDelayDialog();
+                break;
+            case DelayedCaptureEffect.ConfirmDialog:
+                delayDialog?.Confirm();
+                break;
+            case DelayedCaptureEffect.CountdownStarted:
+                startCountdown();
+                break;
+            case DelayedCaptureEffect.CountdownTick:
+                countdownOverlay?.SetSeconds(delayed.Remaining);
+                tray?.SetCountdown(delayed.Remaining);
+                break;
+            case DelayedCaptureEffect.CaptureNow:
+                captureDelayedNow();
+                break;
+            case DelayedCaptureEffect.Cancelled:
+                stopCountdown();
+                break;
+        }
+    }
+
+    /// <summary>
+    /// „Jedes Mal fragen“: Vordergrundfenster merken, Dialog zeigen. Nach dem Start geht der Fokus dorthin zurück, damit der
+    /// Benutzer in der Countdown-Zeit dort das Menü öffnen kann.
+    /// </summary>
+    private void showDelayDialog() {
+        delayPreviousWindow = User32.GetForegroundWindow();
+        DelayDialog dialog = new DelayDialog(delayed.Seconds);
+        delayDialog = dialog;
+        dialog.Confirmed += (s, seconds) => {
+            delayDialog = null;
+            rememberDelaySeconds(seconds);
+            WindowActivation.ForceForeground(delayPreviousWindow);
+            applyDelayed(delayed.DialogConfirmed(seconds));
+        };
+        dialog.Cancelled += (s, e) => {
+            delayDialog = null;
+            WindowActivation.ForceForeground(delayPreviousWindow);
+            Log.Info("Verzögerte Aufnahme: Dialog abgebrochen");
+            applyDelayed(delayed.DialogCancelled());
+        };
+        dialog.Show();
+        bringToFront(dialog);
+    }
+
+    /// <summary>Gewählte Verzögerung als neuen Vorschlag speichern.</summary>
+    private static void rememberDelaySeconds(int seconds) {
+        AppSettings settings = AppServices.Settings.Settings;
+        if(settings.CaptureDelaySeconds == seconds) return;
+        settings.CaptureDelaySeconds = seconds;
+        try {
+            AppServices.Settings.Save();
+        } catch(Exception ex) {
+            Log.Error(ex, "Verzögerung konnte nicht gespeichert werden");
+        }
+    }
+
+    private void startCountdown() {
+        hotkeys?.SetCancelKeyActive(true);
+        countdownOverlay = new CountdownOverlay();
+        countdownOverlay.SetSeconds(delayed.Remaining);
+        countdownOverlay.Show();
+        tray?.SetCountdown(delayed.Remaining);
+        countdownTimer?.Stop();
+        countdownTimer = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Normal, (s, e) => applyDelayed(delayed.Tick()), Dispatcher);
+        countdownTimer.Start();
+        Log.Info($"Verzögerte Aufnahme: Countdown {delayed.Remaining} s");
+    }
+
+    /// <summary>Countdown, Overlay, Esc-Abfang und Dialog beenden (ohne Aufnahme).</summary>
+    private void stopCountdown() {
+        countdownTimer?.Stop();
+        countdownTimer = null;
+        hotkeys?.SetCancelKeyActive(false);
+        tray?.SetCountdown(null);
+        countdownOverlay?.Close();
+        countdownOverlay = null;
+        DelayDialog? dialog = delayDialog;
+        delayDialog = null;
+        dialog?.Abort();
+    }
+
+    /// <summary>
+    /// Countdown vorbei (oder erneuter Hotkey): Overlay ausblenden und abwarten, dass es wirklich weg ist, dann aufnehmen
+    /// wie per Hotkey (Editor bzw. nur speichern mit Benachrichtigung).
+    /// </summary>
+    private async void captureDelayedNow() {
+        countdownTimer?.Stop();
+        countdownTimer = null;
+        hotkeys?.SetCancelKeyActive(false);
+        tray?.SetCountdown(null);
+        CountdownOverlay? overlay = countdownOverlay;
+        countdownOverlay = null;
+        try {
+            if(overlay != null) {
+                await overlay.HideForCaptureAsync();
+                overlay.Close();
+            }
+        } catch(Exception ex) {
+            Log.Error(ex, "Countdown-Overlay konnte nicht ausgeblendet werden");
+        }
+        if(AppServices.Settings.Settings.DelayedCaptureAction == DelayedCaptureActions.Save) {
+            Log.Info("Verzögerte Aufnahme: nur speichern");
+            captureSaveOnly();
+        } else {
+            Log.Info("Verzögerte Aufnahme: mit Editor");
+            captureAndEdit();
+        }
     }
 
     private void captureAndEdit() {

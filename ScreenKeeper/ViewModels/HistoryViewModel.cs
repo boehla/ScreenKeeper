@@ -15,12 +15,15 @@ public interface IHistoryHost {
     bool Confirm(string message);
 
     void ShowError(string message);
+
+    /// <summary>Kommentar-Dialog; liefert den eingegebenen Text (leer = entfernen) oder null bei Abbruch.</summary>
+    string? AskComment(string? comment);
 }
 
 /// <summary>
 /// History: Aufnahmen neueste zuerst, nach Tagen gruppiert (flache Liste aus Überschriften und Einträgen, damit die
 /// Liste virtualisiert bleibt), blockweise nachgeladen; Datums-, Text- und Permanent-Filter; Aktionen Bearbeiten,
-/// Zwischenablage, Kopie anlegen, Permanent, Explorer, Löschen (Papierkorb), Aktualisieren, Ordner öffnen.
+/// Zwischenablage, Kopie anlegen, Permanent, Kommentar, Explorer, Löschen (Papierkorb), Aktualisieren, Ordner öffnen.
 /// </summary>
 public sealed class HistoryViewModel : ViewModelBase {
     public const int BlockSize = 60;
@@ -58,6 +61,7 @@ public sealed class HistoryViewModel : ViewModelBase {
         ShowInExplorerCommand = new RelayCommand(p => ShowInExplorer(p as HistoryItem), p => p is HistoryItem || selection.Count > 0);
         DuplicateCommand = new RelayCommand(p => _ = DuplicateAsync(p as HistoryItem), p => p is HistoryItem || selection.Count > 0);
         TogglePermanentCommand = new RelayCommand(p => _ = TogglePermanentAsync(p as HistoryItem), p => p is HistoryItem || selection.Count > 0);
+        EditCommentCommand = new RelayCommand(p => _ = EditCommentAsync(p as HistoryItem), p => p is HistoryItem || selection.Count > 0);
         DeleteCommand = new RelayCommand(() => _ = DeleteSelectedAsync(), () => selection.Count > 0);
         RefreshCommand = new RelayCommand(() => _ = RefreshAsync());
         OpenFolderCommand = new RelayCommand(OpenFolder);
@@ -95,6 +99,9 @@ public sealed class HistoryViewModel : ViewModelBase {
 
     /// <summary>Permanent markieren bzw. Markierung aufheben (P); Parameter = Eintrag, sonst die Auswahl.</summary>
     public ICommand TogglePermanentCommand { get; }
+
+    /// <summary>Kommentar bearbeiten (K); Parameter = Eintrag, sonst der erste ausgewählte.</summary>
+    public ICommand EditCommentCommand { get; }
 
     public ICommand DeleteCommand { get; }
 
@@ -377,6 +384,40 @@ public sealed class HistoryViewModel : ViewModelBase {
     }
 
     /// <summary>
+    /// Kommentar bearbeiten: Dialog mit dem aktuellen Kommentar, danach die JSON atomar speichern (fehlt sie, wird sie
+    /// angelegt) und Anzeige und Suchdaten des Eintrags erneuern. Ein offener Editor derselben Aufnahme übernimmt den Text
+    /// als Rückgängig-Schritt (sonst überschriebe er ihn beim Schließen). True, wenn etwas gespeichert wurde.
+    /// </summary>
+    public async Task<bool> EditCommentAsync(HistoryItem? item) {
+        item ??= selection.FirstOrDefault();
+        if(item == null || Host == null) return false;
+        CaptureEntry entry = item.Entry;
+        CaptureFiles files = item.Files;
+        try {
+            // ist die Aufnahme im Editor offen, gilt dessen (evtl. noch ungespeicherter) Stand
+            EditorViewModel? editor = findOpenEditor(files.JsonPath);
+            string current = editor != null ? editor.Comment ?? "" : await Task.Run(() => storage.GetMetadata(entry).Comment);
+            string? text = Host.AskComment(current);
+            if(text == null) return false;
+            string? comment = CaptureDocument.NormalizeComment(text);
+            if(comment == CaptureDocument.NormalizeComment(current)) return false;
+            await Task.Run(() => storage.SetComment(files.PngPath, comment));
+            editor?.SetComment(comment);
+            CaptureEntry? updated = storage.GetEntry(files);
+            if(updated != null) {
+                await Task.Run(() => storage.GetMetadata(updated));
+                item.UpdateEntry(updated);
+            }
+            Message = comment != null ? Strings.Format(Strings.HistoryCommentSaved, item.Name) : Strings.Format(Strings.HistoryCommentRemoved, item.Name);
+            return true;
+        } catch(Exception ex) {
+            Log.Error(ex, $"Kommentar für {files.PngPath} konnte nicht gespeichert werden");
+            Host.ShowError(Strings.Format(Strings.HistoryCommentFailed, ex.Message));
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Editor geschlossen: Eintrag aktualisieren (Vorschaubild neu laden, Kennzeichen „bearbeitet“).
     /// </summary>
     public void OnEditorClosed(string jsonPath) {
@@ -592,6 +633,17 @@ public sealed class HistoryViewModel : ViewModelBase {
         Views.EditorWindow? editor = AppServices.Workflow.OpenEditor;
         if(editor == null || !string.Equals(Path.GetFullPath(editor.JsonPath), Path.GetFullPath(jsonPath), StringComparison.OrdinalIgnoreCase)) return;
         editor.ViewModel.IsPermanent = permanent;
+    }
+
+    /// <summary>
+    /// Editor derselben Aufnahme, falls offen. Er übernimmt einen in der History geänderten Kommentar (sonst überschriebe er
+    /// ihn beim Schließen).
+    /// </summary>
+    private static EditorViewModel? findOpenEditor(string jsonPath) {
+        if(!AppServices.IsInitialized) return null;
+        Views.EditorWindow? editor = AppServices.Workflow.OpenEditor;
+        if(editor == null || !string.Equals(Path.GetFullPath(editor.JsonPath), Path.GetFullPath(jsonPath), StringComparison.OrdinalIgnoreCase)) return null;
+        return editor.ViewModel;
     }
 
     private bool isUnderRoot(string path) {

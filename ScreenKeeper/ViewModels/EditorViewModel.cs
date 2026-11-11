@@ -21,6 +21,8 @@ public sealed partial class EditorViewModel : ViewModelBase {
     private IEditorTool activeTool;
     private PixelRect? previewSelection;
     private PixelPoint cursorPixel;
+    private PixelRect? lastSelection;
+    private bool isSameLayout;
 
     public EditorViewModel(CaptureDocument document, BitmapSource original, IEditorHost host)
         : this(document, original, host, null) {
@@ -32,6 +34,7 @@ public sealed partial class EditorViewModel : ViewModelBase {
         Original = original;
         this.host = host;
         ImageBounds = new PixelRect(0, 0, original.PixelWidth, original.PixelHeight);
+        InitialSelection = document.Selection;
         UndoStack = new UndoStack();
         UndoStack.Changed += onUndoStackChanged;
 
@@ -39,7 +42,9 @@ public sealed partial class EditorViewModel : ViewModelBase {
         Tools = new ObservableCollection<ToolItem> { new ToolItem(SelectionTool) };
         activeTool = SelectionTool;
         Tools[0].IsActive = true;
-        Options = ToolOptions.FromSettings(settings ?? (AppServices.IsInitialized ? AppServices.Settings.Settings : new AppSettings()));
+        AppSettings source = settings ?? (AppServices.IsInitialized ? AppServices.Settings.Settings : new AppSettings());
+        Options = ToolOptions.FromSettings(source);
+        lastSelection = source.LastSelection;
         Measure = new AnnotationMeasure(document);
         initializeAnnotationTools();
 
@@ -57,6 +62,11 @@ public sealed partial class EditorViewModel : ViewModelBase {
             DuplicateRequested?.Invoke(this, EventArgs.Empty);
         });
         TogglePermanentCommand = new RelayCommand(() => IsPermanent = !IsPermanent);
+        ApplyLastSelectionCommand = new RelayCommand(() => ApplyLastSelection(), () => LastSelectionState == LastSelectionState.Available);
+        EditCommentCommand = new RelayCommand(() => {
+            CancelGesture();
+            CommentEditRequested?.Invoke(this, EventArgs.Empty);
+        });
         SelectToolCommand = new RelayCommand(p => {
             if(p is ToolItem item) SelectTool(item.Tool);
         });
@@ -142,7 +152,106 @@ public sealed partial class EditorViewModel : ViewModelBase {
     /// <summary>Der Knopf „Kopie anlegen“ wurde gedrückt (ein laufender Vorgang ist bereits abgeschlossen).</summary>
     public event EventHandler? DuplicateRequested;
 
+    /// <summary>„Kommentar“: Eingabedialog öffnen (macht das Fenster) und das Ergebnis mit <see cref="SetComment"/> übernehmen.</summary>
+    public ICommand EditCommentCommand { get; }
+
+    /// <summary>Der Knopf „Kommentar“ wurde gedrückt (ein laufender Vorgang ist bereits abgeschlossen).</summary>
+    public event EventHandler? CommentEditRequested;
+
+    /// <summary>Kommentar der Aufnahme; null = keiner.</summary>
+    public string? Comment => Document.Comment;
+
+    public bool HasComment => Document.HasComment;
+
+    /// <summary>Tooltip des Knopfs „Kommentar“: ohne Kommentar die Aktion, sonst zusätzlich der Anfang des Kommentars.</summary>
+    public string CommentToolTip => HasComment ? Strings.Format(Strings.ToolbarCommentExisting, CommentText.Preview(Document.Comment, CommentText.ToolTipLength)) : Strings.ToolbarComment;
+
+    /// <summary>
+    /// Kommentar über den Rückgängig-Stapel setzen (ein Schritt; leer = entfernen). False, wenn sich nichts ändert.
+    /// </summary>
+    public bool SetComment(string? comment) {
+        string? normalized = CaptureDocument.NormalizeComment(comment);
+        if(Document.Comment == normalized) return false;
+        UndoStack.Execute(new SetCommentCommand(Document, Document.Comment, normalized));
+        return true;
+    }
+
     public ICommand SelectToolCommand { get; }
+
+    /// <summary>Bereich des Dokuments beim Öffnen des Editors (zum Erkennen, ob er in dieser Sitzung geändert wurde).</summary>
+    public PixelRect? InitialSelection { get; }
+
+    /// <summary>„Letzten Bereich“: gemerkten Bereich auf diese Aufnahme übernehmen (ein Rückgängig-Schritt).</summary>
+    public ICommand ApplyLastSelectionCommand { get; }
+
+    /// <summary>
+    /// Zuletzt gemerkter Bereich in Bildschirmkoordinaten (aus den Einstellungen; null = keiner).
+    /// </summary>
+    public PixelRect? LastSelection {
+        get => lastSelection;
+        set {
+            if(lastSelection == value) return;
+            lastSelection = value;
+            onLastSelectionStateChanged();
+        }
+    }
+
+    /// <summary>
+    /// Monitor-Anordnung der Aufnahme = aktuelle Anordnung? Nur dann passen Bildschirmkoordinaten (setzt das Fenster:
+    /// Vollbild-Modus wird genau dann gewählt).
+    /// </summary>
+    public bool IsSameLayout {
+        get => isSameLayout;
+        set {
+            if(isSameLayout == value) return;
+            isSameLayout = value;
+            onLastSelectionStateChanged();
+        }
+    }
+
+    public LastSelectionState LastSelectionState => LastSelectionRules.GetState(lastSelection, isSameLayout, Document.VirtualScreen, ImageBounds);
+
+    /// <summary>Tooltip des Knopfs „Letzten Bereich“ (nennt den Grund, wenn er ausgegraut ist).</summary>
+    public string LastSelectionToolTip {
+        get {
+            switch(LastSelectionState) {
+                case LastSelectionState.None: return Strings.ToolbarLastSelectionNone;
+                case LastSelectionState.OtherLayout: return Strings.ToolbarLastSelectionOtherLayout;
+                case LastSelectionState.OutsideImage: return Strings.ToolbarLastSelectionOutside;
+            }
+            return Strings.ToolbarLastSelection;
+        }
+    }
+
+    /// <summary>
+    /// Gemerkten Bereich in Bildpixel dieser Aufnahme umrechnen, auf das Bild begrenzen und über denselben Rückgängig-Befehl
+    /// wie die Maus setzen. False, wenn nicht möglich oder der Bereich schon so gesetzt ist.
+    /// </summary>
+    public bool ApplyLastSelection() {
+        if(LastSelectionState != LastSelectionState.Available || !lastSelection.HasValue) return false;
+        PixelRect? target = LastSelectionRules.ToImage(lastSelection.Value, Document.VirtualScreen, ImageBounds);
+        if(!target.HasValue) return false;
+        CancelGesture();
+        if(Document.Selection == target) return false;
+        SetSelection(target);
+        return true;
+    }
+
+    /// <summary>
+    /// Beim Schließen: zu merkender Bereich in Bildschirmkoordinaten, oder null, wenn nichts gemerkt werden soll
+    /// (siehe <see cref="LastSelectionRules.ShouldRemember"/>).
+    /// </summary>
+    public PixelRect? GetSelectionToRemember(bool discarded) {
+        if(!LastSelectionRules.ShouldRemember(InitialSelection, Document.Selection, isSameLayout, discarded)) return null;
+        return LastSelectionRules.ToScreen(Document.Selection!.Value, Document.VirtualScreen);
+    }
+
+    private void onLastSelectionStateChanged() {
+        OnPropertyChanged(nameof(LastSelection));
+        OnPropertyChanged(nameof(LastSelectionState));
+        OnPropertyChanged(nameof(LastSelectionToolTip));
+        CommandManager.InvalidateRequerySuggested();
+    }
 
     /// <summary>Bereich, Vorschau, Lupe oder Werkzeugzustand haben sich geändert (Overlay neu zeichnen).</summary>
     public event EventHandler? OverlayChanged;
@@ -344,6 +453,11 @@ public sealed partial class EditorViewModel : ViewModelBase {
         if((kind & DocumentChangeKind.Selection) != 0) {
             OnPropertyChanged(nameof(Selection));
             OnPropertyChanged(nameof(HasSelection));
+        }
+        if((kind & DocumentChangeKind.Comment) != 0) {
+            OnPropertyChanged(nameof(Comment));
+            OnPropertyChanged(nameof(HasComment));
+            OnPropertyChanged(nameof(CommentToolTip));
         }
         if((kind & DocumentChangeKind.Annotations) != 0) {
             // ausgewähltes Objekt kann durch Rückgängig verschwunden sein

@@ -78,6 +78,18 @@ public partial class Magnifier : UserControl {
     }
 
     /// <summary>
+    /// Tastenhilfe als zweite, kleinere Zeile unter der Infozeile; null oder leer = ausblenden. Die Höhe der Lupe
+    /// (<see cref="UIElement.DesiredSize"/>, Grundlage von <see cref="MagnifierPlacement.Place"/>) enthält die Zeile.
+    /// </summary>
+    public void SetKeyHints(string? text) {
+        hintText.Text = text ?? "";
+        hintText.Visibility = string.IsNullOrEmpty(text) ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    /// <summary>Angezeigte Tastenhilfe (leer = keine; für Tests).</summary>
+    public string KeyHints => hintText.Visibility == Visibility.Visible ? hintText.Text : "";
+
+    /// <summary>
     /// Zeigt die Umgebung von <paramref name="focus"/>. Tut nichts, wenn sich nichts geändert hat.
     /// </summary>
     public void Show(PixelPoint focus, PixelRect? selection) {

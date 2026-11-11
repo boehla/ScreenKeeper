@@ -12,7 +12,13 @@ public enum HotkeyAction {
     /// <summary>Aufnahme nur speichern</summary>
     CaptureSave = 2,
     /// <summary>History öffnen</summary>
-    ShowHistory = 3
+    ShowHistory = 3,
+    /// <summary>Verzögerte Aufnahme (Countdown)</summary>
+    CaptureDelayed = 4,
+    /// <summary>Reines Druck an die Remotesitzung durchreichen (nur über den Tastatur-Hook, nur bei Remote-Fenster vorne)</summary>
+    RemotePrintScreen = 5,
+    /// <summary>Esc während des Countdowns (intern, nur über den Tastatur-Hook, nicht einstellbar)</summary>
+    CancelDelayed = 6
 }
 
 /// <summary>
@@ -30,7 +36,9 @@ public enum HotkeyState {
     /// <summary>Text ist kein gültiger Hotkey.</summary>
     Invalid,
     /// <summary>Vorübergehend ausgesetzt (z. B. während im Einstellungsfenster ein Hotkey aufgezeichnet wird).</summary>
-    Suspended
+    Suspended,
+    /// <summary>Nur über den Tastatur-Hook, solange ein Remotedesktop-Fenster im Vordergrund ist (Durchreich-Hotkey).</summary>
+    RemoteOnly
 }
 
 /// <summary>
@@ -78,10 +86,16 @@ public interface IHotkeyService : IDisposable {
 /// Globale Hotkeys über <c>RegisterHotKey</c> an einem versteckten Fenster. Ist eine Druck-Kombination dort nicht
 /// registrierbar (z. B. belegt), wird sie über einen Low-Level-Tastatur-Hook (<c>WH_KEYBOARD_LL</c>, eigener Thread,
 /// siehe <see cref="KeyboardHook"/>) abgefangen – aber nur genau die konfigurierten Druck-Kombinationen.
+/// Mit <see cref="AppSettings.CaptureHotkeysInRemoteSessions"/> laufen zusätzlich alle registrierten Hotkeys über den
+/// Hook, solange ein Remotedesktop-Fenster im Vordergrund ist (dort kommt WM_HOTKEY nicht an); außerhalb lässt der Hook
+/// sie durch, damit sie nicht doppelt auslösen.
 /// </summary>
 public sealed class HotkeyService : IHotkeyService {
     /// <summary>ERROR_HOTKEY_ALREADY_REGISTERED</summary>
     public const int ErrorHotkeyAlreadyRegistered = 1409;
+
+    /// <summary>VK_ESCAPE</summary>
+    public const int VkEscape = 0x1B;
 
     private const int probeId = 0x0100;
 
@@ -91,7 +105,12 @@ public sealed class HotkeyService : IHotkeyService {
     private readonly Dictionary<HotkeyAction, HotkeyBinding> hookBindings = new Dictionary<HotkeyAction, HotkeyBinding>();
     private readonly Dictionary<HotkeyAction, HotkeyStatus> status = new Dictionary<HotkeyAction, HotkeyStatus>();
     private AppSettings? lastSettings;
+    private HotkeyBinding? remotePrintScreen;
+    private bool remoteEnabled;
+    private IReadOnlyList<string> remoteClasses = Array.Empty<string>();
+    private HotkeyFilter? filter;
     private KeyboardHook? hook;
+    private bool cancelKeyActive;
     private bool suspended;
     private bool disposed;
 
@@ -110,8 +129,11 @@ public sealed class HotkeyService : IHotkeyService {
 
     public event EventHandler<HotkeyAction>? HotkeyPressed;
 
-    /// <summary>Hotkeys, die über den Tastatur-Hook statt RegisterHotKey laufen (für Diagnose/Tests).</summary>
+    /// <summary>Hotkeys, die immer über den Tastatur-Hook statt RegisterHotKey laufen (für Diagnose/Tests).</summary>
     public IReadOnlyDictionary<HotkeyAction, HotkeyBinding> HookedBindings => hookBindings;
+
+    /// <summary>Alle Kombinationen, die der Tastatur-Hook gerade kennt (für Diagnose/Tests).</summary>
+    public IReadOnlyList<HookBinding> FilterBindings => filter?.Bindings ?? Array.Empty<HookBinding>();
 
     public IReadOnlyDictionary<HotkeyAction, HotkeyStatus> Status => status;
 
@@ -121,13 +143,17 @@ public sealed class HotkeyService : IHotkeyService {
         status.Clear();
         List<string> problems = new List<string>();
         if(suspended) {
-            foreach(HotkeyAction action in Enum.GetValues<HotkeyAction>()) status[action] = new HotkeyStatus(HotkeyState.Suspended, null);
+            foreach(HotkeyAction action in configurableActions) status[action] = new HotkeyStatus(HotkeyState.Suspended, null);
             return problems;
         }
+        remoteEnabled = settings.CaptureHotkeysInRemoteSessions;
+        remoteClasses = RemoteSession.ParseWindowClasses(settings.RemoteSessionWindowClasses);
         register(HotkeyAction.CaptureEdit, settings.HotkeyCaptureEdit, problems);
         register(HotkeyAction.CaptureSave, settings.HotkeyCaptureSave, problems);
         register(HotkeyAction.ShowHistory, settings.HotkeyHistory, problems);
-        if(hookBindings.Count > 0) installHook(problems);
+        register(HotkeyAction.CaptureDelayed, settings.HotkeyCaptureDelayed, problems);
+        registerRemotePrintScreen(settings.HotkeyRemotePrintScreen, problems);
+        startHook(problems);
         return problems;
     }
 
@@ -161,12 +187,52 @@ public sealed class HotkeyService : IHotkeyService {
         if(lastSettings != null) Apply(lastSettings);
     }
 
+    /// <summary>
+    /// Esc für die Dauer des Countdowns abfangen (über den Tastatur-Hook, also auch ohne Fokus und im Remotedesktop;
+    /// Esc wird dabei geschluckt) bzw. wieder freigeben. Löst <see cref="HotkeyAction.CancelDelayed"/> aus.
+    /// </summary>
+    public void SetCancelKeyActive(bool active) {
+        if(cancelKeyActive == active) return;
+        cancelKeyActive = active;
+        if(suspended || disposed) return;
+        List<HookBinding> bindings = buildHookBindings();
+        if(filter != null && hook != null) {
+            filter.SetBindings(bindings);
+            hook.Update();
+            return;
+        }
+        if(active) startHook(new List<string>());
+    }
+
     public void Dispose() {
         if(disposed) return;
         disposed = true;
         unregisterAll();
         window.RemoveHook(wndProc);
         window.Dispose();
+    }
+
+    /// <summary>
+    /// Welche Kombinationen der Tastatur-Hook kennt (UI-frei, testbar): fehlgeschlagene Druck-Kombinationen immer;
+    /// mit Remote-Erfassung alle per RegisterHotKey registrierten und der Durchreich-Hotkey nur bei Remote-Fenster
+    /// vorne (sonst feuert WM_HOTKEY – der Hook darf sie dann weder auslösen noch schlucken); Esc im Countdown immer.
+    /// </summary>
+    public static List<HookBinding> BuildHookBindings(IReadOnlyDictionary<HotkeyAction, HotkeyBinding> hooked, IReadOnlyDictionary<HotkeyAction, HotkeyBinding> registered,
+        HotkeyBinding? remotePrintScreen, bool remoteEnabled, bool cancelKeyActive) {
+        List<HookBinding> bindings = new List<HookBinding>();
+        foreach(KeyValuePair<HotkeyAction, HotkeyBinding> pair in hooked) bindings.Add(new HookBinding(pair.Key, pair.Value, HotkeyScope.Always));
+        if(remoteEnabled) {
+            foreach(KeyValuePair<HotkeyAction, HotkeyBinding> pair in registered) bindings.Add(new HookBinding(pair.Key, pair.Value, HotkeyScope.RemoteOnly));
+            if(remotePrintScreen != null) bindings.Add(new HookBinding(HotkeyAction.RemotePrintScreen, remotePrintScreen, HotkeyScope.RemoteOnly));
+        }
+        if(cancelKeyActive) bindings.Add(new HookBinding(HotkeyAction.CancelDelayed, new HotkeyBinding(HotkeyModifiers.None, VkEscape), HotkeyScope.Always));
+        return bindings;
+    }
+
+    private static IEnumerable<HotkeyAction> configurableActions => Enum.GetValues<HotkeyAction>().Where(a => a != HotkeyAction.CancelDelayed);
+
+    private List<HookBinding> buildHookBindings() {
+        return BuildHookBindings(hookBindings, registered, remotePrintScreen, remoteEnabled && remoteClasses.Count > 0, cancelKeyActive);
     }
 
     private void register(HotkeyAction action, string text, List<string> problems) {
@@ -198,10 +264,36 @@ public sealed class HotkeyService : IHotkeyService {
         problems.Add(Strings.Format(Strings.HintHotkeyFailed, binding.ToString()));
     }
 
-    private void installHook(List<string> problems) {
+    /// <summary>
+    /// Durchreich-Hotkey: wird nie registriert, sondern nur vom Hook abgefangen – und nur, wenn die Remote-Erfassung an ist.
+    /// </summary>
+    private void registerRemotePrintScreen(string text, List<string> problems) {
+        remotePrintScreen = null;
+        if(string.IsNullOrWhiteSpace(text) || !remoteEnabled || remoteClasses.Count == 0) {
+            status[HotkeyAction.RemotePrintScreen] = new HotkeyStatus(HotkeyState.Off, null);
+            return;
+        }
+        if(!HotkeyBinding.TryParse(text, out HotkeyBinding? binding) || binding == null) {
+            status[HotkeyAction.RemotePrintScreen] = new HotkeyStatus(HotkeyState.Invalid, null);
+            problems.Add(Strings.Format(Strings.HintHotkeyInvalid, text));
+            return;
+        }
+        remotePrintScreen = binding;
+        status[HotkeyAction.RemotePrintScreen] = new HotkeyStatus(HotkeyState.RemoteOnly, binding);
+        Log.Info($"Hotkey {binding} reicht im Remotedesktop Druck an die Sitzung durch");
+    }
+
+    private void startHook(List<string> problems) {
+        List<HookBinding> bindings = buildHookBindings();
+        if(bindings.Count == 0) return;
+        filter = new HotkeyFilter(bindings);
+        bool observeRemote = filter.HasRemoteBindings;
+        if(!filter.NeedsHook && !observeRemote) {
+            filter = null;
+            return;
+        }
         // Der Hook läuft in einem eigenen Thread; die Aktion wird asynchron im UI-Thread ausgeführt
-        PrintScreenFilter filter = new PrintScreenFilter(hookBindings);
-        hook = KeyboardHook.Start(filter, action => dispatcher.BeginInvoke(new Action(() => raise(action))), out int error);
+        hook = KeyboardHook.Start(filter, observeRemote ? remoteClasses : Array.Empty<string>(), action => dispatcher.BeginInvoke(new Action(() => raise(action))), out int error);
         if(hook == null) {
             Log.Warn($"Tastatur-Hook konnte nicht installiert werden (Fehler {error})");
             foreach(KeyValuePair<HotkeyAction, HotkeyBinding> pair in hookBindings) {
@@ -209,9 +301,11 @@ public sealed class HotkeyService : IHotkeyService {
                 problems.Add(Strings.Format(Strings.HintHotkeyFailed, pair.Value.ToString()));
             }
             hookBindings.Clear();
+            filter = null;
             return;
         }
-        Log.Info($"Tastatur-Hook installiert für {string.Join(", ", hookBindings.Select(p => $"{p.Value} ({p.Key})"))}");
+        if(hookBindings.Count > 0) Log.Info($"Tastatur-Hook installiert für {string.Join(", ", hookBindings.Select(p => $"{p.Value} ({p.Key})"))}");
+        if(observeRemote) Log.Info($"Remotedesktop-Erfassung aktiv für Fensterklasse(n) {string.Join(", ", remoteClasses)}");
     }
 
     private void unregisterAll() {
@@ -221,7 +315,9 @@ public sealed class HotkeyService : IHotkeyService {
             hook.Dispose();
             hook = null;
         }
+        filter = null;
         hookBindings.Clear();
+        remotePrintScreen = null;
     }
 
     private IntPtr wndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled) {

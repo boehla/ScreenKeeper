@@ -141,15 +141,17 @@ public sealed class CommandLineRunner {
         if(index + 1 >= args.Length) throw new ArgumentException(Strings.Format(Strings.CliMissingArgument, "--open"));
         string jsonPath = Path.GetFullPath(args[index + 1]);
         if(!File.Exists(jsonPath)) throw new FileNotFoundException(Strings.Format(Strings.CliFileNotFound, jsonPath));
-        // nur für automatisierte Tests, absichtlich nicht in der Hilfe: --test-select x,y,w,h und --test-annotate
+        // nur für automatisierte Tests, absichtlich nicht in der Hilfe: --test-select x,y,w,h, --test-annotate und --test-magnifier
         string? testSelection = getOption(args, "--test-select");
         PixelRect? selection = testSelection == null ? null : ParseRect(testSelection);
         bool testAnnotate = hasFlag(args, "--test-annotate");
+        bool testMagnifier = hasFlag(args, "--test-magnifier");
         AppServices.Initialize(null);
         EditorWindow editor = AppServices.Workflow.OpenExisting(jsonPath);
         Task closed = waitForClose(editor);
         if(selection.HasValue) editor.RunTestSelection(selection.Value);
         if(testAnnotate) editor.RunTestAnnotate();
+        if(testMagnifier) editor.RunTestMagnifier();
         await closed;
         return editor.TestFailed ? 1 : 0;
     }
@@ -204,7 +206,8 @@ public sealed class CommandLineRunner {
         int tabs = await window.RunTestAsync();
         SettingsViewModel viewModel = window.ViewModel;
         Console.Out.WriteLine($"tabs={tabs} storage={viewModel.ResolvedStorageFolder} export={viewModel.ResolvedExportFolder} preview={viewModel.FileNamePreview}");
-        Console.Out.WriteLine($"hotkeys={viewModel.HotkeyCaptureEdit}|{viewModel.HotkeyCaptureSave}|{viewModel.HotkeyHistory} status={viewModel.HotkeyCaptureEditStatus} {viewModel.PrintScreenStatus} autostart={viewModel.Autostart}");
+        Console.Out.WriteLine($"hotkeys={viewModel.HotkeyCaptureEdit}|{viewModel.HotkeyCaptureSave}|{viewModel.HotkeyHistory}|{viewModel.HotkeyCaptureDelayed}|{viewModel.HotkeyRemotePrintScreen} status={viewModel.HotkeyCaptureEditStatus} {viewModel.PrintScreenStatus} autostart={viewModel.Autostart}");
+        Console.Out.WriteLine($"remote={viewModel.CaptureHotkeysInRemoteSessions} delay={viewModel.CaptureDelaySecondsText} ask={viewModel.CaptureDelayAskEachTime} after={viewModel.DelayedCaptureAction}");
         window.Close();
         await closed;
         if(bindingErrors != null) reportBindingErrors(bindingErrors);

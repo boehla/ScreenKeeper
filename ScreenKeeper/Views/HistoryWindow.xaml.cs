@@ -82,6 +82,12 @@ public partial class HistoryWindow : Window, IHistoryHost {
         MessageBox.Show(this, message, Strings.ErrorTitle, MessageBoxButton.OK, MessageBoxImage.Error);
     }
 
+    string? IHistoryHost.AskComment(string? comment) {
+        string? result = CommentDialog.Ask(this, comment);
+        list.Focus();
+        return result;
+    }
+
     private void onLoaded(object sender, RoutedEventArgs e) {
         scrollViewer = findChild<ScrollViewer>(list);
         if(scrollViewer != null) scrollViewer.ScrollChanged += (s, args) => checkLoadMore();

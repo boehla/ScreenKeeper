@@ -136,6 +136,17 @@ public interface IStorageService {
     /// </summary>
     CaptureDocument SetPermanent(string pngOrJsonPath, bool permanent);
 
+    /// <summary>
+    /// Kommentar setzen (leer = entfernen) und die JSON atomar speichern (fehlt sie, wird sie wie beim Bearbeiten angelegt).
+    /// </summary>
+    CaptureDocument SetComment(string pngOrJsonPath, string? comment);
+
+    /// <summary>
+    /// Legt die <see cref="AgentsFile.FileName"/> im Ablageordner an bzw. aktualisiert sie, falls sie fehlt oder veraltet
+    /// ist (je Ablageordner einmal je Programmlauf). Nur, wenn der Ablageordner existiert. Fehler werden nur protokolliert.
+    /// </summary>
+    void EnsureAgentsFile();
+
     void DeleteToRecycleBin(CaptureFiles files);
 
     /// <summary>Verschiebt alle Dateien mehrerer Aufnahmen in einem Vorgang in den Papierkorb.</summary>
@@ -156,6 +167,9 @@ public sealed class StorageService : IStorageService {
     private readonly ConcurrentDictionary<string, Task> pendingWrites = new ConcurrentDictionary<string, Task>(StringComparer.OrdinalIgnoreCase);
     // Gelesene Kennzeichen je JSON-Datei mit deren Änderungszeit (UTC), damit Filter und History sie nicht erneut lesen
     private readonly ConcurrentDictionary<string, (DateTime Stamp, CaptureMetadata Metadata)> metadataCache = new ConcurrentDictionary<string, (DateTime Stamp, CaptureMetadata Metadata)>(StringComparer.OrdinalIgnoreCase);
+    private readonly object agentsSync = new object();
+    // Ablageordner, für den die AGENTS.md in diesem Programmlauf schon geprüft wurde
+    private string? agentsCheckedRoot;
 
     public StorageService(ISettingsService settings, IRenderService render) {
         this.settings = settings;
@@ -191,6 +205,8 @@ public sealed class StorageService : IStorageService {
         DateTime time = document.CapturedAt.DateTime;
         string folder = Path.Combine(RootFolder, time.ToString("yyyy", CultureInfo.InvariantCulture), time.ToString("MM", CultureInfo.InvariantCulture));
         Directory.CreateDirectory(folder);
+        // Nur beim ersten Mal je Ablageordner ein kurzer Dateivergleich; Fehler werden nur protokolliert
+        EnsureAgentsFile();
         string baseName = GetUniqueBaseName(folder, FormatFileName(settings.Settings.FileNamePattern, time));
         CaptureFiles files = CaptureFiles.FromBase(folder, baseName);
         document.Image = Path.GetFileName(files.PngPath);
@@ -205,6 +221,8 @@ public sealed class StorageService : IStorageService {
 
     public void SaveDocument(CaptureDocument document, string jsonPath) {
         CaptureDocumentSerializer.Save(document, jsonPath);
+        // Kennzeichen (z. B. Kommentar) beim nächsten Zugriff neu lesen, auch wenn sich die Änderungszeit nicht messbar ändert
+        metadataCache.TryRemove(Path.GetFullPath(jsonPath), out _);
     }
 
     /// <summary>
@@ -434,6 +452,34 @@ public sealed class StorageService : IStorageService {
         }
         Log.Info($"Aufnahme {opened.JsonPath} {(permanent ? "als permanent markiert" : "nicht mehr permanent")}");
         return opened.Document;
+    }
+
+    public CaptureDocument SetComment(string pngOrJsonPath, string? comment) {
+        OpenedCapture opened = OpenOrCreate(pngOrJsonPath);
+        string? normalized = CaptureDocument.NormalizeComment(comment);
+        if(opened.Document.Comment != normalized) {
+            opened.Document.Comment = normalized;
+            SaveDocument(opened.Document, opened.JsonPath);
+        }
+        Log.Info($"Aufnahme {opened.JsonPath}: Kommentar {(normalized == null ? "entfernt" : $"gesetzt ({normalized.Length} Zeichen)")}");
+        return opened.Document;
+    }
+
+    public void EnsureAgentsFile() {
+        string root;
+        try {
+            root = RootFolder;
+        } catch(Exception ex) {
+            Log.Warn($"AGENTS.md: Ablageordner nicht bestimmbar: {ex.Message}");
+            return;
+        }
+        lock(agentsSync) {
+            if(string.Equals(agentsCheckedRoot, root, StringComparison.OrdinalIgnoreCase)) return;
+            if(!Directory.Exists(root)) return;
+            AgentsFile.TryEnsure(root);
+            // auch nach einem Fehler nicht bei jeder Aufnahme erneut versuchen (nächster Start bzw. Ordnerwechsel)
+            agentsCheckedRoot = root;
+        }
     }
 
     public OpenedCapture OpenOrCreate(string pngOrJsonPath) {

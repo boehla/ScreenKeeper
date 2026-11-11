@@ -50,7 +50,8 @@ public static class HotkeyConflictChecker {
 
         foreach((HotkeyAction action, HotkeyBinding binding) in parsed) {
             if(duplicates.Contains(action)) continue;
-            if(probe != null) {
+            // Der Durchreich-Hotkey wird nie registriert (nur vom Tastatur-Hook abgefangen): keine Probe
+            if(probe != null && action != HotkeyAction.RemotePrintScreen) {
                 (HotkeyProbeResult result, int error) = probe(action, binding);
                 if(result != HotkeyProbeResult.Available) {
                     string text;
@@ -76,6 +77,8 @@ public static class HotkeyConflictChecker {
             case HotkeyAction.CaptureEdit: return Strings.SettingsHotkeyCaptureEdit;
             case HotkeyAction.CaptureSave: return Strings.SettingsHotkeyCaptureSave;
             case HotkeyAction.ShowHistory: return Strings.SettingsHotkeyHistory;
+            case HotkeyAction.CaptureDelayed: return Strings.SettingsHotkeyCaptureDelayed;
+            case HotkeyAction.RemotePrintScreen: return Strings.SettingsHotkeyRemotePrintScreen;
         }
         return action.ToString();
     }

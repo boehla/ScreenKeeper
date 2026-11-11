@@ -129,12 +129,11 @@ public class Phase6Tests {
     }
 
     [Fact]
-    public void PrintScreenFilter_SuppressesOnlyConfiguredCombinationsIncludingKeyUp() {
-        PrintScreenFilter filter = new PrintScreenFilter(new Dictionary<HotkeyAction, HotkeyBinding> {
-            [HotkeyAction.CaptureEdit] = new HotkeyBinding(HotkeyModifiers.None, HotkeyBinding.VkPrintScreen),
-            [HotkeyAction.CaptureSave] = new HotkeyBinding(HotkeyModifiers.Ctrl, HotkeyBinding.VkPrintScreen),
-            // keine Druck-Kombination: gehört nicht zum Hook
-            [HotkeyAction.ShowHistory] = new HotkeyBinding(HotkeyModifiers.Ctrl | HotkeyModifiers.Alt, 0x48)
+    public void HotkeyFilter_SuppressesOnlyConfiguredCombinationsIncludingKeyUp() {
+        // wie der frühere PrintScreenFilter: fehlgeschlagene Druck-Kombinationen gelten immer
+        HotkeyFilter filter = new HotkeyFilter(new[] {
+            new HookBinding(HotkeyAction.CaptureEdit, new HotkeyBinding(HotkeyModifiers.None, HotkeyBinding.VkPrintScreen), HotkeyScope.Always),
+            new HookBinding(HotkeyAction.CaptureSave, new HotkeyBinding(HotkeyModifiers.Ctrl, HotkeyBinding.VkPrintScreen), HotkeyScope.Always)
         });
 
         Assert.True(filter.Process(HotkeyBinding.VkPrintScreen, true, HotkeyModifiers.None, out HotkeyAction? action));

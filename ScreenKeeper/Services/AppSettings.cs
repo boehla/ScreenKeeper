@@ -35,11 +35,47 @@ public sealed class AppSettings {
     /// <summary>Hotkey: History öffnen.</summary>
     public string HotkeyHistory { get; set; } = "Shift+PrintScreen";
 
+    /// <summary>Hotkey: verzögerte Aufnahme (Countdown); leer = aus.</summary>
+    public string HotkeyCaptureDelayed { get; set; } = "";
+
+    /// <summary>
+    /// Hotkey: im Remotedesktop ein reines Druck an die Sitzung durchreichen; leer = aus. Wirkt nur, solange ein
+    /// Remote-Fenster im Vordergrund ist und <see cref="CaptureHotkeysInRemoteSessions"/> an ist.
+    /// </summary>
+    public string HotkeyRemotePrintScreen { get; set; } = "";
+
+    /// <summary>Hotkeys auch bei aktivem Remotedesktop-Fenster (z. B. mstsc im Vollbild) abfangen.</summary>
+    public bool CaptureHotkeysInRemoteSessions { get; set; } = true;
+
+    /// <summary>Fensterklassen von Remotedesktop-Fenstern, durch <c>;</c> oder <c>,</c> getrennt (nur in der Datei einstellbar).</summary>
+    public string RemoteSessionWindowClasses { get; set; } = RemoteSession.DefaultWindowClasses;
+
+    public const int MinCaptureDelaySeconds = 1;
+    public const int MaxCaptureDelaySeconds = 60;
+
+    /// <summary>Verzögerung der verzögerten Aufnahme in Sekunden (1–60); bei „jedes Mal fragen“ der Vorschlag.</summary>
+    public int CaptureDelaySeconds { get; set; } = 3;
+
+    /// <summary>Bei jeder verzögerten Aufnahme nach den Sekunden fragen.</summary>
+    public bool CaptureDelayAskEachTime { get; set; }
+
+    /// <summary>Was nach dem Countdown passiert (siehe <see cref="DelayedCaptureActions"/>).</summary>
+    public string DelayedCaptureAction { get; set; } = DelayedCaptureActions.Edit;
+
     /// <summary>Vergrößerung der Lupe (4–16).</summary>
     public int MagnifierZoom { get; set; } = 8;
 
     /// <summary>Kantenlänge der Lupe in geräteunabhängigen Pixeln.</summary>
     public int MagnifierSize { get; set; } = 160;
+
+    /// <summary>Unter der Lupe eine Zeile mit der Tastenbelegung (Rad: Zoom, +/-: Größe) anzeigen.</summary>
+    public bool ShowMagnifierKeyHints { get; set; } = true;
+
+    /// <summary>
+    /// Zuletzt im Editor gewählter Bereich in Bildschirmkoordinaten des virtuellen Desktops (physische Pixel; nicht
+    /// in Bildpixeln, damit er auf der nächsten Aufnahme an derselben Stelle liegt). Null = keiner.
+    /// </summary>
+    public PixelRect? LastSelection { get; set; }
 
     /// <summary>Standardfarbe der Zeichenwerkzeuge (#AARRGGBB).</summary>
     public string DefaultColor { get; set; } = "#FFE53935";
@@ -133,6 +169,14 @@ public sealed class AppSettings {
     public Dictionary<string, JsonElement>? ExtensionData { get; set; }
 
     /// <summary>
+    /// Alle Werte, die die Hotkey-Registrierung beeinflussen – ändert sich der Text, müssen die Hotkeys neu angewendet werden.
+    /// </summary>
+    public string GetHotkeySignature() {
+        return string.Join("|", HotkeyCaptureEdit, HotkeyCaptureSave, HotkeyHistory, HotkeyCaptureDelayed, HotkeyRemotePrintScreen,
+            CaptureHotkeysInRemoteSessions ? "remote" : "local", RemoteSessionWindowClasses);
+    }
+
+    /// <summary>
     /// Ersetzt ungültige oder fehlende (null) Werte durch Standardwerte.
     /// </summary>
     public void Normalize() {
@@ -143,6 +187,11 @@ public sealed class AppSettings {
         HotkeyCaptureEdit ??= defaults.HotkeyCaptureEdit;
         HotkeyCaptureSave ??= defaults.HotkeyCaptureSave;
         HotkeyHistory ??= defaults.HotkeyHistory;
+        HotkeyCaptureDelayed ??= "";
+        HotkeyRemotePrintScreen ??= "";
+        if(string.IsNullOrWhiteSpace(RemoteSessionWindowClasses)) RemoteSessionWindowClasses = defaults.RemoteSessionWindowClasses;
+        CaptureDelaySeconds = Math.Clamp(CaptureDelaySeconds, MinCaptureDelaySeconds, MaxCaptureDelaySeconds);
+        if(DelayedCaptureAction != DelayedCaptureActions.Edit && DelayedCaptureAction != DelayedCaptureActions.Save) DelayedCaptureAction = defaults.DelayedCaptureAction;
         MagnifierZoom = Math.Clamp(MagnifierZoom, MinMagnifierZoom, MaxMagnifierZoom);
         if(MagnifierSize < MinMagnifierSize || MagnifierSize > MaxMagnifierSize) MagnifierSize = defaults.MagnifierSize;
         if(string.IsNullOrWhiteSpace(DefaultColor)) DefaultColor = defaults.DefaultColor;
@@ -171,7 +220,28 @@ public sealed class AppSettings {
         SettingsVersion = CurrentSettingsVersion;
         if(RetentionDays > MaxRetentionDays) RetentionDays = MaxRetentionDays;
         if(HistoryWindow != null && !HistoryWindow.IsValid) HistoryWindow = null;
+        if(LastSelection.HasValue && !IsValidLastSelection(LastSelection.Value)) LastSelection = null;
     }
+
+    /// <summary>Größte erlaubte Kantenlänge eines gemerkten Bereichs (Schutz vor unsinnigen Werten in der Datei).</summary>
+    public const int MaxLastSelectionSize = 100000;
+
+    /// <summary>Gemerkter Bereich brauchbar? Breite und Höhe mindestens 1 und nicht unsinnig groß.</summary>
+    public static bool IsValidLastSelection(PixelRect region) {
+        return region.Width > 0 && region.Height > 0 && region.Width <= MaxLastSelectionSize && region.Height <= MaxLastSelectionSize
+            && Math.Abs((long)region.X) <= MaxLastSelectionSize && Math.Abs((long)region.Y) <= MaxLastSelectionSize;
+    }
+}
+
+/// <summary>
+/// Werte für <see cref="AppSettings.DelayedCaptureAction"/>.
+/// </summary>
+public static class DelayedCaptureActions {
+    /// <summary>Aufnahme + Editor.</summary>
+    public const string Edit = "edit";
+
+    /// <summary>Aufnahme nur speichern.</summary>
+    public const string Save = "save";
 }
 
 /// <summary>

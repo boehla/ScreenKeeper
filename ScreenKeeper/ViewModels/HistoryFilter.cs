@@ -14,8 +14,8 @@ public enum HistoryQuickRange {
 
 /// <summary>
 /// Filter der History: Zeitraum (Tage <see cref="From"/> bis <see cref="To"/>, jeweils einschließlich, lokale Zeit),
-/// Text (ohne Groß-/Kleinschreibung) im Dateinamen, im Programmnamen oder Fenstertitel des Vordergrundprogramms und
-/// optional nur permanent markierte Aufnahmen. Null bzw. leer = keine Einschränkung.
+/// Text (ohne Groß-/Kleinschreibung) im Dateinamen, im Programmnamen oder Fenstertitel des Vordergrundprogramms oder im
+/// Kommentar und optional nur permanent markierte Aufnahmen. Null bzw. leer = keine Einschränkung.
 /// </summary>
 public sealed record HistoryFilter(DateTime? From, DateTime? To, string? Text, bool PermanentOnly = false) {
     public static HistoryFilter All { get; } = new HistoryFilter(null, null, null);
@@ -52,7 +52,7 @@ public sealed record HistoryFilter(DateTime? From, DateTime? To, string? Text, b
         if(!string.IsNullOrWhiteSpace(Text)) {
             string text = Text.Trim();
             if(contains(entry.Name, text)) return true;
-            return metadata != null && (contains(metadata.ForegroundProcess, text) || contains(metadata.ForegroundTitle, text));
+            return metadata != null && (contains(metadata.ForegroundProcess, text) || contains(metadata.ForegroundTitle, text) || contains(metadata.Comment ?? "", text));
         }
         return true;
     }

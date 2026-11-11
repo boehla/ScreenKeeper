@@ -21,7 +21,9 @@ public enum DocumentChangeKind {
     /// <summary>Der gewählte Bereich.</summary>
     Selection = 1,
     /// <summary>Zeichenobjekte (inkl. virtueller Maus) – die Annotation-Zeichnung muss neu aufgebaut werden.</summary>
-    Annotations = 2
+    Annotations = 2,
+    /// <summary>Der Kommentar der Aufnahme.</summary>
+    Comment = 4
 }
 
 /// <summary>
