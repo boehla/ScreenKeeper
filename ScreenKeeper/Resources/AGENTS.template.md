@@ -85,6 +85,7 @@ haben den genannten Standardwert. Unbekannte Felder (z. B. aus neueren Versionen
 |---|---|---|
 | `title` | String | Fenstertitel |
 | `process` | String | Prozessname ohne `.exe` |
+| `className` | String | Fensterklasse, z. B. `Progman` (Desktop) oder `Shell_TrayWnd` (Taskleiste); fehlt bei älteren Aufnahmen |
 | `bounds` | Rechteck | sichtbarer Fensterrahmen in Bildpixeln |
 | `z` | Zahl | Z-Reihenfolge, 0 = oberstes Fenster |
 | `foreground` | bool | dieses Fenster hatte den Fokus; nur geschrieben, wenn `true` |

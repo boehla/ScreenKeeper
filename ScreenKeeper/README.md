@@ -66,7 +66,8 @@ Tray-Menü unter *Verzögerte Aufnahme*.
 
 Die History ist das Hauptfenster. Sie zeigt alle Aufnahmen, neueste zuerst, nach Tagen gruppiert (Heute, Gestern,
 Datum) – mit Vorschaubild, Uhrzeit, darunter dem **Programm im Vordergrund** bei der Aufnahme (Prozessname und gekürzter
-Fenstertitel, der Tooltip zeigt ihn ganz), dem Kennzeichen **bearbeitet**, wenn ein Bereich oder Zeichnungen gespeichert
+Fenstertitel, der Tooltip zeigt ihn ganz; ist ein Bereich gewählt, steht hier das Fenster, das mehr als die Hälfte des
+Bereichs sichtbar füllt – Desktop und Taskleiste ausgenommen), dem Kennzeichen **bearbeitet**, wenn ein Bereich oder Zeichnungen gespeichert
 sind, und **permanent** (Stern rechts in der Zeile, gefüllt = permanent). Weitere Einträge werden beim Scrollen nachgeladen, auch Tausende Aufnahmen bleiben flüssig. Schließen versteckt
 das Fenster nur; ScreenKeeper läuft im Infobereich weiter.
 

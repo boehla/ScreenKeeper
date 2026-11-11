@@ -207,6 +207,7 @@ public sealed class CaptureService : ICaptureService {
                 windows.Add(new WindowInfo {
                     Title = getWindowTitle(hwnd),
                     Process = getProcessName(processId, processNames),
+                    ClassName = getClassName(hwnd),
                     Bounds = bounds,
                     Z = windows.Count,
                     Foreground = hwnd == foregroundWindow
@@ -227,6 +228,12 @@ public sealed class CaptureService : ICaptureService {
         StringBuilder text = new StringBuilder(length + 1);
         User32.GetWindowText(hwnd, text, text.Capacity);
         return text.ToString();
+    }
+
+    private static string getClassName(IntPtr hwnd) {
+        StringBuilder buffer = new StringBuilder(256);
+        int length = User32.GetClassName(hwnd, buffer, buffer.Capacity);
+        return length > 0 ? buffer.ToString() : "";
     }
 
     private static string getProcessName(uint processId, Dictionary<uint, string> cache) {

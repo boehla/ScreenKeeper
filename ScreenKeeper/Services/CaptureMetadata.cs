@@ -14,8 +14,12 @@ public sealed record CaptureMetadata(bool IsEdited, bool IsBroken, bool Permanen
     /// <summary>JSON vorhanden, aber nicht lesbar.</summary>
     public static CaptureMetadata Broken { get; } = new CaptureMetadata(false, true, false, "", "");
 
+    /// <summary>
+    /// <see cref="ForegroundProcess"/>/<see cref="ForegroundTitle"/> bezeichnen die Aufnahme: bei gewähltem Bereich ggf.
+    /// das Fenster, das ihn überwiegend füllt, sonst das Vordergrundfenster (siehe <see cref="CaptureDescription"/>).
+    /// </summary>
     public static CaptureMetadata FromDocument(CaptureDocument document) {
-        ForegroundInfo? foreground = document.Foreground;
+        ForegroundInfo? foreground = CaptureDescription.Resolve(document);
         return new CaptureMetadata(document.IsEdited, false, document.Permanent, foreground?.Process ?? "", foreground?.Title ?? "", document.Comment ?? "");
     }
 
