@@ -187,6 +187,12 @@
                 </StackPanel>
             </Button>
         </DataTemplate>
+        <!-- Textausrichtung: nur Symbol, Name im Tooltip (3×3-Raster) -->
+        <DataTemplate x:Key="AlignmentTemplate">
+            <Button Style="{StaticResource ToolbarButton}" ToolTip="{Binding Label}" Margin="1" Click="onChoiceClick">
+                <Path Style="{StaticResource Icon}" Data="{Binding Icon}" />
+            </Button>
+        </DataTemplate>
     </UserControl.Resources>
     <Border Background="#F0262626" BorderBrush="#50FFFFFF" BorderThickness="1" CornerRadius="6" Padding="4">
         <StackPanel Orientation="Horizontal">
@@ -311,9 +317,34 @@
                             <TextBlock Style="{StaticResource ValueText}" Text="{Binding CurrentFontSizeText}" />
                         </StackPanel>
                     </ToggleButton>
-                    <Popup x:Name="fontSizePopup" Style="{StaticResource MenuPopup}" PlacementTarget="{Binding ElementName=fontSizeButton}">
+                    <!-- „Auto“, eigene Größe (Eingabe, Enter übernimmt) und die festen Größen -->
+                    <Popup x:Name="fontSizePopup" Style="{StaticResource MenuPopup}" PlacementTarget="{Binding ElementName=fontSizeButton}"
+                           Opened="onFontSizePopupOpened" Closed="onFontSizePopupClosed">
                         <Border Style="{StaticResource PopupPanel}">
-                            <ItemsControl ItemsSource="{Binding FontSizeChoices}" ItemTemplate="{StaticResource ChoiceTemplate}" Focusable="False" />
+                            <StackPanel>
+                                <TextBox x:Name="fontSizeInput" Margin="4,2,4,4" Padding="4,3" MinWidth="80" FontSize="12"
+                                         Foreground="White" CaretBrush="White" Background="#FF3A3A3A" BorderBrush="#70FFFFFF" BorderThickness="1"
+                                         ToolTip="{loc:Str OptionFontSizeInput}" PreviewKeyDown="onFontSizeInputKeyDown" />
+                                <ItemsControl ItemsSource="{Binding FontSizeChoices}" ItemTemplate="{StaticResource ChoiceTemplate}" Focusable="False" />
+                            </StackPanel>
+                        </Border>
+                    </Popup>
+                </Grid>
+                <Grid Visibility="{Binding ShowTextAlignmentOption, Converter={StaticResource BoolToVisibility}}">
+                    <ToggleButton x:Name="alignmentButton" Style="{StaticResource MenuButton}" ToolTip="{loc:Str OptionTextAlignment}"
+                                  IsChecked="{Binding IsOpen, ElementName=alignmentPopup}"
+                                  IsHitTestVisible="{Binding IsOpen, ElementName=alignmentPopup, Converter={StaticResource InverseBool}}">
+                        <Path Style="{StaticResource Icon}" Data="{Binding CurrentTextAlignmentIcon}" />
+                    </ToggleButton>
+                    <Popup x:Name="alignmentPopup" Style="{StaticResource MenuPopup}" PlacementTarget="{Binding ElementName=alignmentButton}">
+                        <Border Style="{StaticResource PopupPanel}">
+                            <ItemsControl ItemsSource="{Binding TextAlignmentChoices}" ItemTemplate="{StaticResource AlignmentTemplate}" Focusable="False">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <UniformGrid Columns="3" Rows="3" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                            </ItemsControl>
                         </Border>
                     </Popup>
                 </Grid>

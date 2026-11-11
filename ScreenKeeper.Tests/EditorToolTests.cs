@@ -310,7 +310,7 @@ public class EditorToolTests {
     }
 
     [Fact]
-    public void TextTool_DragSetsWrapWidth() {
+    public void TextTool_DragCreatesFixedField() {
         Sta.Run(() => {
             EditorViewModel vm = create();
             vm.Options.FontSize = 20;
@@ -320,7 +320,45 @@ public class EditorToolTests {
             TextAnnotation editing = vm.EditingText!;
             Assert.Equal(50, editing.X);
             Assert.Equal(50, editing.Y);
-            Assert.Equal(201 - 2 * (int)TextLayout.GetPadding(20), editing.Width);
+            // äußere Feldgröße wie beim Rechteck (beide Pixel inklusive)
+            Assert.Equal(201, editing.Width);
+            Assert.Equal(41, editing.Height);
+            Assert.True(TextLayout.IsField(editing));
+            Assert.Equal(new Rect(50, 50, 201, 41), TextLayout.GetBounds(editing));
+        });
+    }
+
+    [Fact]
+    public void TextEdit_HandleDragResizesFieldAndKeepsEditing() {
+        Sta.Run(() => {
+            EditorViewModel vm = create();
+            drag(vm, TextTool.ToolKey, 50, 50, 250, 90);
+            vm.UpdateEditingText("Hallo");
+            Assert.NotNull(vm.GetSelectionVisual());
+            Assert.Equal(EditorCursor.SizeNWSE, vm.GetCursor(at(251, 91)));
+            // Anfasser unten rechts ziehen: Feld wächst, die Bearbeitung läuft weiter
+            drag(vm, "", 251, 91, 301, 131);
+            Assert.True(vm.IsTextEditing);
+            Assert.False(vm.IsEditingResizeActive);
+            TextAnnotation editing = vm.EditingText!;
+            Assert.Equal("Hallo", editing.Text);
+            Assert.Equal((50, 50, 251, 81), (editing.X, editing.Y, editing.Width!.Value, editing.Height!.Value));
+            // Klick daneben übernimmt mit der neuen Größe
+            click(vm, "", 400, 300);
+            TextAnnotation committed = Assert.Single(vm.Document.Annotations.OfType<TextAnnotation>(), t => t.Text == "Hallo");
+            Assert.Equal((251, 81), (committed.Width!.Value, committed.Height!.Value));
+        });
+    }
+
+    [Fact]
+    public void TextEdit_FreeTextHasNoResizeHandles() {
+        Sta.Run(() => {
+            EditorViewModel vm = create();
+            click(vm, TextTool.ToolKey, 50, 50);
+            vm.UpdateEditingText("Hallo");
+            Assert.True(vm.IsTextEditing);
+            Assert.Null(vm.GetSelectionVisual());
+            Assert.Equal(ObjectHandle.None, vm.HitEditingTextHandle(at((int)TextLayout.GetBounds(vm.EditingText!).Right, (int)TextLayout.GetBounds(vm.EditingText!).Bottom)));
         });
     }
 

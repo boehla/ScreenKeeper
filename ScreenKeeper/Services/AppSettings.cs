@@ -89,6 +89,12 @@ public sealed class AppSettings {
     /// <summary>Zuletzt verwendete Schriftgröße des Text-Werkzeugs (Bildpixel).</summary>
     public double DefaultFontSize { get; set; } = 24;
 
+    /// <summary>Zuletzt gewählt: neue Textfelder mit automatischer Schriftgröße.</summary>
+    public bool DefaultTextAutoFontSize { get; set; }
+
+    /// <summary>Zuletzt verwendete Ausrichtung des Text-Werkzeugs (siehe <see cref="TextAlignments"/>).</summary>
+    public string DefaultTextAlignment { get; set; } = TextAlignments.TopLeft;
+
     /// <summary>Zuletzt verwendete Blockgröße beim Verpixeln (Bildpixel).</summary>
     public int DefaultBlockSize { get; set; } = 10;
 
@@ -198,6 +204,7 @@ public sealed class AppSettings {
         if(string.IsNullOrWhiteSpace(HighlightColor)) HighlightColor = defaults.HighlightColor;
         if(DefaultThickness <= 0 || DefaultThickness > 100 || double.IsNaN(DefaultThickness)) DefaultThickness = defaults.DefaultThickness;
         if(DefaultFontSize < 6 || DefaultFontSize > 400 || double.IsNaN(DefaultFontSize)) DefaultFontSize = defaults.DefaultFontSize;
+        DefaultTextAlignment = TextAlignments.Normalize(DefaultTextAlignment, defaults.DefaultTextAlignment);
         if(DefaultBlockSize < 2 || DefaultBlockSize > 200) DefaultBlockSize = defaults.DefaultBlockSize;
         if(DefaultBlurRadius < 1 || DefaultBlurRadius > 200) DefaultBlurRadius = defaults.DefaultBlurRadius;
         if(DefaultStampSize < 8 || DefaultStampSize > 400 || double.IsNaN(DefaultStampSize)) DefaultStampSize = defaults.DefaultStampSize;

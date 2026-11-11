@@ -70,6 +70,10 @@ Alle Services als Klassen mit Interface (`ICaptureService` usw.), ohne DI-Framew
   zeichnet Original + Annotation-Drawing per `DrawingVisual`/`RenderTargetBitmap` (96 dpi, Pbgra32) und schneidet auf `region`.
   Der Editor zeigt dasselbe `Drawing` live an (z. B. über ein `DrawingImage`/`DrawingBrush` oder ein Host-Element) –
   so ist Anzeige = Export.
+- `TextLayout`: **die eine Text-Anordnung** (`Arrange`) für Anzeige, Export, Treffertest und Inline-Bearbeitung –
+  wirksame Schriftgröße (bei „Auto“ binäre Suche im 0,5-px-Raster, 6–400 px, Ergebnis je Text/Schrift/Feldgröße
+  zwischengespeichert), Innenabstand, Feld und Zeichenpunkt je Ausrichtung. Festes Textfeld (`width` + `height` =
+  äußere Feldgröße) wird beim Zeichnen auf das Feld beschnitten; freier Text (ohne `height`) wie bis 0.9.
 - `ClipboardService`: Bild als `CF_BITMAP`/DIB **und** als `PNG`-Format setzen (`DataObject` mit `SetImage` + `SetData("PNG", MemoryStream)`),
   mit Wiederholversuchen (Zwischenablage kann belegt sein).
 - `HotkeyService`: `RegisterHotKey` über ein verstecktes `HwndSource`-Fenster; Fallback `WH_KEYBOARD_LL` für die Druck-Taste.

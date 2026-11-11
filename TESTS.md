@@ -19,7 +19,7 @@ Erwartet: `0 Warning(s)`, `0 Error(s)` (bzw. `0 Warnung(en)`, `0 Fehler` bei deu
 dotnet test ScreenKeeper.Tests\ScreenKeeper.Tests.csproj
 ```
 
-Erwartet: `Passed!  - Failed: 0, Passed: 335, Skipped: 0, Total: 335` (Stand 0.9.0). In einer getrennten
+Erwartet: `Passed!  - Failed: 0, Passed: 353, Skipped: 0, Total: 353` (Stand 0.10.0). In einer getrennten
 Remotedesktop-Sitzung scheitern die drei `RenderServiceTests` `Render_FullImageIsIdentical`,
 `Render_DrawsCapturedCursorAtHotspot` und `Render_CutsRegionExactly` (kein Rendern ohne Bildschirm). Die Tests schreiben nur in
 `%TEMP%\ScreenKeeperTests\…` und räumen danach auf; sie brauchen keinen entsperrten Desktop.
@@ -158,6 +158,23 @@ Nicht automatisierbar (braucht eine echte Remotedesktop-Verbindung bzw. Fokus un
 3. „Aufnahme verwerfen“ mit geändertem Bereich: `lastSelection` bleibt unverändert.
 4. Alte Aufnahme aus der History nur öffnen und schließen: `lastSelection` bleibt unverändert.
 5. Fenster-Editor (andere Anordnung): Knopf ausgegraut, Tooltip nennt den Grund; ebenso ohne gemerkten Bereich.
+
+**Text-Werkzeug: festes Feld, Auto-Größe, Ausrichtung** (ab 0.10, Editor mit beliebiger Aufnahme):
+
+1. T, Feld aufziehen: gestrichelte Vorschau wie beim Rechteck (Shift = Quadrat, am Bildrand begrenzt). Danach
+   Eingabefeld genau in Feldgröße mit schwarz-weiß gestricheltem Rahmen.
+2. Schriftgröße → „Auto“, viel Text tippen: die Schrift wird beim Tippen kleiner, der Knopf zeigt „Auto (… px)“.
+   Enter → neue Zeile; Strg+Enter (oder Klick daneben) → gezeichneter Text sieht genauso aus wie im Eingabefeld.
+3. Mit „Auswahl“ (oder weiter mit T) an einem Eck-/Seitenanfasser ziehen: Feld ändert Breite/Höhe, Auto-Schrift
+   wächst bzw. schrumpft mit; bei fester Größe bleibt die Schrift, überstehender Text wird am Feldrand abgeschnitten
+   (auch nach Strg+C / Export).
+4. Schriftgröße-Menü: ins Eingabefeld klicken, `18,5` + Enter → Knopf „18,5 px“, „Auto“ aus; Backspace/Buchstaben im
+   Eingabefeld löschen kein Objekt und wechseln kein Werkzeug; danach tippt man im Textfeld weiter.
+5. Ausrichtung: 3×3-Raster, Tooltips; „Mitte“ zentriert den Text im Feld, „unten rechts“ setzt ihn rechtsbündig an den
+   unteren Rand. Ein einfacher Klick erzeugt freien Text (wächst, nur horizontale Ausrichtung).
+6. Editor schließen, neu öffnen: das nächste Textfeld übernimmt Auto/feste Größe, Ausrichtung, Farbe, Hintergrund
+   (`settings.json`: `defaultTextAutoFontSize`, `defaultTextAlignment`).
+7. Eine Aufnahme aus 0.9 mit Text öffnen: Text sieht unverändert aus.
 
 ## 6. Kodierung
 

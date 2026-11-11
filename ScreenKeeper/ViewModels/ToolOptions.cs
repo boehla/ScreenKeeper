@@ -34,7 +34,14 @@ public sealed class ToolOptions {
 
     public bool Smooth { get; set; } = true;
 
+    /// <summary>Feste Schriftgröße (Bildpixel); auch für freien Text, wenn <see cref="TextAutoFontSize"/> an ist.</summary>
     public double FontSize { get; set; } = 24;
+
+    /// <summary>Neue Textfelder mit automatischer Schriftgröße.</summary>
+    public bool TextAutoFontSize { get; set; }
+
+    /// <summary>Ausrichtung neuer Texte (siehe <see cref="TextAlignments"/>).</summary>
+    public string TextAlignment { get; set; } = TextAlignments.TopLeft;
 
     public int BlockSize { get; set; } = 10;
 
@@ -102,6 +109,8 @@ public sealed class ToolOptions {
             TextBackground = settings.DefaultTextBackground,
             Smooth = settings.DefaultSmooth,
             FontSize = settings.DefaultFontSize,
+            TextAutoFontSize = settings.DefaultTextAutoFontSize,
+            TextAlignment = TextAlignments.Normalize(settings.DefaultTextAlignment, TextAlignments.TopLeft),
             BlockSize = settings.DefaultBlockSize,
             BlurRadius = settings.DefaultBlurRadius,
             StampSize = settings.DefaultStampSize,
@@ -126,6 +135,8 @@ public sealed class ToolOptions {
             || settings.DefaultTextBackground != TextBackground
             || settings.DefaultSmooth != Smooth
             || settings.DefaultFontSize != FontSize
+            || settings.DefaultTextAutoFontSize != TextAutoFontSize
+            || settings.DefaultTextAlignment != TextAlignment
             || settings.DefaultBlockSize != BlockSize
             || settings.DefaultBlurRadius != BlurRadius
             || settings.DefaultStampSize != StampSize
@@ -144,6 +155,8 @@ public sealed class ToolOptions {
         settings.DefaultTextBackground = TextBackground;
         settings.DefaultSmooth = Smooth;
         settings.DefaultFontSize = FontSize;
+        settings.DefaultTextAutoFontSize = TextAutoFontSize;
+        settings.DefaultTextAlignment = TextAlignment;
         settings.DefaultBlockSize = BlockSize;
         settings.DefaultBlurRadius = BlurRadius;
         settings.DefaultStampSize = StampSize;

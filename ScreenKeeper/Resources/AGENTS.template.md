@@ -154,11 +154,17 @@ Wie `line` (`points` mit Anfang und Spitze, `stroke`, `thickness`, `startCap`, `
 | `x`, `y` | Zahl | | linke obere Ecke des Textfelds |
 | `text` | String | `""` | Text (mehrzeilig möglich) |
 | `fontFamily` | String | `Segoe UI` | Schriftart |
-| `fontSize` | Zahl | `24` | Schriftgröße in Bildpixeln |
+| `fontSize` | Zahl | `24` | Schriftgröße in Bildpixeln (bei `autoFontSize` die zuletzt gewählte feste Größe, nicht verwendet) |
 | `bold` | bool | `false` | fett |
 | `foreground` | Farbe | `#FFE53935` | Textfarbe |
 | `background` | Farbe | fehlt | Hintergrundfarbe; fehlt = kein Hintergrund |
-| `width` | Zahl | fehlt | Breite des Textfelds mit Zeilenumbruch; fehlt = ohne Umbruch |
+| `width` | Zahl | fehlt | ohne `height`: Umbruchbreite ohne Innenabstand, fehlt = ohne Umbruch; mit `height`: äußere Breite des festen Textfelds |
+| `height` | Zahl | fehlt | äußere Höhe des festen Textfelds (ab 0.10); fehlt = freier Text, der mit dem Inhalt wächst |
+| `autoFontSize` | bool | `false` | nur festes Feld: Schriftgröße automatisch so groß wie möglich, dass der Text ins Feld passt (6–400 px, in 0,5er-Schritten) |
+| `alignment` | String | `topLeft` | `topLeft`, `topCenter`, `topRight`, `middleLeft`, `middleCenter`, `middleRight`, `bottomLeft`, `bottomCenter`, `bottomRight`; horizontal = Zeilenausrichtung, vertikal = Lage im festen Feld |
+
+Innenabstand zwischen Feldrand und Text: `round(Schriftgröße × 0,2)`. Ein festes Feld (`width` und `height`) schneidet
+Text, der nicht hineinpasst, am Feldrand ab.
 
 ### `highlight` – Textmarker
 

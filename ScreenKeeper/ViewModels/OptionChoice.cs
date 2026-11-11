@@ -15,7 +15,9 @@ public enum OptionKind {
     CursorKind,
     FillColor,
     StartCap,
-    EndCap
+    EndCap,
+    AutoFontSize,
+    TextAlignment
 }
 
 /// <summary>
@@ -32,7 +34,10 @@ public sealed class OptionChoice {
 
     public OptionKind Kind { get; }
 
-    /// <summary>Wert: string (Farbe, Zeigerart, Linienende), double (Stärke, Schrift-, Stempelgröße) oder int (Block, Radius).</summary>
+    /// <summary>
+    /// Wert: string (Farbe, Zeigerart, Linienende, Textausrichtung), double (Stärke, Schrift-, Stempelgröße), int (Block,
+    /// Radius) oder bool (automatische Schriftgröße).
+    /// </summary>
     public object Value { get; }
 
     public string Label { get; }
@@ -40,7 +45,7 @@ public sealed class OptionChoice {
     /// <summary>Farbfeld (nur bei Farben).</summary>
     public Brush? Brush { get; }
 
-    /// <summary>Symbol (nur bei Linienenden).</summary>
+    /// <summary>Symbol (nur bei Linienenden und Textausrichtung).</summary>
     public Geometry? Icon { get; }
 
     /// <summary>Strichstärke für die Vorschau-Linie im Menü (nur bei Strichstärken).</summary>

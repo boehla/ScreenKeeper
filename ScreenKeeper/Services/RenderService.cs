@@ -233,13 +233,18 @@ public sealed class RenderService : IRenderService {
 
     private void drawText(DrawingContext dc, TextAnnotation annotation) {
         if(string.IsNullOrEmpty(annotation.Text)) return;
-        FormattedText formatted = TextLayout.Create(annotation, AnnotationColors.GetBrush(annotation.Foreground));
-        double padding = TextLayout.GetPadding(annotation.FontSize);
+        TextArrangement layout = TextLayout.Arrange(annotation, AnnotationColors.GetBrush(annotation.Foreground));
         if(!string.IsNullOrEmpty(annotation.Background)) {
-            Rect bounds = TextLayout.GetBounds(annotation, formatted);
-            dc.DrawRoundedRectangle(AnnotationColors.GetBrush(annotation.Background), null, bounds, padding / 2, padding / 2);
+            dc.DrawRoundedRectangle(AnnotationColors.GetBrush(annotation.Background), null, layout.Bounds, layout.Padding / 2, layout.Padding / 2);
         }
-        dc.DrawText(formatted, new Point(annotation.X + padding, annotation.Y + padding));
+        // festes Feld: was nicht hineinpasst, wird am Feldrand abgeschnitten (Anzeige und Export)
+        if(layout.IsField) {
+            RectangleGeometry clip = new RectangleGeometry(layout.Bounds);
+            clip.Freeze();
+            dc.PushClip(clip);
+        }
+        dc.DrawText(layout.Text, layout.Origin);
+        if(layout.IsField) dc.Pop();
     }
 
     private void drawHighlight(DrawingContext dc, HighlightAnnotation annotation) {

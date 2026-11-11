@@ -27,12 +27,13 @@
             <views:SelectionOverlay x:Name="selectionOverlay" />
             <!-- Hilfslinien durch den Zielpixel beim Wählen des Bereichs (über die ganze Fläche) -->
             <views:CrosshairOverlay x:Name="crosshairOverlay" />
-            <views:AnnotationOverlay x:Name="annotationOverlay" />
             <!-- Inline-Bearbeitung von Text (Position, Schrift und Farbe setzt EditorWindow.TextEditing.cs) -->
             <TextBox x:Name="textEditor" Visibility="Collapsed" AcceptsReturn="True" AcceptsTab="False"
                      BorderBrush="#A0FFFFFF" BorderThickness="1" Padding="0" Background="Transparent"
                      VerticalScrollBarVisibility="Disabled" HorizontalScrollBarVisibility="Disabled"
                      UndoLimit="100" Cursor="IBeam" />
+            <!-- über dem Textfeld, damit die Anfasser des bearbeiteten Felds ganz sichtbar sind (fängt keine Klicks ab) -->
+            <views:AnnotationOverlay x:Name="annotationOverlay" />
             <views:Magnifier x:Name="magnifier" Visibility="Collapsed" />
             <views:EditorToolbar x:Name="toolbar" Visibility="Hidden" />
         </Canvas>

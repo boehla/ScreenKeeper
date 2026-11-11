@@ -167,7 +167,8 @@ public static class AnnotationEditing {
     /// <summary>
     /// Kopie mit geänderter Größe: Anfasser <paramref name="handle"/> wurde bei Pixel <paramref name="down"/> gegriffen und
     /// steht jetzt bei <paramref name="pointer"/>. Rechteck-artige Objekte: Rahmen wie beim Bereich (klappt um);
-    /// Freihand: Punkte werden skaliert; Text: seitliche Anfasser ändern die Umbruchbreite, die übrigen die Schriftgröße;
+    /// Freihand: Punkte werden skaliert; festes Textfeld: wie ein Rechteck (Schriftgröße bleibt); freier Text: seitliche
+    /// Anfasser ändern die Umbruchbreite, die übrigen die Schriftgröße;
     /// Stempel: Durchmesser um den Mittelpunkt; Linie/Pfeil: Endpunkt (mit <paramref name="shift"/> im 45°-Raster).
     /// </summary>
     public static Annotation Resized(Annotation original, ObjectHandle handle, PixelPoint down, PixelPoint pointer, bool shift, IAnnotationMeasure measure) {
@@ -210,6 +211,15 @@ public static class AnnotationEditing {
     }
 
     private static void resizeText(TextAnnotation text, TextAnnotation original, ObjectHandle handle, PixelPoint down, PixelPoint pointer, IAnnotationMeasure measure) {
+        if(TextLayout.IsField(original)) {
+            // festes Feld: wie ein Rechteck in Breite und Höhe, die Schriftgröße bleibt (Auto passt sich über das Layout an)
+            PixelRect field = resizeRect(new PixelRect(original.X, original.Y, original.Width!.Value, original.Height!.Value), handle, down, pointer);
+            text.X = field.X;
+            text.Y = field.Y;
+            text.Width = Math.Max(1, field.Width);
+            text.Height = Math.Max(1, field.Height);
+            return;
+        }
         Rect bounds = measure.GetTextBounds(original);
         PixelRect from = new PixelRect(original.X, original.Y, Math.Max(1, (int)Math.Ceiling(bounds.Width)), Math.Max(1, (int)Math.Ceiling(bounds.Height)));
         PixelRect to = resizeRect(from, handle, down, pointer);

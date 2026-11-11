@@ -103,14 +103,15 @@ Ein Screenshot-Tool für Windows als Ersatz für Greenshot. Kernidee:
 | Rechteck, Ellipse | Rahmenfarbe, Strichstärke, Füllung optional |
 | Linie, Pfeil | Farbe, Strichstärke; Shift = 45°-Raster |
 | Freihand | Farbe, Strichstärke, Glättung |
-| Text | Schrift, Größe, Farbe, Hintergrund optional; Doppelklick zum Bearbeiten |
+| Text | Klick = freier Text (wächst mit dem Inhalt); Aufziehen = festes Textfeld wie ein Rechteck (verschieben, an allen Anfassern in Breite/Höhe ändern, Text wird umbrochen und am Feldrand abgeschnitten); Schriftgröße fest (Liste oder eigene Eingabe 6–400 px) oder „Auto“ (größte Schrift, bei der der Text ins Feld passt); Ausrichtung 3×3 (horizontal Zeilen, vertikal Lage im Feld); Farbe, Hintergrund optional; Doppelklick zum Bearbeiten (ab 0.10) |
 | Highlight (Textmarker) | halbtransparentes Rechteck, Farbe (Standard Gelb) |
 | Verpixeln | Rechteck, Blockgröße einstellbar |
 | Weichzeichnen | Rechteck, Stärke einstellbar |
 | Nummern-Stempel | fortlaufend 1, 2, 3 …, Farbe, Größe |
 | **Virtuelle Maus** | siehe unten |
 
-- Farbe und Strichstärke über die Werkzeugleiste; zuletzt verwendete Werte werden gemerkt.
+- Farbe und Strichstärke über die Werkzeugleiste; zuletzt verwendete Werte werden gemerkt (beim Text auch
+  Auto/feste Schriftgröße und Ausrichtung, auch wenn sie an einem vorhandenen Text geändert wurden).
 - **Rückgängig / Wiederholen** (Strg+Z / Strg+Y) für alle Änderungen inkl. Bereich und Maus.
 - Verpixeln und Weichzeichnen arbeiten **nicht destruktiv**: Sie werden bei Anzeige und Export aus dem Original berechnet.
 - Zeichnungen dürfen außerhalb des Bereichs liegen; sie bleiben gespeichert und werden erst beim Export abgeschnitten.

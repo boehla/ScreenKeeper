@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.10.0
+
+- **Texteingabe:** Enter fügt eine neue Zeile ein; Strg+Enter oder ein Klick daneben übernimmt den Text (bisher:
+  Enter übernimmt, Shift+Enter neue Zeile). Beim Aufziehen des Textfelds zeigt der Mauszeiger das Kreuz wie beim
+  Rechteck.
+- **Feldgröße während der Eingabe:** Ein festes Textfeld zeigt auch beim Bearbeiten seine acht Anfasser; Ziehen ändert
+  Breite/Höhe, die Eingabe läuft weiter. Freier Text (wächst mit dem Inhalt) hat dabei keine Anfasser.
+- **Textfeld wie ein Rechteck:** Mit dem Text-Werkzeug aufgezogen (gleiche Vorschau, Begrenzung aufs Bild, Shift =
+  Quadrat) entsteht ein festes Textfeld mit Breite **und** Höhe. Es lässt sich verschieben und an allen acht
+  Anfassern in Breite und Höhe ändern; die Schriftgröße wird dabei nicht mitskaliert. Der Text wird im Feld
+  umbrochen; was nicht hineinpasst, wird am Feldrand abgeschnitten – in Anzeige und Export. Beim Bearbeiten zeigt ein
+  schwarz-weiß gestrichelter Rahmen die Feldgrenzen, beim Auswählen der Auswahlrahmen. Rahmen unter 10 × 10 px und ein
+  einfacher Klick ergeben wie bisher freien Text, der mit dem Inhalt wächst.
+- **Schriftgröße „Auto“:** größte Schrift im 0,5-px-Raster (6–400 px, höchstens eine Zeile so hoch wie das Feld), bei
+  der der umbrochene Text ohne Worttrennung samt Innenabstand ins Feld passt – je mehr Text, desto kleiner; passt er
+  auch mit 6 px nicht, wird abgeschnitten. Berechnet in `TextLayout` (binäre Suche, Ergebnis zwischengespeichert),
+  damit Anzeige, Export, Treffertest und Inline-Bearbeitung dieselbe Größe verwenden; die Inline-Bearbeitung passt die
+  Größe beim Tippen an. Der Knopf zeigt „Auto (31 px)“.
+- **Eigene Schriftgröße:** Im Menü der Schriftgröße steht über der Liste ein Eingabefeld (6–400 px, Komma oder Punkt,
+  optional „px“, auf 0,5 gerundet; Enter übernimmt, Esc schließt). Eine feste Größe schaltet „Auto“ aus. Editor-Kürzel
+  greifen während der Eingabe nicht.
+- **Ausrichtung:** neuer Knopf mit 3×3-Raster (oben/Mitte/unten × links/Mitte/rechts, Tooltips). Horizontal die
+  Zeilenausrichtung, vertikal die Lage des Textblocks im festen Feld (bei freiem Text nur horizontal).
+- **Text-Einstellungen gemerkt:** Auto/feste Größe, Schriftgröße und Ausrichtung gelten wie Farbe und Hintergrund für
+  das nächste Textfeld – auch wenn sie an einem bearbeiteten oder ausgewählten Text geändert wurden. Neue
+  Einstellungen `defaultTextAutoFontSize` und `defaultTextAlignment` (unbekannte Werte → oben links).
+- Datenformat (`text`): neue Felder `height` (äußere Feldhöhe; fehlt = freier Text), `autoFontSize` und `alignment`
+  (`topLeft` … `bottomRight`, unbekannte Werte bleiben erhalten und wirken wie oben links). Mit `height` ist `width`
+  die äußere Feldbreite inklusive Innenabstand – so bleibt das Feld stehen, wenn sich der Innenabstand mit der
+  automatischen Schriftgröße ändert; ohne `height` bleibt `width` die Umbruchbreite ohne Innenabstand wie bisher.
+  Ältere Dateien sehen unverändert aus, `formatVersion` bleibt 1. AGENTS.md beschreibt die neuen Felder.
+
 ## 0.9.1
 
 - **Ausgewähltes Objekt bei aktivem Zeichenwerkzeug:** Ein Klick auf das ausgewählte Objekt oder seine Anfasser

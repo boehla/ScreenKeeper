@@ -38,7 +38,8 @@ public sealed partial class EditorViewModel {
         nameof(CurrentColor), nameof(CurrentColorBrush), nameof(CurrentThickness), nameof(CurrentThicknessText),
         nameof(CurrentFillColor), nameof(CurrentFillBrush), nameof(IsTextBackgroundActive),
         nameof(CurrentStartCap), nameof(CurrentEndCap), nameof(CurrentStartCapIcon), nameof(CurrentEndCapIcon),
-        nameof(IsSmoothActive), nameof(CurrentFontSizeText),
+        nameof(IsSmoothActive), nameof(CurrentFontSizeText), nameof(CurrentFontSizeValueText), nameof(IsAutoFontSizeActive),
+        nameof(ShowTextAlignmentOption), nameof(CurrentTextAlignment), nameof(CurrentTextAlignmentIcon),
         nameof(CurrentBlockSizeText), nameof(CurrentBlurRadiusText), nameof(CurrentStampSizeText),
         nameof(CurrentCursorKindLabel), nameof(IsCursorVisible), nameof(SelectedAnnotation)
     };
@@ -50,6 +51,10 @@ public sealed partial class EditorViewModel {
     private string? selectedAnnotationId;
     private TextAnnotation? editingText;
     private bool editingIsNew;
+    // Größe-Ändern des bearbeiteten festen Felds: Stand beim Drücken (null = kein Vorgang), Anfasser und Startpixel
+    private TextAnnotation? editingResizeBefore;
+    private ObjectHandle editingResizeHandle;
+    private PixelPoint editingResizeDown;
     private IReadOnlyList<OptionChoice>? colorChoices;
     private IReadOnlyList<OptionChoice>? thicknessChoices;
     private IReadOnlyList<OptionChoice>? fontSizeChoices;
@@ -60,6 +65,7 @@ public sealed partial class EditorViewModel {
     private IReadOnlyList<OptionChoice>? fillColorChoices;
     private IReadOnlyList<OptionChoice>? startCapChoices;
     private IReadOnlyList<OptionChoice>? endCapChoices;
+    private IReadOnlyList<OptionChoice>? textAlignmentChoices;
     private ICommand? toggleTextBackgroundCommand;
     private ICommand? toggleSmoothCommand;
     private ICommand? toggleCursorVisibleCommand;
@@ -169,8 +175,9 @@ public sealed partial class EditorViewModel {
     /// Rahmen und Anfasser des ausgewählten Objekts (null: nichts ausgewählt oder Text wird bearbeitet).
     /// </summary>
     public ObjectSelectionVisual? GetSelectionVisual() {
-        if(editingText != null) return null;
-        Annotation? selected = SelectedAnnotation;
+        // bearbeitetes festes Feld: Rahmen und Anfasser der Arbeitskopie (Größe ändern während der Eingabe)
+        if(editingText != null && !TextLayout.IsField(editingText)) return null;
+        Annotation? selected = (Annotation?)editingText ?? SelectedAnnotation;
         if(selected == null) return null;
         Rect bounds = AnnotationEditing.GetBounds(selected, Measure);
         List<Point> handles = AnnotationEditing.GetHandles(selected).Select(h => AnnotationEditing.GetHandlePoint(selected, h, Measure)).ToList();
@@ -213,16 +220,64 @@ public sealed partial class EditorViewModel {
     }
 
     public void UpdateEditingText(string text) {
-        if(editingText != null) editingText.Text = text;
+        if(editingText == null) return;
+        editingText.Text = text;
+        // automatische Schriftgröße: die Anzeige in der Werkzeugleiste folgt dem Text
+        if(editingText.AutoFontSize && TextLayout.IsField(editingText)) OnPropertyChanged(nameof(CurrentFontSizeText));
+    }
+
+    /// <summary>Wird gerade die Größe des bearbeiteten Textfelds gezogen?</summary>
+    public bool IsEditingResizeActive => editingResizeBefore != null;
+
+    /// <summary>
+    /// Anfasser des gerade bearbeiteten festen Textfelds unter der Maus bzw. der gerade gezogene
+    /// (<see cref="ObjectHandle.None"/>: keiner, keine Bearbeitung oder freier Text – der wächst mit dem Inhalt).
+    /// </summary>
+    public ObjectHandle HitEditingTextHandle(PointerInput input) {
+        if(editingResizeBefore != null) return editingResizeHandle;
+        if(editingText == null || !TextLayout.IsField(editingText)) return ObjectHandle.None;
+        return AnnotationEditing.HitHandle(editingText, input.X, input.Y, HandleRadius, Measure);
     }
 
     /// <summary>
-    /// Text übernehmen (Enter, Klick daneben): neu → einfügen; geändert → ein Rückgängig-Schritt; leer → Objekt löschen.
+    /// Größe-Ändern des bearbeiteten festen Felds beginnen (die Bearbeitung läuft weiter); false, wenn kein Anfasser
+    /// getroffen wurde.
+    /// </summary>
+    private bool tryBeginEditingResize(PointerInput input) {
+        ObjectHandle hit = HitEditingTextHandle(input);
+        if(hit == ObjectHandle.None || editingText == null) return false;
+        editingResizeBefore = (TextAnnotation)editingText.Clone();
+        editingResizeHandle = hit;
+        editingResizeDown = input.Pixel;
+        return true;
+    }
+
+    private void moveEditingResize(PointerInput input) {
+        if(editingResizeBefore == null || editingText == null) return;
+        if(AnnotationEditing.Resized(editingResizeBefore, editingResizeHandle, editingResizeDown, input.Pixel, input.Shift, Measure) is not TextAnnotation resized) return;
+        if(resized.X == editingText.X && resized.Y == editingText.Y && resized.Width == editingText.Width && resized.Height == editingText.Height) return;
+        // nur die Geometrie übernehmen; der Text gehört dem Eingabefeld
+        editingText.X = resized.X;
+        editingText.Y = resized.Y;
+        editingText.Width = resized.Width;
+        editingText.Height = resized.Height;
+        TextEditChanged?.Invoke(this, EventArgs.Empty);
+        if(editingText.AutoFontSize) OnPropertyChanged(nameof(CurrentFontSizeText));
+        NotifyOverlayChanged();
+    }
+
+    private void endEditingResize() {
+        editingResizeBefore = null;
+    }
+
+    /// <summary>
+    /// Text übernehmen (Strg+Enter, Klick daneben): neu → einfügen; geändert → ein Rückgängig-Schritt; leer → Objekt löschen.
     /// </summary>
     public void CommitTextEdit() {
         TextAnnotation? text = editingText;
         if(text == null) return;
         bool isNew = editingIsNew;
+        editingResizeBefore = null;
         editingText = null;
         editingIsNew = false;
         bool empty = string.IsNullOrWhiteSpace(text.Text);
@@ -250,6 +305,7 @@ public sealed partial class EditorViewModel {
     /// <summary>Bearbeitung verwerfen (Esc): neuer Text entfällt, vorhandener bleibt unverändert.</summary>
     public void CancelTextEdit() {
         if(editingText == null) return;
+        editingResizeBefore = null;
         editingText = null;
         editingIsNew = false;
         TextEditChanged?.Invoke(this, EventArgs.Empty);
@@ -265,8 +321,13 @@ public sealed partial class EditorViewModel {
     public IReadOnlyList<OptionChoice> ThicknessChoices => thicknessChoices ??= ToolOptions.Thicknesses
         .Select(t => new OptionChoice(OptionKind.Thickness, t, formatPixels(t))).ToList();
 
-    public IReadOnlyList<OptionChoice> FontSizeChoices => fontSizeChoices ??= ToolOptions.FontSizes
-        .Select(s => new OptionChoice(OptionKind.FontSize, s, formatPixels(s))).ToList();
+    /// <summary>„Auto“ und die festen Schriftgrößen.</summary>
+    public IReadOnlyList<OptionChoice> FontSizeChoices => fontSizeChoices ??= new[] { new OptionChoice(OptionKind.AutoFontSize, true, Strings.FontSizeAuto) }
+        .Concat(ToolOptions.FontSizes.Select(s => new OptionChoice(OptionKind.FontSize, s, formatPixels(s)))).ToList();
+
+    /// <summary>Die 9 Ausrichtungen zeilenweise (für das 3×3-Raster).</summary>
+    public IReadOnlyList<OptionChoice> TextAlignmentChoices => textAlignmentChoices ??= TextAlignments.All
+        .Select(a => new OptionChoice(OptionKind.TextAlignment, a, TextAlignmentIcons.GetLabel(a), null, TextAlignmentIcons.Get(a))).ToList();
 
     public IReadOnlyList<OptionChoice> BlockSizeChoices => blockSizeChoices ??= ToolOptions.BlockSizes
         .Select(s => new OptionChoice(OptionKind.BlockSize, s, formatPixels(s))).ToList();
@@ -312,6 +373,8 @@ public sealed partial class EditorViewModel {
     public bool ShowSmoothOption => isTarget(AnnotationTypes.Freehand);
 
     public bool ShowFontSizeOption => isTarget(AnnotationTypes.Text);
+
+    public bool ShowTextAlignmentOption => isTarget(AnnotationTypes.Text);
 
     public bool ShowBlockSizeOption => isTarget(AnnotationTypes.Pixelate);
 
@@ -387,7 +450,29 @@ public sealed partial class EditorViewModel {
 
     public bool IsSmoothActive => optionTargetAnnotation is FreehandAnnotation freehand ? freehand.Smooth : Options.Smooth;
 
-    public string CurrentFontSizeText => formatPixels(optionTargetAnnotation is TextAnnotation text ? text.FontSize : Options.FontSize);
+    /// <summary>
+    /// Automatische Schriftgröße aktiv? Am Text nur bei einem festen Feld (freier Text hat immer eine feste Größe),
+    /// sonst die Einstellung für neue Textfelder.
+    /// </summary>
+    public bool IsAutoFontSizeActive => optionTargetAnnotation is TextAnnotation text ? text.AutoFontSize && TextLayout.IsField(text) : Options.TextAutoFontSize;
+
+    /// <summary>Anzeige im Knopf: feste Größe, „Auto“ bzw. am Textfeld „Auto (wirksame Größe)“.</summary>
+    public string CurrentFontSizeText {
+        get {
+            if(optionTargetAnnotation is TextAnnotation text) {
+                if(!IsAutoFontSizeActive) return formatPixels(text.FontSize);
+                return Strings.Format(Strings.FontSizeAutoValue, formatPixels(TextLayout.GetEffectiveFontSize(text)));
+            }
+            return Options.TextAutoFontSize ? Strings.FontSizeAuto : formatPixels(Options.FontSize);
+        }
+    }
+
+    /// <summary>Feste Schriftgröße als Zahl (Vorbelegung der eigenen Eingabe).</summary>
+    public string CurrentFontSizeValueText => formatNumber(optionTargetAnnotation is TextAnnotation text ? text.FontSize : Options.FontSize);
+
+    public string CurrentTextAlignment => TextAlignments.Normalize(optionTargetAnnotation is TextAnnotation text ? text.Alignment : Options.TextAlignment, TextAlignments.TopLeft);
+
+    public Geometry CurrentTextAlignmentIcon => TextAlignmentIcons.Get(CurrentTextAlignment);
 
     public string CurrentBlockSizeText => formatPixels(optionTargetAnnotation is PixelateAnnotation pixelate ? pixelate.BlockSize : Options.BlockSize);
 
@@ -420,6 +505,8 @@ public sealed partial class EditorViewModel {
             case OptionKind.FillColor: SetFillColor((string)choice.Value); break;
             case OptionKind.StartCap: SetStartCap((string)choice.Value); break;
             case OptionKind.EndCap: SetEndCap((string)choice.Value); break;
+            case OptionKind.AutoFontSize: SetAutoFontSize(); break;
+            case OptionKind.TextAlignment: SetTextAlignment((string)choice.Value); break;
         }
     }
 
@@ -445,10 +532,59 @@ public sealed partial class EditorViewModel {
         });
     }
 
+    /// <summary>Feste Schriftgröße setzen (begrenzt auf 6–400 px); schaltet die automatische Größe aus.</summary>
     public void SetFontSize(double fontSize) {
-        Options.FontSize = fontSize;
+        double value = Math.Clamp(fontSize, TextLayout.MinFontSize, TextLayout.MaxFontSize);
+        Options.FontSize = value;
+        Options.TextAutoFontSize = false;
         changeTarget(a => {
-            if(a is TextAnnotation text) text.FontSize = fontSize;
+            if(a is TextAnnotation text) {
+                text.FontSize = value;
+                text.AutoFontSize = false;
+            }
+        });
+    }
+
+    /// <summary>
+    /// Automatische Schriftgröße einschalten: für neue Textfelder und am festen Feld (freier Text behält seine feste Größe).
+    /// </summary>
+    public void SetAutoFontSize() {
+        Options.TextAutoFontSize = true;
+        changeTarget(a => {
+            if(a is TextAnnotation text && TextLayout.IsField(text)) text.AutoFontSize = true;
+        });
+    }
+
+    /// <summary>
+    /// Eigene Eingabe der Schriftgröße übernehmen (siehe <see cref="TryParseFontSize"/>); false bei ungültiger Eingabe.
+    /// </summary>
+    public bool ApplyFontSizeInput(string? input) {
+        if(!TryParseFontSize(input, out double fontSize)) return false;
+        SetFontSize(fontSize);
+        return true;
+    }
+
+    /// <summary>
+    /// Eingabe wie „18“, „18,5“, „18.5“ oder „18 px“ lesen; auf 0,5 gerundet und auf 6–400 begrenzt. False bei leerer,
+    /// nicht lesbarer oder nicht positiver Eingabe.
+    /// </summary>
+    public static bool TryParseFontSize(string? input, out double fontSize) {
+        fontSize = 0;
+        string text = (input ?? "").Trim();
+        if(text.EndsWith("px", StringComparison.OrdinalIgnoreCase)) text = text.Substring(0, text.Length - 2).Trim();
+        text = text.Replace(',', '.');
+        if(!double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out double value)) return false;
+        if(double.IsNaN(value) || double.IsInfinity(value) || value <= 0) return false;
+        fontSize = Math.Clamp(Math.Round(value * 2) / 2, TextLayout.MinFontSize, TextLayout.MaxFontSize);
+        return true;
+    }
+
+    /// <summary>Ausrichtung setzen (gemerkt für neue Texte).</summary>
+    public void SetTextAlignment(string alignment) {
+        string value = TextAlignments.Normalize(alignment, TextAlignments.TopLeft);
+        Options.TextAlignment = value;
+        changeTarget(a => {
+            if(a is TextAnnotation text) text.Alignment = value;
         });
     }
 
@@ -687,6 +823,10 @@ public sealed partial class EditorViewModel {
     }
 
     private static string formatPixels(double value) {
-        return Strings.Format(Strings.OptionValuePixels, value.ToString("0.#", CultureInfo.CurrentCulture));
+        return Strings.Format(Strings.OptionValuePixels, formatNumber(value));
+    }
+
+    private static string formatNumber(double value) {
+        return value.ToString("0.#", CultureInfo.CurrentCulture);
     }
 }

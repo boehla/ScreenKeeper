@@ -282,6 +282,8 @@ public sealed partial class EditorViewModel : ViewModelBase {
     public void PointerDown(PointerInput input) {
         cursorPixel = input.Pixel;
         // Klick neben das Textfeld übernimmt den Text (der übernommene Text fängt diesen Klick nicht ab)
+        // … außer auf einem Anfasser des bearbeiteten festen Felds: der ändert die Feldgröße, die Bearbeitung läuft weiter
+        if(tryBeginEditingResize(input)) return;
         bool wasTextEditing = IsTextEditing;
         if(wasTextEditing) CommitTextEdit();
         if(input.ClickCount >= 2 && tryEditTextAt(input)) return;
@@ -291,6 +293,10 @@ public sealed partial class EditorViewModel : ViewModelBase {
 
     public void PointerMove(PointerInput input) {
         cursorPixel = input.Pixel;
+        if(IsEditingResizeActive) {
+            moveEditingResize(input);
+            return;
+        }
         if(selectedObject.IsActive) {
             selectedObject.Move(input);
             return;
@@ -300,6 +306,11 @@ public sealed partial class EditorViewModel : ViewModelBase {
 
     public void PointerUp(PointerInput input) {
         cursorPixel = input.Pixel;
+        if(IsEditingResizeActive) {
+            moveEditingResize(input);
+            endEditingResize();
+            return;
+        }
         if(selectedObject.IsActive) {
             endOnSelectedObject(input);
             return;
@@ -308,6 +319,8 @@ public sealed partial class EditorViewModel : ViewModelBase {
     }
 
     public EditorCursor GetCursor(PointerInput input) {
+        ObjectHandle editingHandle = HitEditingTextHandle(input);
+        if(editingHandle != ObjectHandle.None) return AnnotationEditing.GetCursor(editingHandle);
         EditorCursor? objectCursor = getSelectedObjectCursor(input);
         return objectCursor ?? activeTool.GetCursor(input);
     }

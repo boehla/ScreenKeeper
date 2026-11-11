@@ -186,6 +186,8 @@ public partial class EditorWindow {
     private void onPreviewKeyDown(object sender, KeyEventArgs e) {
         // Während der Textbearbeitung gehören alle Tasten dem Textfeld (Enter/Esc behandelt es selbst)
         if(viewModel.IsTextEditing) return;
+        // ebenso während der Eingabe einer eigenen Schriftgröße in der Werkzeugleiste
+        if(Keyboard.FocusedElement is System.Windows.Controls.Primitives.TextBoxBase) return;
         Key key = e.Key == Key.System ? e.SystemKey : e.Key;
         // Alt erneut gedrückt (ohne Rad): normales Verhalten beim Loslassen
         if((key == Key.LeftAlt || key == Key.RightAlt) && !e.IsRepeat) altWheelUsed = false;

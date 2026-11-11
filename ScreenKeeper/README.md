@@ -168,7 +168,7 @@ Objekts. Alle Zeichnungen bleiben einzelne Objekte und lassen sich jederzeit aus
 | Rechteck, Ellipse | R, E | aufziehen (Shift: Quadrat/Kreis); Rahmenfarbe, Strichstärke, Füllfarbe |
 | Linie, Pfeil | L, A | vom Anfang zum Ende ziehen (Shift: 45°-Raster); Farbe, Strichstärke, Anfang, Ende |
 | Freihand | F | zeichnen; Farbe, Strichstärke, Glätten, Anfang, Ende |
-| Text | T | klicken (oder Feld aufziehen = Umbruchbreite) und tippen; Schriftgröße, Farbe, Hintergrund |
+| Text | T | klicken = freier Text, Feld aufziehen = festes Textfeld (Shift: Quadrat), dann tippen; Schriftgröße (Auto, Liste oder eigene Eingabe), Ausrichtung, Farbe, Hintergrund |
 | Textmarker | H | halbtransparentes Rechteck aufziehen (Standard Gelb) |
 | Verpixeln | P | Rechteck aufziehen; Blockgröße |
 | Weichzeichnen | B | Rechteck aufziehen; Stärke |
@@ -184,6 +184,14 @@ Objekts. Alle Zeichnungen bleiben einzelne Objekte und lassen sich jederzeit aus
   halbtransparent (50 %). Der Rahmen liegt über der Füllung; gefüllte Objekte lassen sich auch innen anklicken.
 - **Text:** Enter übernimmt, Shift+Enter beginnt eine neue Zeile, Esc verwirft, Klick daneben übernimmt.
   Doppelklick auf einen vorhandenen Text (oder Klick mit dem Text-Werkzeug) bearbeitet ihn; leerer Text löscht ihn.
+  Ein **festes Textfeld** wird wie ein Rechteck aufgezogen, verschoben und an allen Anfassern in Breite und Höhe
+  geändert (die Schriftgröße bleibt); beim Bearbeiten zeigt ein schwarz-weiß gestrichelter Rahmen die Feldgrenzen. Der
+  Text wird im Feld umbrochen; was nicht hineinpasst, wird am Feldrand abgeschnitten (auch im Export).
+  **Schriftgröße „Auto“** wählt die größte Schrift, bei der der ganze Text ins Feld passt (je mehr Text, desto kleiner;
+  6–400 px); der Knopf zeigt dann z. B. „Auto (31 px)“. Feste Größen kommen aus der Liste oder aus dem Eingabefeld oben
+  im Menü (6–400 px, auch Kommazahlen, Enter übernimmt). **Ausrichtung:** 3×3-Raster – horizontal die
+  Zeilenausrichtung, vertikal die Lage des Texts im Feld. Ein einfacher Klick ergibt wie bisher freien Text, der mit
+  dem Inhalt wächst (feste Schriftgröße, nur horizontale Ausrichtung).
 - **Ausgewähltes Objekt:** Entf löscht, Strg+D dupliziert, Esc hebt die Auswahl auf. Farbe, Strichstärke usw. aus der
   Werkzeugleiste wirken auf das ausgewählte Objekt (rückgängig machbar).
 - **Verpixeln/Weichzeichnen** werden bei Anzeige und Export aus dem Original berechnet; im Export sind die
@@ -192,7 +200,8 @@ Objekts. Alle Zeichnungen bleiben einzelne Objekte und lassen sich jederzeit aus
   verschieben, mit dem Augen-Knopf aus- und einblenden (ausgeblendete Zeiger sind im Editor gestrichelt angedeutet),
   in der Art ändern (aufgenommener Zeiger, Pfeil, Hand, Textcursor) und löschen; mit **M** beliebig oft neu einfügen.
 - Die Werkzeug-Tastenkürzel gelten nur, solange kein Text bearbeitet wird. Zuletzt verwendete Farbe, Strichstärke,
-  Schrift-, Block- und Stempelgröße, Stärke, Füllfarbe, Linienenden und Zeigerart werden gemerkt.
+  Schrift-, Block- und Stempelgröße, Stärke, Füllfarbe, Linienenden und Zeigerart werden gemerkt, beim Text auch
+  Auto/feste Schriftgröße, Ausrichtung und Hintergrund – auch wenn sie an einem vorhandenen Text geändert wurden.
 - Rückgängig/Wiederholen umfasst alle Änderungen (Bereich, Zeichnungen, Maus, Kommentar), bis zu 200 Schritte.
 
 **Knöpfe** (Werkzeugleiste am Bereich)

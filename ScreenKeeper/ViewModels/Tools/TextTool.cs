@@ -5,12 +5,19 @@ using ScreenKeeper.Services;
 namespace ScreenKeeper.ViewModels.Tools;
 
 /// <summary>
-/// Werkzeug „Text“: Klick setzt die Position (der Text beginnt am Klickpunkt), Aufziehen legt zusätzlich die
-/// Umbruchbreite fest. Danach startet die Inline-Bearbeitung (<see cref="EditorViewModel.BeginTextEdit"/>).
-/// Ein Klick auf einen vorhandenen Text öffnet dessen Bearbeitung.
+/// Werkzeug „Text“: Klick setzt die Position eines freien Texts (der Text beginnt am Klickpunkt und wächst mit dem
+/// Inhalt), Aufziehen legt wie beim Rechteck ein festes Textfeld fest (Breite und Höhe; Shift: Quadrat). Danach startet
+/// die Inline-Bearbeitung (<see cref="EditorViewModel.BeginTextEdit"/>). Ein Klick auf einen vorhandenen Text öffnet
+/// dessen Bearbeitung.
 /// </summary>
 public sealed class TextTool : IAnnotationTool {
     public const string ToolKey = "text";
+
+    /// <summary>
+    /// Mindestbreite und -höhe eines aufgezogenen Textfelds in Bildpixeln; kleinere Rahmen (versehentliches Ziehen beim
+    /// Klicken) ergeben einen freien Text an der linken oberen Ecke.
+    /// </summary>
+    public const int MinFieldSize = 10;
 
     private enum State {
         None,
@@ -58,7 +65,7 @@ public sealed class TextTool : IAnnotationTool {
             if(pixel == start) return;
             state = State.Dragging;
         }
-        editor.ToolPreviewRect = SelectionGeometry.FromPoints(start, pixel);
+        editor.ToolPreviewRect = DrawingToolBase.GetRect(start, pixel, input.Shift);
         editor.NotifyOverlayChanged();
     }
 
@@ -91,12 +98,14 @@ public sealed class TextTool : IAnnotationTool {
     }
 
     public EditorCursor GetCursor(PointerInput input) {
-        return EditorCursor.IBeam;
+        // beim Aufziehen des Felds das Kreuz wie beim Rechteck
+        return state == State.Dragging ? EditorCursor.Cross : EditorCursor.IBeam;
     }
 
     /// <summary>
-    /// Neuer (noch leerer) Text mit den aktuellen Optionen. Ohne <paramref name="box"/> beginnt der Text am Punkt
-    /// <paramref name="point"/>; mit Box ist das die linke obere Ecke und die Box-Breite die Umbruchbreite.
+    /// Neuer (noch leerer) Text mit den aktuellen Optionen. Ohne <paramref name="box"/> (oder bei einer Box unter
+    /// <see cref="MinFieldSize"/>) ein freier Text am Punkt <paramref name="point"/> mit fester Schriftgröße; mit Box ein
+    /// festes Feld genau in der Box (automatische Schriftgröße nach den Optionen).
     /// </summary>
     public TextAnnotation CreateText(PixelPoint point, PixelRect? box) {
         ToolOptions options = editor.Options;
@@ -105,12 +114,15 @@ public sealed class TextTool : IAnnotationTool {
             FontFamily = TextLayout.DefaultFontFamily,
             FontSize = options.FontSize,
             Foreground = options.Color,
-            Background = options.TextBackground ? AnnotationColors.GetTextBackground(options.Color) : null
+            Background = options.TextBackground ? AnnotationColors.GetTextBackground(options.Color) : null,
+            Alignment = options.TextAlignment
         };
-        if(box.HasValue && box.Value.Width >= options.FontSize + 2 * padding) {
+        if(box.HasValue && box.Value.Width >= MinFieldSize && box.Value.Height >= MinFieldSize) {
             text.X = box.Value.X;
             text.Y = box.Value.Y;
-            text.Width = (int)Math.Round(box.Value.Width - 2 * padding);
+            text.Width = box.Value.Width;
+            text.Height = box.Value.Height;
+            text.AutoFontSize = options.TextAutoFontSize;
         } else {
             text.X = point.X - (int)padding;
             text.Y = point.Y - (int)padding;

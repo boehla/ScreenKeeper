@@ -196,7 +196,7 @@ Details stehen in {1}.</value>
     <value>Freihand (F)</value>
   </data>
   <data name="ToolText" xml:space="preserve">
-    <value>Text (T) – Enter übernimmt, Shift+Enter neue Zeile, Esc verwirft</value>
+    <value>Text (T) – Enter neue Zeile, Strg+Enter oder Klick daneben übernimmt, Esc verwirft</value>
   </data>
   <data name="ToolHighlight" xml:space="preserve">
     <value>Textmarker (H)</value>
@@ -230,6 +230,45 @@ Details stehen in {1}.</value>
   </data>
   <data name="OptionFontSize" xml:space="preserve">
     <value>Schriftgröße</value>
+  </data>
+  <data name="OptionFontSizeInput" xml:space="preserve">
+    <value>Eigene Schriftgröße (6–400 px), Enter übernimmt</value>
+  </data>
+  <data name="FontSizeAuto" xml:space="preserve">
+    <value>Auto</value>
+  </data>
+  <data name="FontSizeAutoValue" xml:space="preserve">
+    <value>Auto ({0})</value>
+  </data>
+  <data name="OptionTextAlignment" xml:space="preserve">
+    <value>Ausrichtung</value>
+  </data>
+  <data name="TextAlignTopLeft" xml:space="preserve">
+    <value>Oben links</value>
+  </data>
+  <data name="TextAlignTopCenter" xml:space="preserve">
+    <value>Oben Mitte</value>
+  </data>
+  <data name="TextAlignTopRight" xml:space="preserve">
+    <value>Oben rechts</value>
+  </data>
+  <data name="TextAlignMiddleLeft" xml:space="preserve">
+    <value>Mitte links</value>
+  </data>
+  <data name="TextAlignMiddleCenter" xml:space="preserve">
+    <value>Mitte</value>
+  </data>
+  <data name="TextAlignMiddleRight" xml:space="preserve">
+    <value>Mitte rechts</value>
+  </data>
+  <data name="TextAlignBottomLeft" xml:space="preserve">
+    <value>Unten links</value>
+  </data>
+  <data name="TextAlignBottomCenter" xml:space="preserve">
+    <value>Unten Mitte</value>
+  </data>
+  <data name="TextAlignBottomRight" xml:space="preserve">
+    <value>Unten rechts</value>
   </data>
   <data name="OptionBlockSize" xml:space="preserve">
     <value>Blockgröße</value>

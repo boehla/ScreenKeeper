@@ -121,8 +121,9 @@ public abstract class DrawingToolBase : IAnnotationTool {
 
     /// <summary>
     /// Rechteck aus Start- und aktuellem Pixel (beide inklusive); mit <paramref name="square"/> quadratisch.
+    /// Auch vom Text-Werkzeug für das Textfeld verwendet.
     /// </summary>
-    protected static PixelRect GetRect(PixelPoint start, PixelPoint current, bool square) {
+    internal static PixelRect GetRect(PixelPoint start, PixelPoint current, bool square) {
         if(square) {
             int dx = current.X - start.X;
             int dy = current.Y - start.Y;
