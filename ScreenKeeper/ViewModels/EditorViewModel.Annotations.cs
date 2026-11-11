@@ -46,6 +46,7 @@ public sealed partial class EditorViewModel {
     /// <summary>Deckkraft der halbtransparenten Füllfarben in der Werkzeugleiste.</summary>
     public const byte TranslucentFillAlpha = 0x80;
 
+    private readonly ObjectManipulator selectedObject;
     private string? selectedAnnotationId;
     private TextAnnotation? editingText;
     private bool editingIsNew;
@@ -561,6 +562,37 @@ public sealed partial class EditorViewModel {
     /// <summary>Darf das Werkzeug Objekte auswählen? („Auswahl“ und „Bereich“)</summary>
     private static bool isSelectingTool(IEditorTool tool) {
         return tool is ObjectSelectTool || tool is SelectionTool;
+    }
+
+    /// <summary>
+    /// Fängt das ausgewählte Objekt Klicks und Mauszeiger ab? Nur bei Zeichenwerkzeugen (Rechteck … Nummern-Stempel,
+    /// virtuelle Maus, Text) – „Auswahl“ und „Bereich“ erledigen das selbst –, nicht während der Textbearbeitung und nicht,
+    /// solange das Werkzeug selbst einen Vorgang hat. So kann man das gerade gezeichnete Objekt verschieben bzw. an den
+    /// Anfassern ändern, ohne das Werkzeug zu wechseln; Klicks auf andere Objekte oder Leerraum zeichnen weiter neu.
+    /// </summary>
+    private bool canGrabSelectedObject => activeTool is IAnnotationTool && editingText == null && !activeTool.IsGestureActive;
+
+    /// <summary>
+    /// Anfasser bzw. Körper des ausgewählten Objekts getroffen: Größe ändern bzw. Verschieben beginnen (gleicher Ablauf und
+    /// Rückgängig-Schritt wie bei „Auswahl“). False: das Werkzeug bekommt den Klick.
+    /// </summary>
+    private bool tryBeginOnSelectedObject(PointerInput input) {
+        return canGrabSelectedObject && selectedObject.TryBeginOnSelected(input);
+    }
+
+    private void endOnSelectedObject(PointerInput input) {
+        bool clicked = selectedObject.Up(input);
+        // Text-Werkzeug: ein Klick (ohne Ziehen) auf den ausgewählten Text öffnet ihn wie jeden anderen Text zum Bearbeiten
+        if(clicked && activeTool is TextTool && SelectedAnnotation is TextAnnotation text) BeginTextEdit(text, false);
+    }
+
+    /// <summary>
+    /// Mauszeiger über dem ausgewählten Objekt bzw. während es gezogen wird – mit derselben Trefferprüfung wie
+    /// <see cref="tryBeginOnSelectedObject"/>; null: der Zeiger des Werkzeugs.
+    /// </summary>
+    private EditorCursor? getSelectedObjectCursor(PointerInput input) {
+        if(!selectedObject.IsActive && !canGrabSelectedObject) return null;
+        return selectedObject.GetCursor(input);
     }
 
     /// <summary>

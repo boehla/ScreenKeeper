@@ -46,6 +46,7 @@ public sealed partial class EditorViewModel : ViewModelBase {
         Options = ToolOptions.FromSettings(source);
         lastSelection = source.LastSelection;
         Measure = new AnnotationMeasure(document);
+        selectedObject = new ObjectManipulator(this);
         initializeAnnotationTools();
 
         CopySelectionCommand = new RelayCommand(CopySelection, () => HasSelection);
@@ -108,7 +109,7 @@ public sealed partial class EditorViewModel : ViewModelBase {
     /// <summary>Gerätepixel je Bildpixel (vom Fenster gesetzt; für Trefferflächen in konstanter Bildschirmgröße).</summary>
     public double DevicePixelsPerImagePixel { get; set; } = 1;
 
-    public bool IsGestureActive => activeTool.IsGestureActive;
+    public bool IsGestureActive => activeTool.IsGestureActive || selectedObject.IsActive;
 
     public PixelPoint? MagnifierFocus => activeTool.MagnifierFocus;
 
@@ -266,6 +267,7 @@ public sealed partial class EditorViewModel : ViewModelBase {
     public void SelectTool(IEditorTool tool) {
         if(ReferenceEquals(tool, activeTool)) return;
         if(IsTextEditing) CommitTextEdit();
+        selectedObject.Cancel();
         activeTool.Deactivate();
         activeTool = tool;
         foreach(ToolItem item in Tools) item.IsActive = ReferenceEquals(item.Tool, tool);
@@ -279,24 +281,35 @@ public sealed partial class EditorViewModel : ViewModelBase {
 
     public void PointerDown(PointerInput input) {
         cursorPixel = input.Pixel;
-        // Klick neben das Textfeld übernimmt den Text
-        if(IsTextEditing) CommitTextEdit();
+        // Klick neben das Textfeld übernimmt den Text (der übernommene Text fängt diesen Klick nicht ab)
+        bool wasTextEditing = IsTextEditing;
+        if(wasTextEditing) CommitTextEdit();
         if(input.ClickCount >= 2 && tryEditTextAt(input)) return;
+        if(!wasTextEditing && tryBeginOnSelectedObject(input)) return;
         activeTool.PointerDown(input);
     }
 
     public void PointerMove(PointerInput input) {
         cursorPixel = input.Pixel;
+        if(selectedObject.IsActive) {
+            selectedObject.Move(input);
+            return;
+        }
         activeTool.PointerMove(input);
     }
 
     public void PointerUp(PointerInput input) {
         cursorPixel = input.Pixel;
+        if(selectedObject.IsActive) {
+            endOnSelectedObject(input);
+            return;
+        }
         activeTool.PointerUp(input);
     }
 
     public EditorCursor GetCursor(PointerInput input) {
-        return activeTool.GetCursor(input);
+        EditorCursor? objectCursor = getSelectedObjectCursor(input);
+        return objectCursor ?? activeTool.GetCursor(input);
     }
 
     /// <summary>
@@ -305,6 +318,7 @@ public sealed partial class EditorViewModel : ViewModelBase {
     /// </summary>
     public void CancelGesture() {
         if(IsTextEditing) CommitTextEdit();
+        selectedObject.Cancel();
         activeTool.CancelGesture();
     }
 
@@ -364,6 +378,7 @@ public sealed partial class EditorViewModel : ViewModelBase {
     /// </summary>
     public void Discard() {
         CancelTextEdit();
+        selectedObject.Cancel();
         activeTool.CancelGesture();
         host.DiscardCapture();
     }
