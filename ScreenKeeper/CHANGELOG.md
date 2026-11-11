@@ -2,6 +2,10 @@
 
 ## 0.10.0
 
+- **Bezeichnung folgt dem Bereich:** Ist ein Bereich gewählt, kommen Titel und Prozess in der History von dem Fenster,
+  das mehr als die Hälfte des Bereichs sichtbar füllt. Desktop, Taskleiste und Fenster ohne Titel gewinnen nie; dann
+  und ohne Bereich bleibt es beim Vordergrundfenster. Pro Fenster wird dafür die Fensterklasse erfasst (neues
+  JSON-Feld `className`).
 - **Texteingabe:** Enter fügt eine neue Zeile ein; Strg+Enter oder ein Klick daneben übernimmt den Text (bisher:
   Enter übernimmt, Shift+Enter neue Zeile). Beim Aufziehen des Textfelds zeigt der Mauszeiger das Kreuz wie beim
   Rechteck.
