@@ -240,6 +240,8 @@ public partial class EditorWindow : Window, IEditorHost {
     private void onRootSizeChanged(object sender, SizeChangedEventArgs e) {
         selectionOverlay.Width = root.ActualWidth;
         selectionOverlay.Height = root.ActualHeight;
+        crosshairOverlay.Width = root.ActualWidth;
+        crosshairOverlay.Height = root.ActualHeight;
         annotationOverlay.Width = root.ActualWidth;
         annotationOverlay.Height = root.ActualHeight;
         if(!viewInitialized) initializeView();
@@ -361,7 +363,7 @@ public partial class EditorWindow : Window, IEditorHost {
     }
 
     /// <summary>
-    /// Overlay (Abdunkelung, Rahmen, Anfasser, Größe), Werkzeugleiste und Lupe an den aktuellen Zustand anpassen.
+    /// Overlay (Abdunkelung, Rahmen, Anfasser, Größe), Werkzeugleiste, Lupe und Hilfslinien an den aktuellen Zustand anpassen.
     /// </summary>
     private void updateOverlay() {
         if(!IsLoaded || !viewInitialized) return;
@@ -396,8 +398,11 @@ public partial class EditorWindow : Window, IEditorHost {
         bool pointerHere = viewport.IsMouseOver || viewport.IsMouseCaptured || viewModel.IsKeyboardSelecting;
         if(!focus.HasValue || !pointerHere || isPanning) {
             magnifier.Visibility = Visibility.Collapsed;
+            crosshairOverlay.Update(null, deviceScale);
             return;
         }
+        // Hilfslinien durch die Mitte des Zielpixels, immer zusammen mit der Lupe
+        crosshairOverlay.Update(transform.ToView(focus.Value.X + 0.5, focus.Value.Y + 0.5), deviceScale);
         magnifier.Show(focus.Value, viewModel.DisplayedSelection);
         magnifier.Visibility = Visibility.Visible;
         magnifier.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
