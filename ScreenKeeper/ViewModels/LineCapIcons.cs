@@ -20,8 +20,12 @@ public static class LineCapIcons {
         lock(sync) {
             if(cache.TryGetValue((cap, atStart), out Geometry? cached)) return cached;
             Geometry geometry = Geometry.Parse(getPathData(cap));
-            if(atStart) geometry.Transform = new ScaleTransform(-1, 1, 10, 10);
-            geometry.Freeze();
+            // Geometry.Parse liefert eine eingefrorene Geometrie; zum Spiegeln eine veränderbare Kopie nehmen
+            if(atStart) {
+                geometry = geometry.Clone();
+                geometry.Transform = new ScaleTransform(-1, 1, 10, 10);
+            }
+            if(geometry.CanFreeze) geometry.Freeze();
             cache[(cap, atStart)] = geometry;
             return geometry;
         }

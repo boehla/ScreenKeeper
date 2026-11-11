@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.1
+
+- **Ausgewähltes Objekt bei aktivem Zeichenwerkzeug:** Ein Klick auf das ausgewählte Objekt oder seine Anfasser
+  verschiebt bzw. skaliert es jetzt (gleicher Ablauf und Rückgängig-Schritt wie bei „Auswahl“), statt eine neue
+  Zeichnung zu beginnen; der Mauszeiger zeigt Verschieben bzw. Größe ändern an. Klicks daneben zeichnen weiterhin neu.
+- **Fix Linienanfang:** Das Menü für das Symbol am Anfang (Linie, Pfeil, Freihand) blieb leer, weil das Spiegeln der
+  eingefrorenen Symbol-Geometrie scheiterte. Jetzt wird eine veränderbare Kopie gespiegelt; ein Test prüft die Symbole.
+
 ## 0.9.0
 
 - **Kommentar zu Aufnahmen:** neuer Knopf „Kommentar“ (Sprechblase) in der Editor-Werkzeugleiste neben „Permanent“.

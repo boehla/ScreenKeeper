@@ -498,6 +498,20 @@ public class EditorToolTests {
     }
 
     [Fact]
+    public void LineCapChoices_HaveIconsForStartAndEnd() {
+        Sta.Run(() => {
+            EditorViewModel vm = create();
+            Assert.True(vm.SelectToolByKey(LineTool.ToolKey));
+            // Anfang: gespiegelte Symbole – darf nicht an eingefrorener Geometrie scheitern
+            Assert.Equal(LineCaps.All.Count(), vm.StartCapChoices.Count);
+            Assert.All(vm.StartCapChoices, c => Assert.NotNull(c.Icon));
+            Assert.Equal(LineCaps.All.Count(), vm.EndCapChoices.Count);
+            Assert.NotNull(vm.CurrentStartCapIcon);
+            Assert.NotNull(vm.CurrentEndCapIcon);
+        });
+    }
+
+    [Fact]
     public void LineCaps_ApplyToSelectedObject_AsOneUndoStep_AndAreRememberedPerType() {
         Sta.Run(() => {
             EditorViewModel vm = create();
