@@ -25,6 +25,8 @@
         <!-- Overlay in Ansichts-DIPs (nicht gezoomt): konstante Gerätepixel-Größe; ohne Hintergrund → Klicks gehen durch -->
         <Canvas x:Name="overlay" ClipToBounds="True">
             <views:SelectionOverlay x:Name="selectionOverlay" />
+            <!-- Hilfslinien durch den Zielpixel beim Wählen des Bereichs (über die ganze Fläche) -->
+            <views:CrosshairOverlay x:Name="crosshairOverlay" />
             <views:AnnotationOverlay x:Name="annotationOverlay" />
             <!-- Inline-Bearbeitung von Text (Position, Schrift und Farbe setzt EditorWindow.TextEditing.cs) -->
             <TextBox x:Name="textEditor" Visibility="Collapsed" AcceptsReturn="True" AcceptsTab="False"

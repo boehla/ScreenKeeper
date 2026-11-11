@@ -115,6 +115,8 @@ Nach der Aufnahme wird das eingefrorene Bild 1:1 über alle Monitore angezeigt.
   die Größe in Pixeln.
 - Die **Lupe** erscheint vor der ersten Auswahl, beim Aufziehen und beim Ziehen der Anfasser. Sie zeigt die Pixel
   vergrößert mit Raster und Fadenkreuz, darunter Position, Bereichsgröße und Farbwert des Pixels unter dem Fadenkreuz.
+  Gleichzeitig laufen durch den Zielpixel ein dezenter waagerechter und ein senkrechter Strich über alle Monitore,
+  damit sich der Bereich an weit entfernten Kanten ausrichten lässt.
 - **Tastatur:** Pfeiltasten bewegen den Mauszeiger (bzw. beim Ziehen die Kante) um genau 1 Pixel, mit Shift um 10.
   **Leertaste** oder **Enter** setzt den Startpunkt, ein zweiter Druck den Endpunkt – beide Pixel gehören zum Bereich.
 - **Strg+Z** / **Strg+Y**: Rückgängig / Wiederholen.

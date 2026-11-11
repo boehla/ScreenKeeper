@@ -1,5 +1,12 @@
 # Changelog
 
+## Unveröffentlicht
+
+- **Hilfslinien beim Bereich:** Beim Wählen des Bereichs (vor der ersten Auswahl, beim Aufziehen, beim Ziehen der
+  Anfasser und bei der Tastatur-Auswahl – also immer, wenn die Lupe sichtbar ist) geht durch den Zielpixel je ein
+  dezenter waagerechter und senkrechter Strich über die ganze Fläche, im Vollbild über alle Monitore. Die Linien sind
+  nur Anzeige und landen nie im ausgegebenen Bild.
+
 ## 0.8.0
 
 - **Aufnahme verwerfen:** neuer Knopf in der Editor-Werkzeugleiste vor „Abbrechen“ (Mülleimer mit X, Tooltip
