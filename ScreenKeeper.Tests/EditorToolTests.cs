@@ -1,4 +1,5 @@
-﻿using System.Windows.Input;
+﻿using System.Windows;
+using System.Windows.Input;
 using ScreenKeeper.Models;
 using ScreenKeeper.Resources;
 using ScreenKeeper.Services;
@@ -200,7 +201,8 @@ public class EditorToolTests {
         Sta.Run(() => {
             EditorViewModel vm = create();
             drag(vm, HighlightTool.ToolKey, 10, 10, 100, 100);
-            drag(vm, "", 50, 50, 150, 150);
+            // außerhalb des noch ausgewählten ersten Objekts beginnen (darauf würde es verschoben statt neu gezeichnet)
+            drag(vm, "", 150, 150, 50, 50);
             string bottomId = vm.Document.Annotations[0].Id;
             string topId = vm.Document.Annotations[1].Id;
             click(vm, ObjectSelectTool.ToolKey, 70, 70);
@@ -584,6 +586,211 @@ public class EditorToolTests {
             Assert.False(vm.IsTextBackgroundActive);
             vm.ToggleTextBackground();
             Assert.True(vm.Options.TextBackground);
+        });
+    }
+
+    // ---------- Zeichenwerkzeug aktiv: das gerade gezeichnete, ausgewählte Objekt bearbeiten ----------
+
+    [Fact]
+    public void DrawingTool_DragOnSelectedObject_MovesInsteadOfDrawing() {
+        Sta.Run(() => {
+            EditorViewModel vm = create();
+            drag(vm, RectangleTool.ToolKey, 10, 10, 50, 40);
+            RectangleAnnotation drawn = single<RectangleAnnotation>(vm);
+            Assert.Equal(drawn.Id, vm.SelectedAnnotationId);
+            // obere Kante zwischen den Anfassern greifen, Werkzeug bleibt „Rechteck“
+            drag(vm, "", 20, 10, 35, 30);
+            Assert.Same(vm.FindTool(RectangleTool.ToolKey), vm.ActiveTool);
+            RectangleAnnotation moved = single<RectangleAnnotation>(vm);
+            Assert.Equal(drawn.Id, moved.Id);
+            Assert.Equal(new PixelRect(25, 30, 41, 31), moved.Rect);
+            Assert.Equal(drawn.Id, vm.SelectedAnnotationId);
+            Assert.Equal(2, vm.UndoStack.UndoCount);
+            Assert.Equal(Strings.UndoMoveAnnotation, vm.UndoStack.UndoDescription);
+            Assert.False(vm.IsGestureActive);
+            vm.Undo();
+            Assert.Equal(new PixelRect(10, 10, 41, 31), single<RectangleAnnotation>(vm).Rect);
+        });
+    }
+
+    [Fact]
+    public void DrawingTool_DragOnSelectedHandle_ResizesInsteadOfDrawing() {
+        Sta.Run(() => {
+            EditorViewModel vm = create();
+            drag(vm, EllipseTool.ToolKey, 10, 10, 50, 40);
+            // Anfasser rechts unten (Kante bei 51/41) um 20/10 ziehen
+            drag(vm, "", 50, 40, 70, 50);
+            EllipseAnnotation ellipse = single<EllipseAnnotation>(vm);
+            Assert.Equal(new PixelRect(10, 10, 61, 41), ellipse.Rect);
+            Assert.Equal(2, vm.UndoStack.UndoCount);
+            Assert.Equal(Strings.UndoResizeAnnotation, vm.UndoStack.UndoDescription);
+
+            // Linie: Endpunkt-Anfasser
+            drag(vm, LineTool.ToolKey, 100, 100, 150, 100);
+            drag(vm, "", 150, 100, 150, 140);
+            LineAnnotation line = single<LineAnnotation>(vm);
+            Assert.Equal(new PixelPoint(150, 140), line.Points[1]);
+            Assert.Equal(4, vm.UndoStack.UndoCount);
+        });
+    }
+
+    [Fact]
+    public void DrawingTool_DragBesideOrOnOtherObject_DrawsNew() {
+        Sta.Run(() => {
+            EditorViewModel vm = create();
+            drag(vm, RectangleTool.ToolKey, 10, 10, 50, 40);
+            // Leerraum
+            drag(vm, "", 200, 200, 250, 250);
+            Assert.Equal(2, vm.Document.Annotations.Count);
+            // im Inneren des ungefüllten Rechtecks (kein Treffer, wie bei „Auswahl“)
+            drag(vm, "", 30, 25, 45, 35);
+            Assert.Equal(3, vm.Document.Annotations.Count);
+            // auf dem Rand des ersten Rechtecks – es ist nicht mehr ausgewählt
+            drag(vm, "", 20, 10, 35, 30);
+            Assert.Equal(4, vm.Document.Annotations.Count);
+            Assert.Equal(new PixelRect(10, 10, 41, 31), ((RectangleAnnotation)vm.Document.Annotations[0]).Rect);
+            Assert.Equal(vm.Document.Annotations[3].Id, vm.SelectedAnnotationId);
+            Assert.Equal(4, vm.UndoStack.UndoCount);
+        });
+    }
+
+    [Fact]
+    public void DrawingTool_ClickOnSelectedObject_KeepsSelection_CancelRestores() {
+        Sta.Run(() => {
+            EditorViewModel vm = create();
+            drag(vm, HighlightTool.ToolKey, 10, 10, 100, 60);
+            string id = vm.SelectedAnnotationId!;
+            click(vm, "", 50, 30);
+            Assert.Equal(id, vm.SelectedAnnotationId);
+            Assert.Single(vm.Document.Annotations);
+            Assert.Equal(1, vm.UndoStack.UndoCount);
+
+            // Esc (Abbrechen) während des Verschiebens: alter Stand, kein Schritt
+            vm.PointerDown(at(50, 30, ModifierKeys.None, 1));
+            vm.PointerMove(at(80, 80));
+            Assert.True(vm.IsGestureActive);
+            Assert.Equal(new PixelRect(40, 60, 91, 51), single<HighlightAnnotation>(vm).Rect);
+            vm.CancelGesture();
+            vm.PointerUp(at(80, 80));
+            Assert.Equal(new PixelRect(10, 10, 91, 51), single<HighlightAnnotation>(vm).Rect);
+            Assert.Equal(1, vm.UndoStack.UndoCount);
+            Assert.False(vm.IsGestureActive);
+        });
+    }
+
+    [Fact]
+    public void DrawingTool_Cursor_FollowsSelectedObjectHitTest() {
+        Sta.Run(() => {
+            EditorViewModel vm = create();
+            Assert.True(vm.SelectToolByKey(RectangleTool.ToolKey));
+            Assert.Equal(EditorCursor.Cross, vm.GetCursor(at(20, 10)));
+            drag(vm, "", 10, 10, 50, 40);
+            Assert.Equal(EditorCursor.SizeAll, vm.GetCursor(at(20, 10)));
+            Assert.Equal(EditorCursor.SizeNWSE, vm.GetCursor(at(50, 40)));
+            Assert.Equal(EditorCursor.SizeNESW, vm.GetCursor(at(50, 10)));
+            Assert.Equal(EditorCursor.SizeNS, vm.GetCursor(at(30, 40)));
+            Assert.Equal(EditorCursor.SizeWE, vm.GetCursor(at(10, 25)));
+            Assert.Equal(EditorCursor.Cross, vm.GetCursor(at(30, 25)));
+            Assert.Equal(EditorCursor.Cross, vm.GetCursor(at(200, 200)));
+
+            // während des Verschiebens bleibt der Verschieben-Zeiger, auch außerhalb
+            vm.PointerDown(at(20, 10, ModifierKeys.None, 1));
+            vm.PointerMove(at(200, 200));
+            Assert.Equal(EditorCursor.SizeAll, vm.GetCursor(at(300, 250)));
+            vm.PointerUp(at(200, 200));
+
+            // anderes, nicht ausgewähltes Objekt: Werkzeug-Zeiger
+            drag(vm, "", 300, 200, 350, 250);
+            Assert.Equal(EditorCursor.Cross, vm.GetCursor(at(200, 200)));
+            Assert.Equal(EditorCursor.SizeAll, vm.GetCursor(at(312, 200)));
+
+            // Werkzeugwechsel hebt die Auswahl auf: Text-Werkzeug zeigt dort den Textcursor
+            Assert.True(vm.SelectToolByKey(TextTool.ToolKey));
+            Assert.Equal(EditorCursor.IBeam, vm.GetCursor(at(312, 200)));
+        });
+    }
+
+    [Fact]
+    public void NumberStamp_DragOnSelectedStamp_Moves_ClickBesidePlacesNext() {
+        Sta.Run(() => {
+            EditorViewModel vm = create();
+            click(vm, NumberStampTool.ToolKey, 100, 100);
+            NumberStampAnnotation first = single<NumberStampAnnotation>(vm);
+            Assert.Equal(first.Id, vm.SelectedAnnotationId);
+            Assert.Equal(EditorCursor.SizeAll, vm.GetCursor(at(100, 100)));
+            drag(vm, "", 100, 100, 130, 110);
+            NumberStampAnnotation moved = single<NumberStampAnnotation>(vm);
+            Assert.Equal((130, 110), (moved.X, moved.Y));
+            Assert.Equal(1, moved.Number);
+            click(vm, "", 250, 200);
+            Assert.Equal(2, vm.Document.Annotations.OfType<NumberStampAnnotation>().Count());
+            Assert.Equal(3, vm.UndoStack.UndoCount);
+        });
+    }
+
+    [Fact]
+    public void TextTool_SelectedText_DragMoves_ClickStillOpensEditing() {
+        Sta.Run(() => {
+            EditorViewModel vm = create();
+            click(vm, TextTool.ToolKey, 50, 50);
+            vm.UpdateEditingText("Hallo");
+            vm.CommitTextEdit();
+            TextAnnotation text = single<TextAnnotation>(vm);
+            Assert.Equal(text.Id, vm.SelectedAnnotationId);
+            int x = text.X;
+            int y = text.Y;
+
+            PixelPoint inside = new PixelPoint(x + 8, y + 8);
+            Assert.Equal(EditorCursor.SizeAll, vm.GetCursor(PointerInput.AtPixel(inside, ModifierKeys.None)));
+            drag(vm, "", inside.X, inside.Y, inside.X + 20, inside.Y + 10);
+            TextAnnotation moved = single<TextAnnotation>(vm);
+            Assert.Equal((x + 20, y + 10), (moved.X, moved.Y));
+            Assert.False(vm.IsTextEditing);
+            Assert.Equal(Strings.UndoMoveAnnotation, vm.UndoStack.UndoDescription);
+
+            // Klick ohne Ziehen: wie bisher Bearbeitung des vorhandenen Texts
+            click(vm, "", inside.X + 20, inside.Y + 10);
+            Assert.True(vm.IsTextEditing);
+            Assert.False(vm.IsEditingNewText);
+            Assert.Equal(moved.Id, vm.EditingText!.Id);
+            vm.CancelTextEdit();
+        });
+    }
+
+    [Fact]
+    public void TextTool_ClickBesideEditedText_StartsNewTextInsteadOfGrabbing() {
+        Sta.Run(() => {
+            EditorViewModel vm = create();
+            click(vm, TextTool.ToolKey, 50, 50);
+            vm.UpdateEditingText("Hallo");
+            // Klick knapp neben das Textfeld (außerhalb der Trefferfläche, aber auf dem Anfasser rechts unten): übernimmt den
+            // Text; der übernommene (dann ausgewählte) Text fängt diesen Klick nicht ab – es beginnt ein neuer Text
+            Rect bounds = vm.Measure.GetTextBounds(vm.EditingText!);
+            int px = (int)Math.Ceiling(bounds.Right + vm.HitTolerance) + 1;
+            int py = (int)Math.Ceiling(bounds.Bottom + vm.HitTolerance) + 1;
+            Assert.Equal(ObjectHandle.BottomRight, AnnotationEditing.HitHandle(vm.EditingText!, px + 0.5, py + 0.5, vm.HandleRadius, vm.Measure));
+            click(vm, "", px, py);
+            Assert.Single(vm.Document.Annotations.OfType<TextAnnotation>());
+            Assert.True(vm.IsTextEditing);
+            Assert.True(vm.IsEditingNewText);
+            vm.CancelTextEdit();
+        });
+    }
+
+    [Fact]
+    public void SelectingTools_AreUnchanged_ByDrawingToolPrecedence() {
+        Sta.Run(() => {
+            EditorViewModel vm = create();
+            drag(vm, RectangleTool.ToolKey, 10, 10, 50, 40);
+            // Werkzeugwechsel zu „Bereich“ behält die Auswahl nicht (wie bisher); Bereich wird aufgezogen
+            drag(vm, SelectionTool.ToolKey, 100, 100, 200, 200);
+            Assert.Equal(new PixelRect(100, 100, 101, 101), vm.Selection);
+            Assert.Single(vm.Document.Annotations);
+            // „Auswahl“: Verschieben läuft weiter über das Werkzeug selbst (ein Schritt)
+            int steps = vm.UndoStack.UndoCount;
+            drag(vm, ObjectSelectTool.ToolKey, 20, 10, 30, 20);
+            Assert.Equal(new PixelRect(20, 20, 41, 31), single<RectangleAnnotation>(vm).Rect);
+            Assert.Equal(steps + 1, vm.UndoStack.UndoCount);
         });
     }
 }

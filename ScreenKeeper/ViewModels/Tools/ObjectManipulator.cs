@@ -5,7 +5,8 @@ using ScreenKeeper.ViewModels.Undo;
 namespace ScreenKeeper.ViewModels.Tools;
 
 /// <summary>
-/// Verschieben und Größe-Ändern des ausgewählten Zeichenobjekts (genutzt von „Auswahl“ und implizit von „Bereich“).
+/// Verschieben und Größe-Ändern des ausgewählten Zeichenobjekts (genutzt von „Auswahl“, implizit von „Bereich“ und vom
+/// <see cref="EditorViewModel"/> für das zuletzt gezeichnete, noch ausgewählte Objekt bei aktivem Zeichenwerkzeug).
 /// Während des Ziehens wird das Objekt im Dokument durch eine geänderte Kopie ersetzt (Live-Vorschau); beim Loslassen
 /// kommt genau ein <see cref="ChangeAnnotationCommand"/> auf den Stapel, Abbrechen stellt den alten Stand wieder her.
 /// </summary>
@@ -75,8 +76,12 @@ public sealed class ObjectManipulator {
         editor.NotifyAnnotationsChanged();
     }
 
-    public void Up(PointerInput input) {
-        if(mode == Mode.None || before == null) return;
+    /// <summary>
+    /// Vorgang beenden (ein Rückgängig-Schritt, wenn sich das Objekt geändert hat). True, wenn es nur ein Klick auf den
+    /// Körper war (ohne Bewegung).
+    /// </summary>
+    public bool Up(PointerInput input) {
+        if(mode == Mode.None || before == null) return false;
         Move(input);
         Mode finished = mode;
         Annotation original = before;
@@ -84,15 +89,16 @@ public sealed class ObjectManipulator {
         before = null;
         if(finished == Mode.Pending) {
             editor.NotifyOverlayChanged();
-            return;
+            return true;
         }
         Annotation? current = AnnotationList.Find(editor.Document, original.Id);
         if(current == null || current.ToJson() == original.ToJson()) {
             editor.NotifyOverlayChanged();
-            return;
+            return false;
         }
         string description = finished == Mode.Move ? Strings.UndoMoveAnnotation : Strings.UndoResizeAnnotation;
         editor.UndoStack.Push(new ChangeAnnotationCommand(editor.Document, original, current, description));
+        return false;
     }
 
     public void Cancel() {
