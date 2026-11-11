@@ -6,6 +6,9 @@
   Anfasser und bei der Tastatur-Auswahl – also immer, wenn die Lupe sichtbar ist) geht durch den Zielpixel je ein
   dezenter waagerechter und senkrechter Strich über die ganze Fläche, im Vollbild über alle Monitore. Die Linien sind
   nur Anzeige und landen nie im ausgegebenen Bild.
+- **Stern „permanent“ gelb:** Ist eine Aufnahme permanent markiert, ist der Stern in der Editor-Werkzeugleiste gelb
+  gefüllt (wie das Abzeichen in der History). Bisher zeigte nur der blaue Hintergrund den Zustand, und der verschwand,
+  solange die Maus über dem Knopf war.
 
 ## 0.8.0
 
