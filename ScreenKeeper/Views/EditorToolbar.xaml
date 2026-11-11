@@ -106,7 +106,7 @@
         <Style x:Key="DiscardIcon" TargetType="Path" BasedOn="{StaticResource Icon}">
             <Setter Property="Stroke" Value="{StaticResource DiscardIconBrush}" />
         </Style>
-        <!-- Stern „permanent“: gesetzt → gelb gefüllt (bleibt auch beim Darüberfahren sichtbar, anders als der blaue Hintergrund) -->
+        <!-- Stern „permanent“: gesetzt → gelb gefüllt (zeigt den Zustand; der Knopf selbst hat keinen eigenen Hintergrund) -->
         <SolidColorBrush x:Key="PermanentStarBrush" Color="#FFFFCA28" />
         <Style x:Key="PermanentStarIcon" TargetType="Path" BasedOn="{StaticResource Icon}">
             <Style.Triggers>
@@ -406,7 +406,7 @@
             <Button Style="{StaticResource ToolbarButton}" Command="{Binding DuplicateCommand}" ToolTip="{loc:Str ToolbarDuplicate}">
                 <Path Style="{StaticResource Icon}" Data="M6,6 H17 V17 H6 Z M3,13 V3 H13 M11.5,9 V14 M9,11.5 H14" />
             </Button>
-            <Button Style="{StaticResource StateButton}" Tag="{Binding IsPermanent}" Command="{Binding TogglePermanentCommand}" ToolTip="{loc:Str ToolbarPermanent}">
+            <Button Style="{StaticResource ToolbarButton}" Command="{Binding TogglePermanentCommand}" ToolTip="{loc:Str ToolbarPermanent}">
                 <Path Style="{StaticResource PermanentStarIcon}" Data="M10,2.5 L12.3,7.3 L17.5,7.9 L13.6,11.5 L14.7,16.7 L10,14.1 L5.3,16.7 L6.4,11.5 L2.5,7.9 L7.7,7.3 Z" />
             </Button>
             <Rectangle Style="{StaticResource Separator}" />
