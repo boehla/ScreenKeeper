@@ -11,7 +11,7 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace>ScreenKeeper</RootNamespace>
     <AssemblyName>ScreenKeeper</AssemblyName>
-    <Version>0.10.0</Version>
+    <Version>0.10.1</Version>
     <Product>ScreenKeeper</Product>
     <Description>Screenshot-Tool mit unveränderlichem Original und nachträglich änderbarer Bearbeitung</Description>
     <NeutralLanguage>de</NeutralLanguage>

@@ -373,7 +373,8 @@ public class TextFieldTests {
             Assert.True(service.Settings.DefaultTextAutoFontSize);
             Assert.Equal(TextAlignments.TopLeft, ToolOptions.FromSettings(new AppSettings { DefaultTextAlignment = "x" }).TextAlignment);
         }
-        Assert.False(new AppSettings().DefaultTextAutoFontSize);
+        // ohne gespeicherten Wert (neu oder nach dem Update): automatische Schriftgröße
+        Assert.True(new AppSettings().DefaultTextAutoFontSize);
     }
 
     [Fact]

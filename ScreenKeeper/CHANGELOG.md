@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.10.1
+
+- **Schriftgröße „Auto“ als Standard:** Ohne gespeicherte Einstellung (Neuinstallation oder Update von 0.9) ist für
+  neue Textfelder die automatische Schriftgröße vorgewählt. Wer mit 0.10.0 schon den Editor geschlossen hat, hat „fest“
+  gespeichert und wählt „Auto“ einmal im Schriftgröße-Menü.
+
 ## 0.10.0
 
 - **Bezeichnung folgt dem Bereich:** Ist ein Bereich gewählt, kommen Titel und Prozess in der History von dem Fenster,

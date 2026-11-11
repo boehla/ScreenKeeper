@@ -38,7 +38,7 @@ public sealed class ToolOptions {
     public double FontSize { get; set; } = 24;
 
     /// <summary>Neue Textfelder mit automatischer Schriftgröße.</summary>
-    public bool TextAutoFontSize { get; set; }
+    public bool TextAutoFontSize { get; set; } = true;
 
     /// <summary>Ausrichtung neuer Texte (siehe <see cref="TextAlignments"/>).</summary>
     public string TextAlignment { get; set; } = TextAlignments.TopLeft;

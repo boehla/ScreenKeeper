@@ -90,7 +90,7 @@ public sealed class AppSettings {
     public double DefaultFontSize { get; set; } = 24;
 
     /// <summary>Zuletzt gewählt: neue Textfelder mit automatischer Schriftgröße.</summary>
-    public bool DefaultTextAutoFontSize { get; set; }
+    public bool DefaultTextAutoFontSize { get; set; } = true;
 
     /// <summary>Zuletzt verwendete Ausrichtung des Text-Werkzeugs (siehe <see cref="TextAlignments"/>).</summary>
     public string DefaultTextAlignment { get; set; } = TextAlignments.TopLeft;

@@ -150,7 +150,7 @@ public class SettingsPhase5Tests {
             s.HighlightColor = "#FF43A047";
             s.DefaultThickness = 6;
             s.DefaultFontSize = 32;
-            s.DefaultTextAutoFontSize = true;
+            s.DefaultTextAutoFontSize = false;
             s.DefaultTextAlignment = TextAlignments.BottomCenter;
             s.DefaultBlockSize = 14;
             s.DefaultBlurRadius = 12;
