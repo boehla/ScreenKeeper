@@ -105,6 +105,35 @@ public static class ImageEffects {
     }
 
     /// <summary>
+    /// Textmarker: Farbe (<paramref name="red"/>, <paramref name="green"/>, <paramref name="blue"/>) mit Deckkraft
+    /// <paramref name="alpha"/> im Modus „Multiplizieren“ auf <paramref name="pixels"/> legen. Anders als die übrigen Effekte
+    /// arbeitet dies auf <b>vormultipliziertem</b> Bgra (Pbgra32) und liefert auch solches.
+    /// Je Kanal bei deckendem Untergrund: out = lerp(unten, unten · farbe / 255, alpha / 255) – Weiß wird zur Markerfarbe,
+    /// Schwarz bleibt schwarz. Für (teil)transparenten Untergrund gilt die W3C-Compositing-Formel (Multiply + source-over),
+    /// dort scheint die Markerfarbe entsprechend durch. Liefert einen neuen Puffer.
+    /// </summary>
+    public static byte[] Multiply(byte[] pixels, int width, int height, byte red, byte green, byte blue, byte alpha) {
+        validate(pixels, width, height);
+        byte[] result = new byte[pixels.Length];
+        int a = alpha;
+        int[] color = { blue, green, red };
+        for(int i = 0; i < pixels.Length; i += 4) {
+            int backdropAlpha = pixels[i + 3];
+            // ao = as + ab − as·ab (alles in 0 … 255)
+            int outAlpha = (a * (255 - backdropAlpha) + backdropAlpha * 255 + 127) / 255;
+            for(int k = 0; k < 3; k++) {
+                int c = color[k];
+                int cb = pixels[i + k];
+                // co = cs·(1 − ab) + cb·(1 − as) + as·cb·Cs  (cb vormultipliziert, daher ohne Division durch ab)
+                int value = (a * c * (255 - backdropAlpha) + cb * (255 - a) * 255 + a * cb * c + 32512) / 65025;
+                result[i + k] = (byte)Math.Min(value, outAlpha);
+            }
+            result[i + 3] = (byte)outAlpha;
+        }
+        return result;
+    }
+
+    /// <summary>
     /// Ausschnitt (<paramref name="x"/>, <paramref name="y"/>, <paramref name="cropWidth"/> × <paramref name="cropHeight"/>) kopieren.
     /// </summary>
     public static byte[] Crop(byte[] pixels, int width, int height, int x, int y, int cropWidth, int cropHeight) {

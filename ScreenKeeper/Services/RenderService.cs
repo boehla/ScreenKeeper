@@ -15,7 +15,8 @@ public interface IRenderService {
 
     /// <summary>
     /// Wie <see cref="BuildAnnotationDrawing(CaptureDocument, BitmapSource)"/>, zeichnet aber nur Objekte, für die
-    /// <paramref name="include"/> true liefert (z. B. ohne den gerade bearbeiteten Text).
+    /// <paramref name="include"/> true liefert (z. B. ohne den gerade bearbeiteten Text). Ausgelassene Objekte zählen auch
+    /// nicht zum Untergrund eines Textmarkers.
     /// </summary>
     DrawingGroup BuildAnnotationDrawing(CaptureDocument document, BitmapSource original, Func<Annotation, bool>? include);
 
@@ -30,16 +31,25 @@ public interface IRenderService {
 /// Je Annotation-Typ gibt es eine private draw…-Methode.
 /// </summary>
 public sealed class RenderService : IRenderService {
-    /// <summary>Deckkraft des Textmarkers (Anteil an der gespeicherten, deckenden Farbe).</summary>
-    public const double HighlightOpacity = 0.5;
+    /// <summary>Farbe des Textmarkers, wenn die gespeicherte Farbe nicht lesbar ist (Gelb, deckend).</summary>
+    public static readonly Color DefaultHighlightColor = Color.FromArgb(0xFF, 0xFF, 0xEB, 0x3B);
 
     private static readonly Dictionary<string, CursorImage?> systemCursors = new Dictionary<string, CursorImage?>();
     private static readonly object cursorSync = new object();
     private static readonly Typeface stampTypeface = new Typeface(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal);
     private static readonly Brush outlineBrush = freeze(new SolidColorBrush(Color.FromArgb(0x66, 0, 0, 0)));
 
-    /// <summary>Schlüssel des Effekt-Zwischenspeichers: Art, Objekt, Rechteck (im Bild) und Blockgröße bzw. Radius.</summary>
-    private readonly record struct EffectKey(bool Blur, string Id, PixelRect Rect, int Parameter);
+    /// <summary>Art eines zwischengespeicherten Effekts.</summary>
+    private enum EffectKind {
+        Pixelate,
+        Blur,
+        Highlight
+    }
+
+    /// <summary>
+    /// Schlüssel des Effekt-Zwischenspeichers: Art, Objekt, Rechteck (im Bild) und Blockgröße, Radius bzw. Markerfarbe (ARGB).
+    /// </summary>
+    private readonly record struct EffectKey(EffectKind Kind, string Id, PixelRect Rect, int Parameter);
 
     private readonly Dictionary<EffectKey, BitmapSource> effectCache = new Dictionary<EffectKey, BitmapSource>();
     private readonly HashSet<EffectKey> usedEffects = new HashSet<EffectKey>();
@@ -71,9 +81,19 @@ public sealed class RenderService : IRenderService {
             usedEffects.Clear();
         }
         using (DrawingContext dc = group.Open()) {
+            // je Objekt eine eigene Teilzeichnung: der Textmarker braucht, was in der Reihenfolge vor ihm liegt
+            List<Drawing> below = new List<Drawing>();
             foreach(Annotation annotation in document.Annotations) {
                 if(include != null && !include(annotation)) continue;
-                drawAnnotation(dc, document, original, annotation);
+                DrawingGroup part = new DrawingGroup();
+                using (DrawingContext partContext = part.Open()) {
+                    drawAnnotation(partContext, document, original, annotation, below);
+                }
+                if(part.Children.Count == 0) continue;
+                RenderOptions.SetBitmapScalingMode(part, BitmapScalingMode.NearestNeighbor);
+                part.Freeze();
+                dc.DrawDrawing(part);
+                below.Add(part);
             }
         }
         // Nur die Effekte der aktuellen Zeichnung aufheben (beim Ziehen entstünden sonst beliebig viele)
@@ -107,7 +127,7 @@ public sealed class RenderService : IRenderService {
         return target;
     }
 
-    private void drawAnnotation(DrawingContext dc, CaptureDocument document, BitmapSource original, Annotation annotation) {
+    private void drawAnnotation(DrawingContext dc, CaptureDocument document, BitmapSource original, Annotation annotation, IReadOnlyList<Drawing> below) {
         switch(annotation) {
             case RectangleAnnotation rectangle: drawRectangle(dc, rectangle); break;
             case EllipseAnnotation ellipse: drawEllipse(dc, ellipse); break;
@@ -115,7 +135,7 @@ public sealed class RenderService : IRenderService {
             case ArrowAnnotation arrow: drawArrow(dc, arrow); break;
             case FreehandAnnotation freehand: drawFreehand(dc, freehand); break;
             case TextAnnotation text: drawText(dc, text); break;
-            case HighlightAnnotation highlight: drawHighlight(dc, highlight); break;
+            case HighlightAnnotation highlight: drawHighlight(dc, original, highlight, below); break;
             case PixelateAnnotation pixelate: drawPixelate(dc, original, pixelate); break;
             case BlurAnnotation blur: drawBlur(dc, original, blur); break;
             case NumberStampAnnotation stamp: drawNumberStamp(dc, stamp); break;
@@ -247,12 +267,69 @@ public sealed class RenderService : IRenderService {
         if(layout.IsField) dc.Pop();
     }
 
-    private void drawHighlight(DrawingContext dc, HighlightAnnotation annotation) {
-        if(annotation.Rect.IsEmpty) return;
-        Color color = AnnotationColors.Parse(annotation.Color, Color.FromRgb(0xFF, 0xEB, 0x3B));
-        SolidColorBrush brush = new SolidColorBrush(AnnotationColors.WithAlpha(color, (byte)Math.Round(color.A * HighlightOpacity)));
-        brush.Freeze();
-        dc.DrawRectangle(brush, null, toRect(annotation.Rect));
+    /// <summary>
+    /// Textmarker im Modus „Multiplizieren“ (siehe <see cref="ImageEffects.Multiply"/>): Text darunter bleibt dunkel, Weiß wird
+    /// zur Markerfarbe. Der Alpha-Wert der Farbe wirkt als Stärke. WPF kennt keine Mischmodi, daher wird das Ergebnis als
+    /// Bitmap berechnet. Untergrund ist, was an der Stelle tatsächlich zu sehen ist:
+    /// liegt keins der vorher gezeichneten Objekte im Rechteck, nur das Original (zwischengespeichert wie Verpixeln);
+    /// sonst Original plus diese Objekte (Verpixelung, Rahmen, Stempel, frühere Marker …), damit z. B. unter einer Verpixelung
+    /// nie das Original durchscheint. Dieser Fall wird nicht zwischengespeichert.
+    /// </summary>
+    private void drawHighlight(DrawingContext dc, BitmapSource original, HighlightAnnotation annotation, IReadOnlyList<Drawing> below) {
+        PixelRect clipped = annotation.Rect.Intersect(new PixelRect(0, 0, original.PixelWidth, original.PixelHeight));
+        if(clipped.IsEmpty) return;
+        Color color = AnnotationColors.Parse(annotation.Color, DefaultHighlightColor);
+        if(color.A == 0) return;
+        Rect area = toRect(clipped);
+        List<Drawing> covering = below.Where(d => overlaps(d.Bounds, area)).ToList();
+        BitmapSource bitmap;
+        if(covering.Count == 0) {
+            int argb = color.A << 24 | color.R << 16 | color.G << 8 | color.B;
+            bitmap = getEffect(new EffectKey(EffectKind.Highlight, annotation.Id, clipped, argb), () => ComputeHighlight(copyPixels(original, clipped, PixelFormats.Pbgra32), clipped, color));
+        } else {
+            bitmap = ComputeHighlight(renderBelow(original, covering, clipped), clipped, color);
+        }
+        dc.DrawImage(bitmap, area);
+    }
+
+    /// <summary>
+    /// Textmarker-Ergebnis für <paramref name="rect"/> aus dem Untergrund <paramref name="pixels"/> (Pbgra32, Größe des Rechtecks).
+    /// Pbgra32, eingefroren.
+    /// </summary>
+    public static BitmapSource ComputeHighlight(byte[] pixels, PixelRect rect, Color color) {
+        byte[] result = ImageEffects.Multiply(pixels, rect.Width, rect.Height, color.R, color.G, color.B, color.A);
+        BitmapSource bitmap = BitmapSource.Create(rect.Width, rect.Height, 96, 96, PixelFormats.Pbgra32, null, result, rect.Width * 4);
+        bitmap.Freeze();
+        return bitmap;
+    }
+
+    /// <summary>
+    /// Kann eine Zeichnung mit diesen Grenzen das Rechteck berühren? Großzügig (Kantenglättung reicht etwa ein Pixel hinaus).
+    /// </summary>
+    private static bool overlaps(Rect bounds, Rect area) {
+        if(bounds.IsEmpty) return false;
+        bounds.Inflate(1, 1);
+        return bounds.IntersectsWith(area);
+    }
+
+    /// <summary>
+    /// Original plus <paramref name="drawings"/> im Rechteck <paramref name="rect"/> (Bildpixel) als Pbgra32-Pixel.
+    /// </summary>
+    private static byte[] renderBelow(BitmapSource original, IReadOnlyList<Drawing> drawings, PixelRect rect) {
+        DrawingVisual visual = new DrawingVisual();
+        RenderOptions.SetBitmapScalingMode(visual, BitmapScalingMode.NearestNeighbor);
+        using (DrawingContext dc = visual.RenderOpen()) {
+            dc.PushTransform(new TranslateTransform(-rect.X, -rect.Y));
+            dc.DrawImage(original, new Rect(0, 0, original.PixelWidth, original.PixelHeight));
+            foreach(Drawing drawing in drawings) dc.DrawDrawing(drawing);
+            dc.Pop();
+        }
+        RenderTargetBitmap target = new RenderTargetBitmap(rect.Width, rect.Height, 96, 96, PixelFormats.Pbgra32);
+        target.Render(visual);
+        int stride = rect.Width * 4;
+        byte[] pixels = new byte[stride * rect.Height];
+        target.CopyPixels(pixels, stride, 0);
+        return pixels;
     }
 
     private void drawPixelate(DrawingContext dc, BitmapSource original, PixelateAnnotation annotation) {
@@ -285,16 +362,23 @@ public sealed class RenderService : IRenderService {
     private void drawEffect(DrawingContext dc, BitmapSource original, string id, PixelRect rect, bool blur, int parameter) {
         PixelRect clipped = rect.Intersect(new PixelRect(0, 0, original.PixelWidth, original.PixelHeight));
         if(clipped.IsEmpty) return;
-        EffectKey key = new EffectKey(blur, id, clipped, parameter);
-        BitmapSource? bitmap;
+        EffectKey key = new EffectKey(blur ? EffectKind.Blur : EffectKind.Pixelate, id, clipped, parameter);
+        BitmapSource bitmap = getEffect(key, () => ComputeEffect(original, clipped, blur, parameter));
+        dc.DrawImage(bitmap, toRect(clipped));
+    }
+
+    /// <summary>
+    /// Effekt-Bitmap aus dem Zwischenspeicher oder neu berechnen; als in dieser Zeichnung benutzt vermerken.
+    /// </summary>
+    private BitmapSource getEffect(EffectKey key, Func<BitmapSource> compute) {
         lock(effectSync) {
             usedEffects.Add(key);
-            if(!effectCache.TryGetValue(key, out bitmap)) {
-                bitmap = ComputeEffect(original, clipped, blur, parameter);
+            if(!effectCache.TryGetValue(key, out BitmapSource? bitmap)) {
+                bitmap = compute();
                 effectCache[key] = bitmap;
             }
+            return bitmap;
         }
-        dc.DrawImage(bitmap, toRect(clipped));
     }
 
     /// <summary>
@@ -309,7 +393,7 @@ public sealed class RenderService : IRenderService {
             int margin = ImageEffects.GetBlurMargin(parameter);
             source = new PixelRect(rect.X - margin, rect.Y - margin, rect.Width + 2 * margin, rect.Height + 2 * margin).Intersect(imageBounds);
         }
-        byte[] pixels = copyBgra32(original, source);
+        byte[] pixels = copyPixels(original, source, PixelFormats.Bgra32);
         byte[] result;
         if(blur) {
             byte[] blurred = ImageEffects.Blur(pixels, source.Width, source.Height, parameter);
@@ -322,8 +406,9 @@ public sealed class RenderService : IRenderService {
         return bitmap;
     }
 
-    private static byte[] copyBgra32(BitmapSource original, PixelRect rect) {
-        BitmapSource source = original.Format == PixelFormats.Bgra32 ? original : new FormatConvertedBitmap(original, PixelFormats.Bgra32, null, 0);
+    /// <summary>Ausschnitt des Originals in <paramref name="format"/> (Bgra32 oder Pbgra32) kopieren.</summary>
+    private static byte[] copyPixels(BitmapSource original, PixelRect rect, PixelFormat format) {
+        BitmapSource source = original.Format == format ? original : new FormatConvertedBitmap(original, format, null, 0);
         int stride = rect.Width * 4;
         byte[] pixels = new byte[stride * rect.Height];
         source.CopyPixels(new Int32Rect(rect.X, rect.Y, rect.Width, rect.Height), pixels, stride, 0);

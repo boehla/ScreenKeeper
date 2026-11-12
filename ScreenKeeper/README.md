@@ -170,7 +170,7 @@ Objekts. Alle Zeichnungen bleiben einzelne Objekte und lassen sich jederzeit aus
 | Linie, Pfeil | L, A | vom Anfang zum Ende ziehen (Shift: 45°-Raster); Farbe, Strichstärke, Anfang, Ende |
 | Freihand | F | zeichnen; Farbe, Strichstärke, Glätten, Anfang, Ende |
 | Text | T | klicken = freier Text, Feld aufziehen = festes Textfeld (Shift: Quadrat), dann tippen; Schriftgröße (Auto, Liste oder eigene Eingabe), Ausrichtung, Farbe, Hintergrund |
-| Textmarker | H | halbtransparentes Rechteck aufziehen (Standard Gelb) |
+| Textmarker | H | Rechteck aufziehen (Standard Gelb); färbt wie ein echter Marker: Text darunter bleibt dunkel |
 | Verpixeln | P | Rechteck aufziehen; Blockgröße |
 | Weichzeichnen | B | Rechteck aufziehen; Stärke |
 | Nummern-Stempel | N | klicken: 1, 2, 3 … (nächste Nummer = höchste + 1); Farbe, Größe |

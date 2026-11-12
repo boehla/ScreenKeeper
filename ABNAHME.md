@@ -64,7 +64,7 @@ Pfade relativ zu `ScreenKeeper\`.
 | Linie, Pfeil: Farbe, Strichstärke, Shift = 45° | erfüllt | `ViewModels\Tools\LineTool.cs`, `ArrowTool.cs`, `Services\AnnotationGeometry.cs` | `AnnotationGeometryTests` |
 | Freihand: Farbe, Strichstärke, Glättung | erfüllt | `ViewModels\Tools\FreehandTool.cs` | |
 | Text: Schrift, Größe, Farbe, Hintergrund; Doppelklick bearbeitet | teilweise | `ViewModels\Tools\TextTool.cs`, `Views\EditorWindow.TextEditing.cs` | Größe, Farbe, Hintergrund, Doppelklick vorhanden; **Schriftart nicht wählbar** (fest Segoe UI, `fontFamily`/`bold` nur im Datenmodell) |
-| Highlight halbtransparent, Standard Gelb | erfüllt | `ViewModels\Tools\HighlightTool.cs`, `Services\RenderService.cs` | |
+| Highlight (ab 0.11 Multiplizieren statt halbtransparent), Standard Gelb | erfüllt | `ViewModels\Tools\HighlightTool.cs`, `Services\RenderService.cs`, `Services\ImageEffects.cs` | `HighlightMultiplyTests` |
 | Verpixeln mit Blockgröße | erfüllt | `ViewModels\Tools\PixelateTool.cs`, `Services\ImageEffects.cs` | |
 | Weichzeichnen mit Stärke | erfüllt | `ViewModels\Tools\BlurTool.cs`, `Services\ImageEffects.cs` | |
 | Nummern-Stempel fortlaufend, Farbe, Größe | erfüllt | `ViewModels\Tools\NumberStampTool.cs` | |

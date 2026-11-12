@@ -21,7 +21,7 @@ public sealed class ToolOptions {
     /// <summary>Farbe für Rahmen, Linien, Text und Stempel (#AARRGGBB).</summary>
     public string Color { get; set; } = AnnotationColors.Red;
 
-    /// <summary>Farbe des Textmarkers (#AARRGGBB, deckend; die Transparenz legt der Renderer fest).</summary>
+    /// <summary>Farbe des Textmarkers (#AARRGGBB, deckend = volle Stärke; gezeichnet im Modus „Multiplizieren“).</summary>
     public string HighlightColor { get; set; } = "#FFFFEB3B";
 
     public double Thickness { get; set; } = 4;

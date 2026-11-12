@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.11.0
+
+- **Textmarker wie ein echter Marker:** Der Textmarker wird nicht mehr halbtransparent darübergelegt, sondern im Modus
+  „Multiplizieren“ gezeichnet. Text darunter bleibt kräftig dunkel, weißer Hintergrund wird voll gelb. Der Alpha-Wert
+  der Farbe wirkt als Stärke (Standard `#FFFFEB3B` = volle Stärke).
+- Unter dem Marker ist zu sehen, was vorher gezeichnet wurde: Rahmen, Pfeile, Stempel und frühere Marker bleiben
+  getönt sichtbar, und über einer Verpixelung oder Unschärfe scheint nie das Original durch. Mehrere Marker
+  übereinander werden entsprechend dunkler.
+
 ## 0.10.1
 
 - **Schriftgröße „Auto“ als Standard:** Ohne gespeicherte Einstellung (Neuinstallation oder Update von 0.9) ist für

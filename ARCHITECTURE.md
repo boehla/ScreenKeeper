@@ -66,7 +66,9 @@ Alle Services als Klassen mit Interface (`ICaptureService` usw.), ohne DI-Framew
   `DWMWA_EXTENDED_FRAME_BOUNDS`, Titel, Prozessname). Ergebnis `CaptureResult { Bitmap, Document }`.
 - `RenderService`: **der eine Render-Pfad**. `Drawing BuildAnnotationDrawing(CaptureDocument doc, BitmapSource original)`
   liefert die Zeichnungen (inkl. Pixelate/Blur aus dem Original berechnet, inkl. Cursor-Annotationen) als
-  `DrawingGroup` in Bildpixel-Koordinaten. `BitmapSource Render(CaptureDocument doc, BitmapSource original, PixelRect region)`
+  `DrawingGroup` in Bildpixel-Koordinaten. Der Textmarker wird im Modus „Multiplizieren“ als Bitmap berechnet
+  (`ImageEffects.Multiply`): Untergrund ist das Original, oder – wenn vorher gezeichnete Objekte das Rechteck berühren –
+  Original plus diese Objekte per `RenderTargetBitmap` (so scheint unter einer Verpixelung nie das Original durch). `BitmapSource Render(CaptureDocument doc, BitmapSource original, PixelRect region)`
   zeichnet Original + Annotation-Drawing per `DrawingVisual`/`RenderTargetBitmap` (96 dpi, Pbgra32) und schneidet auf `region`.
   Der Editor zeigt dasselbe `Drawing` live an (z. B. über ein `DrawingImage`/`DrawingBrush` oder ein Host-Element) –
   so ist Anzeige = Export.
