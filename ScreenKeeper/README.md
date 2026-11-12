@@ -116,6 +116,13 @@ Tray-Menü → *Einstellungen*. Alle Änderungen wirken sofort nach **OK** bzw. 
 **Autostart:** Die Einstellung *Mit Windows starten* trägt ScreenKeeper unter
 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` ein bzw. entfernt den Eintrag wieder.
 
+**Autostart mit Adminrechten:** Ist ein Programm mit Adminrechten im Vordergrund (z. B. eine Admin-PowerShell), erreicht
+die Druck-Taste ein normal laufendes ScreenKeeper nicht (Windows-Schutz UIPI). Mit dieser Einstellung legt ScreenKeeper
+in der Aufgabenplanung die Aufgabe `ScreenKeeper\Autostart-<SID>` an, die es bei der Anmeldung mit Adminrechten startet
+(EXE am aktuellen Ort). Ein- und Ausschalten fragt einmal per UAC nach; solange die Aufgabe aktiv ist, entfällt der
+`Run`-Eintrag. Ein Start aus dem Startmenü startet dann ebenfalls die Aufgabe. Bei der Deinstallation versucht der
+Installer, die Aufgabe ohne Adminrechte zu entfernen; gelingt das nicht, bitte in der Aufgabenplanung löschen.
+
 **Aufbewahrung (Aufräumen):** „Aufnahmen nach X Tagen in den Papierkorb verschieben, außer permanente“. ScreenKeeper
 verschiebt Aufnahmen, die älter als so viele Tage sind, beim Start und danach einmal täglich in den Papierkorb (Bild,
 JSON und Vorschaubild) und schreibt die Anzahl ins Protokoll. **Permanent** markierte Aufnahmen bleiben immer erhalten,

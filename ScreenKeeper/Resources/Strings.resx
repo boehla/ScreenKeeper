@@ -171,6 +171,15 @@ Details stehen in {1}.</value>
   <data name="CliFileNotFound" xml:space="preserve">
     <value>Datei nicht gefunden: {0}</value>
   </data>
+  <data name="CliInvalidSid" xml:space="preserve">
+    <value>Ungültige Benutzer-SID: {0}</value>
+  </data>
+  <data name="CliInvalidExe" xml:space="preserve">
+    <value>Ungültiger Programmpfad (erwartet: vollständiger Pfad einer vorhandenen ScreenKeeper.exe): {0}</value>
+  </data>
+  <data name="CliInvalidSwitchValue" xml:space="preserve">
+    <value>Ungültiger Wert für {0}: {1} (erlaubt: on, off)</value>
+  </data>
   <data name="CliInvalidRegion" xml:space="preserve">
     <value>Ungültiger Bereich: {0} (erlaubt: selection, full, monitor:&lt;Nummer&gt;)</value>
   </data>
@@ -571,6 +580,30 @@ Ordner: {2}</value>
   </data>
   <data name="SettingsAutostartFailed" xml:space="preserve">
     <value>Der Autostart konnte nicht geändert werden: {0}</value>
+  </data>
+  <data name="SettingsAutostartViaTask" xml:space="preserve">
+    <value>Solange der Autostart mit Adminrechten eingeschaltet ist, startet ScreenKeeper über die Aufgabenplanung.</value>
+  </data>
+  <data name="SettingsElevatedAutostart" xml:space="preserve">
+    <value>Autostart mit Adminrechten</value>
+  </data>
+  <data name="SettingsElevatedAutostartHint" xml:space="preserve">
+    <value>Damit kommt die Druck-Taste auch an, wenn ein Programm mit Adminrechten im Vordergrund ist. ScreenKeeper läuft dann mit Adminrechten (Aufgabenplanung, bei der Anmeldung, EXE am aktuellen Ort). Ein- und Ausschalten erfordert einmalig eine Bestätigung; wirkt ab dem nächsten Start.</value>
+  </data>
+  <data name="SettingsElevatedAutostartFailed" xml:space="preserve">
+    <value>Der Autostart mit Adminrechten konnte nicht geändert werden: {0}</value>
+  </data>
+  <data name="ElevatedAutostartExitCode" xml:space="preserve">
+    <value>Die Aufgabe wurde nicht geändert (Exit-Code {0}). Details stehen im Protokoll {1}.</value>
+  </data>
+  <data name="ElevatedAutostartTimeout" xml:space="preserve">
+    <value>Keine Rückmeldung vom Hilfsprozess mit Adminrechten.</value>
+  </data>
+  <data name="ElevatedAutostartTaskFailed" xml:space="preserve">
+    <value>schtasks.exe meldet Fehler {0}: {1}</value>
+  </data>
+  <data name="ElevatedAutostartTaskDescription" xml:space="preserve">
+    <value>Startet ScreenKeeper bei der Anmeldung mit Adminrechten, damit die Druck-Taste auch bei Programmen mit Adminrechten im Vordergrund ankommt. Ein- und ausschalten in den ScreenKeeper-Einstellungen („Autostart mit Adminrechten“).</value>
   </data>
   <data name="SettingsNotifyOnSaveOnly" xml:space="preserve">
     <value>Benachrichtigung bei „nur speichern“ anzeigen</value>

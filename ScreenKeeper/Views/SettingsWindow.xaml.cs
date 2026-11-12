@@ -20,7 +20,7 @@ public partial class SettingsWindow : Window, ISettingsHost {
     public SettingsWindow() {
         InitializeComponent();
         update = new UpdateViewModel(AppServices.Updates);
-        viewModel = new SettingsViewModel(AppServices.Settings, AppServices.Autostart, AppServices.Hotkeys, EnvironmentCheckService.IsSnippingKeyEnabled) { Host = this, Update = update };
+        viewModel = new SettingsViewModel(AppServices.Settings, AppServices.Autostart, AppServices.ElevatedAutostart, AppServices.Hotkeys, EnvironmentCheckService.IsSnippingKeyEnabled) { Host = this, Update = update };
         viewModel.CloseRequested += (s, e) => Close();
         DataContext = viewModel;
         Closed += (s, e) => {

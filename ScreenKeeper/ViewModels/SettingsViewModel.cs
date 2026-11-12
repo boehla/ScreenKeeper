@@ -34,6 +34,7 @@ public sealed class SettingsViewModel : ViewModelBase {
 
     private readonly ISettingsService settings;
     private readonly IAutostartService autostart;
+    private readonly IElevatedAutostartService elevatedAutostart;
     private readonly IHotkeyService? hotkeys;
     private readonly Func<bool> isSnippingEnabled;
     private readonly Func<DateTime> clock;
@@ -43,6 +44,7 @@ public sealed class SettingsViewModel : ViewModelBase {
     private string exportFolder = "";
     private string retentionDaysText = "0";
     private bool autostartEnabled;
+    private bool elevatedAutostartEnabled;
     private bool notifyOnSaveOnly;
     private bool checkForUpdates;
     private string hotkeyCaptureEdit = "";
@@ -75,9 +77,10 @@ public sealed class SettingsViewModel : ViewModelBase {
     private bool hasHotkeyErrors;
     private string savedMessage = "";
 
-    public SettingsViewModel(ISettingsService settings, IAutostartService autostart, IHotkeyService? hotkeys, Func<bool> isSnippingEnabled, Func<DateTime>? clock = null) {
+    public SettingsViewModel(ISettingsService settings, IAutostartService autostart, IElevatedAutostartService elevatedAutostart, IHotkeyService? hotkeys, Func<bool> isSnippingEnabled, Func<DateTime>? clock = null) {
         this.settings = settings;
         this.autostart = autostart;
+        this.elevatedAutostart = elevatedAutostart;
         this.hotkeys = hotkeys;
         this.isSnippingEnabled = isSnippingEnabled;
         this.clock = clock ?? (() => DateTime.Now);
@@ -259,6 +262,25 @@ public sealed class SettingsViewModel : ViewModelBase {
         get => autostartEnabled;
         set => SetProperty(ref autostartEnabled, value);
     }
+
+    /// <summary>
+    /// Autostart über die Aufgabenplanung mit Adminrechten. Wirkt erst beim Übernehmen (nur bei einer Änderung, dann mit
+    /// einer UAC-Abfrage); solange eingeschaltet, ersetzt die Aufgabe den normalen Autostart.
+    /// </summary>
+    public bool ElevatedAutostart {
+        get => elevatedAutostartEnabled;
+        set {
+            if(!SetProperty(ref elevatedAutostartEnabled, value)) return;
+            OnPropertyChanged(nameof(CanChangeAutostart));
+            OnPropertyChanged(nameof(AutostartToolTip));
+        }
+    }
+
+    /// <summary>Der normale Autostart ist bedienbar, solange die Aufgabe ihn nicht ersetzt.</summary>
+    public bool CanChangeAutostart => !elevatedAutostartEnabled;
+
+    /// <summary>Hinweis am (deaktivierten) Autostart-Häkchen; null = kein Tooltip.</summary>
+    public string? AutostartToolTip => elevatedAutostartEnabled ? Strings.SettingsAutostartViaTask : null;
 
     public bool NotifyOnSaveOnly {
         get => notifyOnSaveOnly;
@@ -554,10 +576,13 @@ public sealed class SettingsViewModel : ViewModelBase {
         target.NotifyOnSaveOnly = notifyOnSaveOnly;
         target.CheckForUpdates = checkForUpdates;
 
+        applyElevatedAutostart(target);
+        // Kein Doppelstart: solange die Aufgabe den Autostart übernimmt, gibt es keinen Run-Wert
+        bool runValueWanted = autostartEnabled && !target.ElevatedAutostart;
         try {
-            if(autostart.IsEnabled != autostartEnabled) {
-                autostart.SetEnabled(autostartEnabled);
-                Log.Info($"Autostart {(autostartEnabled ? "eingeschaltet" : "ausgeschaltet")}");
+            if(autostart.IsEnabled != runValueWanted) {
+                autostart.SetEnabled(runValueWanted);
+                Log.Info($"Autostart (Run-Wert) {(runValueWanted ? "eingeschaltet" : "ausgeschaltet")}");
             }
         } catch(Exception ex) {
             Log.Error(ex, "Autostart konnte nicht geändert werden");
@@ -648,12 +673,39 @@ public sealed class SettingsViewModel : ViewModelBase {
         defaultTextBackground = source.DefaultTextBackground;
         defaultSmooth = source.DefaultSmooth;
         cursorVisible = source.CursorVisible;
+        // Admin-Autostart: Merker in den Einstellungen (die Abfrage der Aufgabenplanung wäre im UI-Thread zu langsam)
+        elevatedAutostartEnabled = source.ElevatedAutostart;
+        if(elevatedAutostartEnabled) {
+            // es gibt dann keinen Run-Wert – angezeigt wird der gemerkte Wunsch
+            autostartEnabled = source.Autostart;
+            return;
+        }
         // Wahrheit für den Autostart ist die Registry
         try {
             autostartEnabled = autostart.IsEnabled;
         } catch(Exception ex) {
             Log.Error(ex, "Autostart-Status nicht lesbar");
             autostartEnabled = source.Autostart;
+        }
+    }
+
+    /// <summary>
+    /// Admin-Autostart nur bei einer Änderung umschalten (eine UAC-Abfrage). Abgebrochen: still zurück auf den alten Stand;
+    /// Fehler: Meldung. Der Merker wird nur bei Erfolg geändert, das Häkchen folgt ihm beim anschließenden Neuladen.
+    /// </summary>
+    private void applyElevatedAutostart(AppSettings target) {
+        if(elevatedAutostartEnabled == target.ElevatedAutostart) return;
+        ElevatedAutostartResult result = elevatedAutostart.SetEnabled(elevatedAutostartEnabled, out string error);
+        switch(result) {
+            case ElevatedAutostartResult.Success:
+                target.ElevatedAutostart = elevatedAutostartEnabled;
+                break;
+            case ElevatedAutostartResult.Cancelled:
+                Log.Info("Autostart mit Adminrechten nicht geändert (UAC abgebrochen)");
+                break;
+            case ElevatedAutostartResult.Failed:
+                Host?.ShowError(Strings.Format(Strings.SettingsElevatedAutostartFailed, error));
+                break;
         }
     }
 

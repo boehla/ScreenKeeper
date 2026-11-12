@@ -82,6 +82,11 @@ Alle Services als Klassen mit Interface (`ICaptureService` usw.), ohne DI-Framew
   `HotkeyScope.RemoteOnly`; außerhalb lässt der Hook sie für WM_HOTKEY durch).
   Hotkey-Modell `HotkeyBinding { Modifiers, Key }` serialisierbar als String (`"Ctrl+Shift+PrintScreen"`).
 - `AutostartService`: `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, Wert `ScreenKeeper` = `"<Pfad zur EXE>"`.
+- `ElevatedAutostartService`: Autostart mit Adminrechten über die Aufgabe `ScreenKeeper\Autostart-<SID>` (bei Anmeldung,
+  höchste Privilegien). Anlegen/Löschen per erhöhtem Hilfsaufruf der eigenen EXE (`--elevated-autostart on|off --sid
+  <SID> --exe <Pfad>`, `schtasks /Create /XML` bzw. `/Delete`), Merker `elevatedAutostart` in `settings.json`. Ein
+  normaler Start ohne Adminrechte startet bei eingeschaltetem Merker die Aufgabe (`schtasks /Run`) und beendet sich; die
+  Aufgabe übergibt `--elevated-task`, damit das nie im Kreis läuft.
 - `EnvironmentCheckService`: Hinweise erkennen (Snipping-Registry-Wert, Prozess `Greenshot`).
 
 ## Editor (`ViewModels\EditorViewModel`, `Views\EditorWindow`)

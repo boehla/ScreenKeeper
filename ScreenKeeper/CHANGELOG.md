@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.11.0
+
+- **Autostart mit Adminrechten:** Neue, optionale Einstellung unter „Programm“. Ist ein Programm mit Adminrechten im
+  Vordergrund (Admin-PowerShell, IIS-Manager), kam die Druck-Taste wegen UIPI bisher nicht bei ScreenKeeper an. Mit dem
+  Häkchen legt ScreenKeeper in der Aufgabenplanung die Aufgabe `ScreenKeeper\Autostart-<SID>` an (bei Anmeldung dieses
+  Benutzers, höchste Privilegien, EXE am aktuellen Ort, ohne Zeitlimit, auch im Akkubetrieb). Nur beim Übernehmen einer
+  Änderung erscheint einmal die UAC-Abfrage – die eigene EXE legt die Aufgabe erhöht an bzw. löscht sie
+  (`--elevated-autostart on|off`, Argumente werden geprüft, XML in `%SystemRoot%\Temp` und danach gelöscht).
+  Abgebrochene UAC-Abfrage: Häkchen zurück, keine Meldung. Beim normalen Programmstart nie eine UAC-Abfrage.
+- **Kein Doppelstart:** Solange die Aufgabe den Autostart übernimmt, gibt es keinen `Run`-Wert; das Häkchen „Mit Windows
+  starten“ ist dann ausgegraut, der Wunsch bleibt gespeichert und gilt nach dem Abschalten wieder. Ein vom Installer
+  angelegter `Run`-Wert wird beim Start entfernt. Neue Einstellung `elevatedAutostart`.
+- **Manueller Start:** Startmenü, Installer oder Update starten ScreenKeeper ohne Adminrechte; bei eingeschaltetem
+  Admin-Autostart startet es dann die Aufgabe (`schtasks /Run`, ohne UAC) und beendet sich. Zeigt die Aufgabe auf eine
+  andere EXE (Neuinstallation an anderem Ort) oder klappt der Start nicht, läuft es normal weiter (Hinweis im Protokoll).
+- **Erhöhte und normale Instanz:** Der Einzelinstanz-Mutex erlaubt dem Benutzer den Zugriff auch auf den Mutex einer
+  erhöhten Instanz; die Nachricht „History zeigen“ eines zweiten Starts kommt trotz UIPI an. Läuft ScreenKeeper erhöht,
+  öffnen Ablageordner und Release-Seite über `explorer.exe`, damit Explorer und Browser nicht mit Adminrechten laufen.
+- **Installer:** legt den `Run`-Wert nicht an, solange der Admin-Autostart eingeschaltet ist, und entfernt die Aufgabe
+  bei der Deinstallation (ohne Adminrechte; klappt das nicht, Hinweis zum Löschen in der Aufgabenplanung).
+
 ## 0.10.1
 
 - **Schriftgröße „Auto“ als Standard:** Ohne gespeicherte Einstellung (Neuinstallation oder Update von 0.9) ist für

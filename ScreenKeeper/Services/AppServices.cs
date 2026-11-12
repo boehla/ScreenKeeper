@@ -10,6 +10,7 @@ public static class AppServices {
     private static IRenderService? render;
     private static IClipboardService? clipboard;
     private static IAutostartService? autostart;
+    private static IElevatedAutostartService? elevatedAutostart;
     private static IEnvironmentCheckService? environmentCheck;
     private static CaptureWorkflow? workflow;
     private static UpdateService? updates;
@@ -25,6 +26,8 @@ public static class AppServices {
     public static IClipboardService Clipboard => clipboard ?? throw notInitialized();
 
     public static IAutostartService Autostart => autostart ?? throw notInitialized();
+
+    public static IElevatedAutostartService ElevatedAutostart => elevatedAutostart ?? throw notInitialized();
 
     public static IEnvironmentCheckService EnvironmentCheck => environmentCheck ?? throw notInitialized();
 
@@ -50,6 +53,7 @@ public static class AppServices {
         capture = new CaptureService();
         clipboard = new ClipboardService();
         autostart = new AutostartService();
+        elevatedAutostart = new ElevatedAutostartService();
         environmentCheck = new EnvironmentCheckService();
         workflow = new CaptureWorkflow();
         updates = new UpdateService(settingsService);

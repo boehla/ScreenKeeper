@@ -106,6 +106,7 @@ Pfade relativ zu `ScreenKeeper\`.
 | Standardfarben und Strichstärke | erfüllt | ebenda | |
 | Mauszeiger standardmäßig sichtbar | erfüllt | ebenda | |
 | Autostart mit Windows (`HKCU\…\Run`) | nur manuell prüfbar | `Services\AutostartService.cs` | Prüfung: Häkchen setzen → Wert `ScreenKeeper` unter `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, Häkchen entfernen → Wert weg |
+| Autostart mit Adminrechten (Aufgabenplanung, ab 0.11.0) | nur manuell prüfbar | `Services\ElevatedAutostartService.cs`, `ViewModels\SettingsViewModel.cs` | XML, Argumente, Startlogik und Einstellungslogik in `Version0110Tests` · Prüfung: (1) Häkchen setzen, Übernehmen → genau eine UAC-Abfrage, danach Aufgabe `ScreenKeeper\Autostart-<SID>` in der Aufgabenplanung, kein Wert `ScreenKeeper` unter `HKCU\…\Run`, „Mit Windows starten“ ausgegraut; erneut Übernehmen → keine UAC-Abfrage. (2) UAC-Abfrage mit „Nein“ beantworten → Häkchen wieder aus, keine Fehlermeldung. (3) Abmelden/Anmelden (oder ScreenKeeper beenden und aus dem Startmenü starten) → Protokoll „gestartet (mit Adminrechten)“. (4) Admin-PowerShell im Vordergrund, Druck → Editor erscheint. (5) Bereich kopieren und in Paint (ohne Adminrechte) einfügen → Bild kommt an. (6) Ablageordner aus der History öffnen → Explorer läuft ohne Adminrechte (Task-Manager, Spalte „Mit erhöhten Rechten“). (7) Startmenü-Start bei laufender erhöhter Instanz → History kommt nach vorne, keine zweite Instanz. (8) Häkchen entfernen, Übernehmen → eine UAC-Abfrage, Aufgabe weg, `Run`-Wert wieder da (wenn „Mit Windows starten“ gewünscht) |
 | Aufbewahrungsdauer | erfüllt | `Services\RetentionService.cs` | |
 | Tray-Benachrichtigung bei „nur speichern“ ein/aus | erfüllt | `App.xaml.cs`, `Services\AppSettings.cs` | |
 
@@ -153,6 +154,7 @@ Pfade relativ zu `ScreenKeeper\`.
 | P4: Löschen verschiebt alle Dateien in den Papierkorb | erfüllt | `Services\StorageService.cs` | `--test-delete` |
 | P5: Einstellungen ohne Neustart, Hotkey-Konflikte beim Speichern gemeldet | erfüllt | `App.xaml.cs` (`onSettingsChanged`), `ViewModels\HotkeyConflictChecker.cs` | Hotkeys werden bei Änderung neu registriert, alter Hook/Hotkey vorher freigegeben |
 | P5: Autostart ein/aus | nur manuell prüfbar | `Services\AutostartService.cs` | Prüfung: siehe 3.5 |
+| P5: Autostart mit Adminrechten ein/aus, Druck bei Admin-Fenster im Vordergrund | nur manuell prüfbar | `Services\ElevatedAutostartService.cs` | Prüfung: siehe 3.5; zusätzlich nach Deinstallation (ohne Adminrechte) prüfen, ob die Aufgabe entfernt ist – sonst erscheint ein Hinweis |
 
 Nicht bewertet: die Ausbaustufen aus SPEC Abschnitt 8 (OCR, Fenster einrasten, gemischte Skalierung, Englisch);
 „Klick ohne Ziehen rastet auf Fenster ein“ in 3.3 ist dort ausdrücklich als Ausbaustufe markiert.
@@ -164,5 +166,5 @@ Nicht bewertet: die Ausbaustufen aus SPEC Abschnitt 8 (OCR, Fenster einrasten, g
 | erfüllt | 85 |
 | teilweise | 1 |
 | fehlt | 0 |
-| nur manuell prüfbar | 14 |
-| **gesamt** | **100** |
+| nur manuell prüfbar | 16 |
+| **gesamt** | **102** |

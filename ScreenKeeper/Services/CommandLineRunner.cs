@@ -18,7 +18,7 @@ namespace ScreenKeeper.Services;
 /// </summary>
 public sealed class CommandLineRunner {
     private const int captureTimingRuns = 3;
-    private static readonly string[] switches = { "--capture", "--render", "--open", "--history", "--settings", "--retention", "--check-update", "--version" };
+    private static readonly string[] switches = { "--capture", "--render", "--open", "--history", "--settings", "--retention", "--check-update", "--version", ElevatedAutostartService.HelperSwitch };
 
     public static bool IsCommandLine(string[] args) {
         return args.Any(a => switches.Contains(a, StringComparer.OrdinalIgnoreCase));
@@ -40,6 +40,7 @@ public sealed class CommandLineRunner {
                 case "--settings": return await runSettings(args);
                 case "--retention": return await runRetention(args);
                 case "--check-update": return await runCheckUpdate();
+                case ElevatedAutostartService.HelperSwitch: return runElevatedAutostart(args);
             }
             writeError(Strings.CliUsage);
             return 1;
@@ -248,6 +249,16 @@ public sealed class CommandLineRunner {
         Console.Out.WriteLine($"current={result.CurrentVersion} latest={result.Latest.Version} asset={result.Latest.AssetName ?? "none"}");
         Console.Out.WriteLine($"update={(result.IsNewer ? result.Latest.Version : "none")} singleFile={UpdateService.IsSingleFile} selfContained={UpdateService.IsSelfContained}");
         Console.Out.Flush();
+        return 0;
+    }
+
+    /// <summary>
+    /// <c>--elevated-autostart on|off --sid &lt;SID&gt; --exe &lt;Pfad&gt;</c>: erhöhter Hilfsprozess der Einstellungen
+    /// (absichtlich nicht in der Hilfe), legt die Aufgabe für den Autostart mit Adminrechten an bzw. löscht sie.
+    /// </summary>
+    private static int runElevatedAutostart(string[] args) {
+        ElevatedAutostartRequest request = ElevatedAutostartService.ParseHelperArguments(args);
+        ElevatedAutostartService.RunHelper(request);
         return 0;
     }
 

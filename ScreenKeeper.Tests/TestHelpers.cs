@@ -47,6 +47,24 @@ public sealed class TempFolder : IDisposable {
     }
 }
 
+/// <summary>
+/// Admin-Autostart ohne UAC und Aufgabenplanung: liefert <see cref="Result"/> und zählt die Aufrufe.
+/// </summary>
+public sealed class FakeElevatedAutostart : IElevatedAutostartService {
+    public bool IsEnabled { get; set; }
+
+    public ElevatedAutostartResult Result { get; set; } = ElevatedAutostartResult.Success;
+
+    public List<bool> Calls { get; } = new List<bool>();
+
+    public ElevatedAutostartResult SetEnabled(bool enabled, out string error) {
+        Calls.Add(enabled);
+        error = Result == ElevatedAutostartResult.Failed ? "kaputt" : "";
+        if(Result == ElevatedAutostartResult.Success) IsEnabled = enabled;
+        return Result;
+    }
+}
+
 public static class TestImages {
     /// <summary>
     /// Bgra32-Bild, in dem jedes Pixel eindeutig aus seiner Position berechnet ist (deckend).

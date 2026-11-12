@@ -66,6 +66,9 @@ public static class Strings {
     public static string CliUsage => Get(nameof(CliUsage));
     public static string CliMissingArgument => Get(nameof(CliMissingArgument));
     public static string CliFileNotFound => Get(nameof(CliFileNotFound));
+    public static string CliInvalidSid => Get(nameof(CliInvalidSid));
+    public static string CliInvalidExe => Get(nameof(CliInvalidExe));
+    public static string CliInvalidSwitchValue => Get(nameof(CliInvalidSwitchValue));
     public static string CliInvalidRegion => Get(nameof(CliInvalidRegion));
     public static string CliNoSelection => Get(nameof(CliNoSelection));
     public static string ToolObjectSelect => Get(nameof(ToolObjectSelect));
@@ -199,6 +202,14 @@ public static class Strings {
     public static string SettingsProgram => Get(nameof(SettingsProgram));
     public static string SettingsAutostart => Get(nameof(SettingsAutostart));
     public static string SettingsAutostartFailed => Get(nameof(SettingsAutostartFailed));
+    public static string SettingsAutostartViaTask => Get(nameof(SettingsAutostartViaTask));
+    public static string SettingsElevatedAutostart => Get(nameof(SettingsElevatedAutostart));
+    public static string SettingsElevatedAutostartHint => Get(nameof(SettingsElevatedAutostartHint));
+    public static string SettingsElevatedAutostartFailed => Get(nameof(SettingsElevatedAutostartFailed));
+    public static string ElevatedAutostartExitCode => Get(nameof(ElevatedAutostartExitCode));
+    public static string ElevatedAutostartTimeout => Get(nameof(ElevatedAutostartTimeout));
+    public static string ElevatedAutostartTaskFailed => Get(nameof(ElevatedAutostartTaskFailed));
+    public static string ElevatedAutostartTaskDescription => Get(nameof(ElevatedAutostartTaskDescription));
     public static string SettingsNotifyOnSaveOnly => Get(nameof(SettingsNotifyOnSaveOnly));
     public static string SettingsFileLocation => Get(nameof(SettingsFileLocation));
     public static string SettingsHotkeyHelp => Get(nameof(SettingsHotkeyHelp));

@@ -167,6 +167,7 @@ public class SettingsPhase5Tests {
             s.DefaultCursorKind = CursorKinds.Hand;
             s.CursorVisible = false;
             s.Autostart = true;
+            s.ElevatedAutostart = true;
             s.RetentionDays = 90;
             s.CheckForUpdates = false;
             s.NotifyOnSaveOnly = false;
@@ -211,7 +212,7 @@ public class SettingsPhase5Tests {
             FakeAutostart autostart = new FakeAutostart();
             int changed = 0;
             service.Changed += (s, e) => changed++;
-            SettingsViewModel viewModel = new SettingsViewModel(service, autostart, null, () => false, () => new DateTime(2026, 11, 9, 14, 32, 5));
+            SettingsViewModel viewModel = new SettingsViewModel(service, autostart, new FakeElevatedAutostart(), null, () => false, () => new DateTime(2026, 11, 9, 14, 32, 5));
             Assert.False(viewModel.Autostart);
             Assert.Equal("Vorschau: 2026-11-09_14-32-05.png", viewModel.FileNamePreview);
 

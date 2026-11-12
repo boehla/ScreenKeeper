@@ -75,6 +75,8 @@ german.AutostartTask=ScreenKeeper mit Windows starten
 english.AutostartTask=Start ScreenKeeper with Windows
 german.AppRunning=ScreenKeeper läuft noch. Bitte über das Tray-Symbol beenden und dann auf OK klicken.
 english.AppRunning=ScreenKeeper is still running. Please exit it from the tray icon, then click OK.
+german.TaskNotDeleted=Die Aufgabe „%1“ (Autostart mit Adminrechten) konnte ohne Adminrechte nicht entfernt werden. Bitte in der Aufgabenplanung löschen.
+english.TaskNotDeleted=The scheduled task "%1" (startup with administrator rights) could not be removed without administrator rights. Please delete it in Task Scheduler.
 
 [Tasks]
 Name: "autostart"; Description: "{cm:AutostartTask}"; GroupDescription: "{cm:AutostartGroup}"
@@ -89,8 +91,9 @@ Name: "{autoprograms}\{#AppName}"; Filename: "{app}\{#AppExeName}"
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: desktopicon
 
 [Registry]
-; Exakt wie AutostartService: HKCU\...\Run, Wert "ScreenKeeper" = "<Pfad zur EXE>" in Anführungszeichen, ohne Argumente
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "ScreenKeeper"; ValueData: """{app}\{#AppExeName}"""; Flags: uninsdeletevalue; Tasks: autostart
+; Exakt wie AutostartService: HKCU\...\Run, Wert "ScreenKeeper" = "<Pfad zur EXE>" in Anführungszeichen, ohne Argumente.
+; Nicht bei eingeschaltetem Autostart mit Adminrechten – dann startet die Aufgabe ScreenKeeper (kein Doppelstart).
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "ScreenKeeper"; ValueData: """{app}\{#AppExeName}"""; Flags: uninsdeletevalue; Tasks: autostart; Check: not IsElevatedAutostartActive
 
 [Run]
 Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
@@ -162,4 +165,55 @@ end;
 function InitializeUninstall(): Boolean;
 begin
   Result := EnsureAppClosed(UninstallSilent());
+end;
+
+{ Wie ElevatedAutostartService.GetTaskName }
+function GetElevatedTaskName(Sid: String): String;
+begin
+  Result := 'ScreenKeeper\Autostart-' + Sid;
+end;
+
+{ Gibt es die Aufgabe? (schtasks /Query ohne Erhöhung) }
+function ElevatedTaskExists(Sid: String): Boolean;
+var
+  ResultCode: Integer;
+begin
+  Result := (Sid <> '') and Exec(ExpandConstant('{sys}\schtasks.exe'), '/Query /TN "' + GetElevatedTaskName(Sid) + '"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and (ResultCode = 0);
+end;
+
+{ Autostart mit Adminrechten eingeschaltet? Merker in settings.json, wie ihn ScreenKeeper schreibt (eingerückt, camelCase),
+  und die Aufgabe ist vorhanden. Bleibt doch ein Run-Wert übrig, entfernt ScreenKeeper ihn beim Start selbst. }
+function IsElevatedAutostartActive(): Boolean;
+var
+  Json: AnsiString;
+begin
+  Result := False;
+  if LoadStringFromFile(ExpandConstant('{userappdata}\ScreenKeeper\settings.json'), Json) then
+    Result := (Pos('"elevatedAutostart": true', String(Json)) > 0) and ElevatedTaskExists(GetUserSid());
+end;
+
+{ Deinstallation: Aufgabe des Autostarts mit Adminrechten ohne Erhöhung entfernen. ScreenKeeper legt sie so an, dass der
+  Benutzer sie löschen darf; klappt es trotzdem nicht, nur ein Hinweis (die Aufgabe zeigt dann auf eine fehlende EXE). }
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  Sid, TaskName, Schtasks: String;
+  ResultCode: Integer;
+begin
+  if CurUninstallStep <> usUninstall then
+    Exit;
+  Sid := GetUserSid();
+  if Sid = '' then
+    Exit;
+  if not ElevatedTaskExists(Sid) then
+    Exit;
+  TaskName := GetElevatedTaskName(Sid);
+  Schtasks := ExpandConstant('{sys}\schtasks.exe');
+  if Exec(Schtasks, '/Delete /TN "' + TaskName + '" /F', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and (ResultCode = 0) then
+    Log('Aufgabe ' + TaskName + ' entfernt')
+  else
+  begin
+    Log('Aufgabe ' + TaskName + ' nicht entfernt (Exit-Code ' + IntToStr(ResultCode) + ')');
+    if not UninstallSilent() then
+      MsgBox(FmtMessage(CustomMessage('TaskNotDeleted'), [TaskName]), mbInformation, MB_OK);
+  end;
 end;

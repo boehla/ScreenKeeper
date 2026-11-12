@@ -508,9 +508,7 @@ public sealed class HistoryViewModel : ViewModelBase {
         try {
             string root = storage.RootFolder;
             Directory.CreateDirectory(root);
-            ProcessStartInfo info = new ProcessStartInfo(root) { UseShellExecute = true };
-            using (Process? process = Process.Start(info)) {
-            }
+            ShellOpen.Open(root);
         } catch(Exception ex) {
             Log.Error(ex, "Ablageordner konnte nicht geöffnet werden");
             Host?.ShowError(ex.Message);

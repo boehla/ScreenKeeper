@@ -287,9 +287,7 @@ public sealed class UpdateService : IDisposable {
     public void OpenReleasePage(string? url = null) {
         string target = url != null && isHttps(url) ? url : ReleasesPageUrl;
         try {
-            ProcessStartInfo info = new ProcessStartInfo(target) { UseShellExecute = true };
-            using (Process? process = Process.Start(info)) {
-            }
+            ShellOpen.Open(target);
             Log.Info($"Release-Seite geöffnet: {target}");
         } catch(Exception ex) {
             Log.Error(ex, "Release-Seite konnte nicht geöffnet werden");

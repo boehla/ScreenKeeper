@@ -148,6 +148,13 @@ public sealed class AppSettings {
     public bool Autostart { get; set; }
 
     /// <summary>
+    /// Autostart mit Adminrechten über die Aufgabenplanung (siehe ElevatedAutostartService). Wird erst gesetzt, wenn die
+    /// Aufgabe angelegt ist. Solange true, gibt es keinen Run-Wert; <see cref="Autostart"/> bleibt als Wunsch für danach
+    /// erhalten. Der Installer liest das Feld als Text (<c>"elevatedAutostart": true</c>).
+    /// </summary>
+    public bool ElevatedAutostart { get; set; }
+
+    /// <summary>
     /// Aufnahmen älter als X Tage in den Papierkorb verschieben (außer permanent markierte); 0 = aus.
     /// Fehlt das Feld in der Datei, gilt der Standard <see cref="DefaultRetentionDays"/>.
     /// </summary>

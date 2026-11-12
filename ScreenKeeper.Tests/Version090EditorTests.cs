@@ -294,7 +294,7 @@ public class MagnifierInEditorTests {
         using (TempFolder temp = new TempFolder()) {
             SettingsService service = new SettingsService(Path.Combine(temp.Path, "settings.json"));
             service.Load();
-            SettingsViewModel vm = new SettingsViewModel(service, new FakeAutostart(), null, () => false);
+            SettingsViewModel vm = new SettingsViewModel(service, new FakeAutostart(), new FakeElevatedAutostart(), null, () => false);
             Assert.True(vm.ShowMagnifierKeyHints);
             Assert.Equal(8, vm.MagnifierZoom);
             Assert.Equal(160, vm.MagnifierSize);

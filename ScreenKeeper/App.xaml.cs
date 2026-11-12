@@ -45,7 +45,7 @@ public partial class App : Application {
             });
             return;
         }
-        startTrayMode();
+        startTrayMode(e.Args);
     }
 
     protected override void OnExit(ExitEventArgs e) {
@@ -87,7 +87,11 @@ public partial class App : Application {
         bringToFront(settingsWindow);
     }
 
-    private void startTrayMode() {
+    private void startTrayMode(string[] args) {
+        if(startViaElevatedTask(args)) {
+            Shutdown(0);
+            return;
+        }
         singleInstance = new SingleInstance();
         if(!singleInstance.TryAcquire()) {
             Log.Info("Zweiter Start – laufende Instanz wird benachrichtigt");
@@ -99,7 +103,8 @@ public partial class App : Application {
         }
 
         AppServices.Initialize(null);
-        Log.Info($"ScreenKeeper {CommandLineRunner.GetVersion()} gestartet, Ablage: {AppServices.Storage.RootFolder}");
+        Log.Info($"ScreenKeeper {CommandLineRunner.GetVersion()} gestartet{(ProcessElevation.IsCurrentElevated() == true ? " (mit Adminrechten)" : "")}, Ablage: {AppServices.Storage.RootFolder}");
+        checkElevatedAutostart();
         singleInstance.ShowHistoryRequested += (s, e) => ShowHistory();
         singleInstance.StartListening();
         AppServices.Workflow.WriteFailed += (s, failure) => tray?.ShowBalloon(Strings.ErrorTitle, Strings.Format(Strings.ErrorPngWriteFailed, failure.Path, failure.Error.Message), true);
@@ -132,6 +137,51 @@ public partial class App : Application {
         ensureAgentsFile();
         startUpdates();
         Dispatcher.BeginInvoke(new Action(warmUpEditor), DispatcherPriority.ApplicationIdle);
+    }
+
+    /// <summary>
+    /// Manueller Start (Startmenü, Installer) bei eingeschaltetem Autostart mit Adminrechten: statt nicht erhöht weiterzulaufen
+    /// die Aufgabe starten (erhöht, ohne UAC) und beenden. Klappt das nicht, normal weiterstarten.
+    /// </summary>
+    private static bool startViaElevatedTask(string[] args) {
+        try {
+            string? exePath = Environment.ProcessPath;
+            if(exePath == null) return false;
+            return ElevatedAutostartService.TryStartViaTask(args,
+                ProcessElevation.IsCurrentElevated,
+                () => {
+                    SettingsService settings = new SettingsService();
+                    settings.Load();
+                    return settings.Settings.ElevatedAutostart;
+                },
+                () => SingleInstance.IsRunning(),
+                () => ElevatedAutostartService.StartTask(exePath));
+        } catch(Exception ex) {
+            Log.Error(ex, "Start über die Aufgabe mit Adminrechten fehlgeschlagen");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Autostart mit Adminrechten eingeschaltet: einen (z. B. vom Installer wieder angelegten) Run-Wert entfernen, damit
+    /// es keinen Doppelstart gibt, und prüfen, ob die Aufgabe auf diese EXE zeigt (nur Protokoll). Im Hintergrund.
+    /// </summary>
+    private static void checkElevatedAutostart() {
+        AppSettings settings = AppServices.Settings.Settings;
+        if(!settings.ElevatedAutostart) return;
+        IAutostartService autostart = AppServices.Autostart;
+        string? exePath = Environment.ProcessPath;
+        Task.Run(() => {
+            try {
+                if(autostart.IsEnabled) {
+                    autostart.SetEnabled(false);
+                    Log.Info("Run-Wert entfernt: der Autostart läuft über die Aufgabe mit Adminrechten");
+                }
+                if(exePath != null) ElevatedAutostartService.LogTaskState(exePath);
+            } catch(Exception ex) {
+                Log.Error(ex, "Autostart mit Adminrechten konnte nicht geprüft werden");
+            }
+        });
     }
 
     /// <summary>
