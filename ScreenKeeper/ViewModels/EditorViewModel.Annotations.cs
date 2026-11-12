@@ -47,7 +47,8 @@ public sealed partial class EditorViewModel {
         nameof(ShowTextAlignmentOption), nameof(CurrentTextAlignment), nameof(CurrentTextAlignmentIcon),
         nameof(CurrentBlockSizeText), nameof(CurrentBlurRadiusText), nameof(CurrentStampSizeText),
         nameof(CurrentCursorKindLabel), nameof(IsCursorVisible), nameof(SelectedAnnotation),
-        nameof(ShowStampNumberOption), nameof(CurrentStampNumberText)
+        nameof(ShowStampNumberOption), nameof(CurrentStampNumberText), nameof(CanChangeStampNumber), nameof(StampNumberToolTip),
+        nameof(CanToggleCursorVisible)
     };
 
     /// <summary>Deckkraft der halbtransparenten Füllfarben in der Werkzeugleiste.</summary>
@@ -362,13 +363,15 @@ public sealed partial class EditorViewModel {
 
     public ICommand ToggleSmoothCommand => toggleSmoothCommand ??= new RelayCommand(ToggleSmooth);
 
-    public ICommand ToggleCursorVisibleCommand => toggleCursorVisibleCommand ??= new RelayCommand(ToggleCursorVisible);
+    public ICommand ToggleCursorVisibleCommand => toggleCursorVisibleCommand ??= new RelayCommand(ToggleCursorVisible, () => CanToggleCursorVisible);
 
-    public ICommand DeleteSelectedCommand => deleteSelectedCommand ??= new RelayCommand(DeleteSelectedAnnotation);
+    /// <summary>„Objekt löschen“: ohne ausgewähltes Objekt deaktiviert (der Knopf bleibt sichtbar und ausgegraut).</summary>
+    public ICommand DeleteSelectedCommand => deleteSelectedCommand ??= new RelayCommand(DeleteSelectedAnnotation, () => HasSelectedAnnotation);
 
-    public ICommand IncreaseStampNumberCommand => increaseStampNumberCommand ??= new RelayCommand(() => ChangeSelectedStampNumber(1));
+    /// <summary>„+“ am Nummern-Stempel; ohne ausgewählten Stempel deaktiviert (ausgegraut).</summary>
+    public ICommand IncreaseStampNumberCommand => increaseStampNumberCommand ??= new RelayCommand(() => ChangeSelectedStampNumber(1), () => CanChangeStampNumber);
 
-    public ICommand DecreaseStampNumberCommand => decreaseStampNumberCommand ??= new RelayCommand(() => ChangeSelectedStampNumber(-1));
+    public ICommand DecreaseStampNumberCommand => decreaseStampNumberCommand ??= new RelayCommand(() => ChangeSelectedStampNumber(-1), () => CanChangeStampNumber);
 
     public bool ShowColorOption => isTarget(AnnotationTypes.Rectangle, AnnotationTypes.Ellipse, AnnotationTypes.Line, AnnotationTypes.Arrow,
         AnnotationTypes.Freehand, AnnotationTypes.Text, AnnotationTypes.Highlight, AnnotationTypes.NumberStamp);
@@ -394,15 +397,27 @@ public sealed partial class EditorViewModel {
 
     public bool ShowStampSizeOption => isTarget(AnnotationTypes.NumberStamp);
 
-    /// <summary>„−“/„+“ für die Nummer gibt es nur für einen ausgewählten Nummern-Stempel (nicht beim bloßen Werkzeug).</summary>
-    public bool ShowStampNumberOption => editingText == null && SelectedAnnotation is NumberStampAnnotation;
+    /// <summary>
+    /// „−“ Nummer „+“ stehen immer zusammen mit den Stempel-Optionen (Werkzeug oder ausgewählter Stempel), damit sich die
+    /// Werkzeugleiste beim Stempeln nicht ändert; wirksam sind sie nur bei einem ausgewählten Stempel
+    /// (<see cref="CanChangeStampNumber"/>).
+    /// </summary>
+    public bool ShowStampNumberOption => isTarget(AnnotationTypes.NumberStamp);
+
+    /// <summary>Ist ein Nummern-Stempel ausgewählt, dessen Nummer „−“/„+“ (Knöpfe bzw. Tasten) ändern?</summary>
+    public bool CanChangeStampNumber => editingText == null && SelectedAnnotation is NumberStampAnnotation;
 
     public bool ShowCursorKindOption => isTarget(AnnotationTypes.Cursor);
 
-    /// <summary>Ein-/Ausblenden gibt es nur für eine ausgewählte virtuelle Maus.</summary>
-    public bool ShowCursorVisibleOption => editingText == null && SelectedAnnotation is CursorAnnotation;
+    /// <summary>
+    /// Der Augen-Knopf steht immer bei den Optionen der virtuellen Maus; wirksam ist er nur bei einer ausgewählten Maus
+    /// (<see cref="CanToggleCursorVisible"/>), sonst ausgegraut.
+    /// </summary>
+    public bool ShowCursorVisibleOption => isTarget(AnnotationTypes.Cursor);
 
-    /// <summary>Gibt es überhaupt Optionen oder einen Löschen-Knopf (für das Trennzeichen in der Werkzeugleiste)?</summary>
+    public bool CanToggleCursorVisible => editingText == null && SelectedAnnotation is CursorAnnotation;
+
+    /// <summary>Gibt es überhaupt Optionen für das Werkzeug bzw. ausgewählte Objekt?</summary>
     public bool ShowOptions => optionTargetType != null;
 
     public string CurrentColor {
@@ -495,8 +510,31 @@ public sealed partial class EditorViewModel {
 
     public string CurrentStampSizeText => formatPixels(optionTargetAnnotation is NumberStampAnnotation stamp ? stamp.Size : Options.StampSize);
 
-    /// <summary>Nummer des ausgewählten Stempels (leer, wenn keiner ausgewählt ist).</summary>
-    public string CurrentStampNumberText => SelectedAnnotation is NumberStampAnnotation stamp ? stamp.Number.ToString(CultureInfo.CurrentCulture) : "";
+    /// <summary>
+    /// Nummer des ausgewählten Stempels; beim Stempel-Werkzeug ohne Auswahl die Nummer des nächsten Stempels (gedimmt
+    /// angezeigt), sonst leer.
+    /// </summary>
+    public string CurrentStampNumberText {
+        get {
+            if(CanChangeStampNumber && SelectedAnnotation is NumberStampAnnotation stamp) return stamp.Number.ToString(CultureInfo.CurrentCulture);
+            if(ShowStampNumberOption) return NumberStampTool.GetNextNumber(Document.Annotations).ToString(CultureInfo.CurrentCulture);
+            return "";
+        }
+    }
+
+    public string StampNumberToolTip => CanChangeStampNumber ? Strings.OptionStampNumber : Strings.OptionStampNumberNext;
+
+    // Unsichtbare Platzhalter in der Werkzeugleiste: legen die Breite der Werte-Anzeigen auf den breitesten möglichen
+    // Wert fest, damit nachfolgende Knöpfe beim Ändern eines Werts nicht wandern (Ziffern sind gleich breit)
+
+    /// <summary>Platzhalter für Pixelwerte (Strichstärke, Blockgröße, Radius, Stempelgröße – alle zweistellig).</summary>
+    public string PixelValueSample => formatPixels(88);
+
+    /// <summary>Platzhalter für die Schriftgröße („Auto (888,8 px)“).</summary>
+    public string FontSizeTextSample => Strings.Format(Strings.FontSizeAutoValue, formatPixels(888.8));
+
+    /// <summary>Platzhalter für die Stempelnummer (drei Ziffern, siehe <see cref="MaxStampNumber"/>).</summary>
+    public string StampNumberTextSample => MaxStampNumber.ToString(CultureInfo.CurrentCulture);
 
     public string CurrentCursorKindLabel => GetCursorKindLabel(optionTargetAnnotation is CursorAnnotation cursor ? cursor.Kind : EffectiveCursorKind);
 
@@ -632,7 +670,7 @@ public sealed partial class EditorViewModel {
     /// am Rand passiert nichts). False, wenn kein Stempel ausgewählt ist.
     /// </summary>
     public bool ChangeSelectedStampNumber(int delta) {
-        if(!ShowStampNumberOption || SelectedAnnotation is not NumberStampAnnotation selected) return false;
+        if(!CanChangeStampNumber || SelectedAnnotation is not NumberStampAnnotation selected) return false;
         int value = Math.Clamp(selected.Number + delta, MinStampNumber, MaxStampNumber);
         changeTarget(a => {
             if(a is NumberStampAnnotation stamp) stamp.Number = value;
@@ -851,6 +889,8 @@ public sealed partial class EditorViewModel {
 
     private void refreshOptions() {
         foreach(string name in optionProperties) OnPropertyChanged(name);
+        // Auswahl kann sich geändert haben: „Objekt löschen“ (CanExecute) neu prüfen lassen
+        CommandManager.InvalidateRequerySuggested();
     }
 
     private static string formatPixels(double value) {

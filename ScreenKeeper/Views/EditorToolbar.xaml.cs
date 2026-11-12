@@ -15,21 +15,44 @@ namespace ScreenKeeper.Views;
 /// Fokus zurück (an das Textfeld bzw. das Fenster).
 /// </summary>
 public partial class EditorToolbar : UserControl {
+    /// <summary>
+    /// Feste Breite des Platzes für die Optionen neben „Objekt löschen“: mindestens so breit wie die breiteste
+    /// Kombination (Text, siehe Test <c>ToolbarLayoutTests</c>). So ist die Leiste immer gleich breit und kein Knopf
+    /// außerhalb wandert, wenn Optionen erscheinen oder verschwinden.
+    /// </summary>
+    public const double OptionsSlotWidth = 230;
+
+    private readonly Popup[] popups;
+
     public EditorToolbar() {
         InitializeComponent();
+        popups = new[] { colorPopup, thicknessPopup, fillPopup, startCapPopup, endCapPopup, fontSizePopup, alignmentPopup, blockSizePopup, blurPopup, stampSizePopup, cursorKindPopup };
         MouseDown += (s, e) => e.Handled = true;
         MouseUp += (s, e) => e.Handled = true;
         MouseWheel += (s, e) => e.Handled = true;
+        MouseLeave += (s, e) => raiseUseEnded();
+        foreach(Popup popup in popups) popup.Closed += (s, e) => raiseUseEnded();
     }
 
     /// <summary>Das Menü der Schriftgröße (mit Eingabefeld) wurde geschlossen: Tastaturfokus zurückgeben.</summary>
     public event EventHandler? FocusReturnRequested;
 
+    /// <summary>Die Maus hat die Leiste verlassen bzw. das letzte Menü wurde geschlossen: die Leiste darf neu platziert werden.</summary>
+    public event EventHandler? UseEnded;
+
+    /// <summary>
+    /// Wird die Leiste gerade bedient (Maus darüber oder ein Menü offen)? Dann bleibt sie stehen, damit kein Knopf unter
+    /// der Maus wegrutscht (z. B. wenn „Rückgängig“ den Bereich ändert).
+    /// </summary>
+    public bool IsInUse => IsMouseOver || popups.Any(p => p.IsOpen);
+
     /// <summary>Alle Auswahlmenüs schließen (z. B. wenn die Leiste versteckt wird).</summary>
     public void ClosePopups() {
-        foreach(Popup popup in new[] { colorPopup, thicknessPopup, fillPopup, startCapPopup, endCapPopup, fontSizePopup, alignmentPopup, blockSizePopup, blurPopup, stampSizePopup, cursorKindPopup }) {
-            popup.IsOpen = false;
-        }
+        foreach(Popup popup in popups) popup.IsOpen = false;
+    }
+
+    private void raiseUseEnded() {
+        if(!IsInUse) UseEnded?.Invoke(this, EventArgs.Empty);
     }
 
     private void onChoiceClick(object sender, RoutedEventArgs e) {

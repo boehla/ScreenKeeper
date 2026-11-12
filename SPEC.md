@@ -76,7 +76,7 @@ Ein Screenshot-Tool für Windows als Ersatz für Greenshot. Kernidee:
 **Darstellung**
 - Ein rahmenloses, oberstes Fenster über den **gesamten virtuellen Bildschirm** zeigt das eingefrorene Bild 1:1. (Bei gleicher Skalierung funktioniert ein einziges Fenster zuverlässig; für gemischte Skalierung siehe Abschnitt 8.)
 - Außerhalb des gewählten Bereichs wird das Bild abgedunkelt (ca. 50 %).
-- Eine Werkzeugleiste schwebt am Bereich (unter- oder oberhalb, je nach Platz); vor der ersten Bereichswahl am oberen Rand des primären Monitors.
+- Eine Werkzeugleiste schwebt am Bereich (unter- oder oberhalb, je nach Platz); vor der ersten Bereichswahl am oberen Rand des primären Monitors. Knöpfe werden höchstens ausgegraut, nie ausgeblendet; die Optionen des Werkzeugs bzw. Objekts (je Typ immer dieselben Knöpfe, nur bei Auswahl wirksame ausgegraut) liegen neben „Objekt löschen“ in einem Platz fester Breite. Die Leiste ist dadurch immer gleich breit und bleibt stehen, solange die Maus über ihr ist – beim Wechsel von Werkzeug, Auswahl oder Optionswert rutscht nichts unter der Maus weg (ab 0.13).
 
 **Bereich wählen**
 - Bereich mit der Maus aufziehen. Danach jederzeit änderbar: 8 Anfasser, Verschieben per Ziehen im Bereich, neues Aufziehen außerhalb.

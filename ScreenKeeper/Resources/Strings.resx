@@ -297,6 +297,9 @@ Details stehen in {1}.</value>
   <data name="OptionStampNumberIncrease" xml:space="preserve">
     <value>Nummer erhöhen (+)</value>
   </data>
+  <data name="OptionStampNumberNext" xml:space="preserve">
+    <value>Nummer des nächsten Stempels (−/+ ändern einen ausgewählten Stempel)</value>
+  </data>
   <data name="OptionCursorKind" xml:space="preserve">
     <value>Zeigerart</value>
   </data>

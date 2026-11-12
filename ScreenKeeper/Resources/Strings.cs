@@ -108,6 +108,7 @@ public static class Strings {
     public static string OptionStampNumber => Get(nameof(OptionStampNumber));
     public static string OptionStampNumberDecrease => Get(nameof(OptionStampNumberDecrease));
     public static string OptionStampNumberIncrease => Get(nameof(OptionStampNumberIncrease));
+    public static string OptionStampNumberNext => Get(nameof(OptionStampNumberNext));
     public static string OptionCursorKind => Get(nameof(OptionCursorKind));
     public static string OptionCursorVisible => Get(nameof(OptionCursorVisible));
     public static string OptionValuePixels => Get(nameof(OptionValuePixels));

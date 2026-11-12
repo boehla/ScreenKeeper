@@ -166,8 +166,11 @@ Nach der Aufnahme wird das eingefrorene Bild 1:1 über alle Monitore angezeigt.
 
 **Zeichnen**
 
-Die Werkzeugleiste enthält links die Werkzeuge, daneben die Optionen des aktiven Werkzeugs bzw. des ausgewählten
-Objekts. Alle Zeichnungen bleiben einzelne Objekte und lassen sich jederzeit auswählen, verschieben, in der Größe
+Die Werkzeugleiste enthält links die Werkzeuge, dann „Objekt löschen“ (ohne Auswahl ausgegraut) und direkt daneben
+in einem Platz fester Breite die Optionen des aktiven Werkzeugs bzw. des ausgewählten Objekts, danach die übrigen
+Knöpfe. Optionen, die nur bei einer Auswahl wirken (Stempelnummer „−“/„+“, Maus ein-/ausblenden), sind sonst
+ausgegraut statt ausgeblendet. So ist die Leiste immer gleich breit und kein Knopf rutscht unter der Maus weg; solange
+die Maus über der Leiste ist, bleibt sie stehen. Alle Zeichnungen bleiben einzelne Objekte und lassen sich jederzeit auswählen, verschieben, in der Größe
 ändern und löschen – auch Tage später aus der gespeicherten Aufnahme. Das Original-PNG wird nie verändert.
 
 | Werkzeug | Taste | Bedienung |

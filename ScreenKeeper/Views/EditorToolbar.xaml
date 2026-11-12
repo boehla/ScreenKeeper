@@ -122,6 +122,10 @@
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="Margin" Value="4,0,0,0" />
         </Style>
+        <!-- Unsichtbarer Platzhalter mit dem breitesten möglichen Wert: hält die Anzeige gleich breit, damit nachfolgende Knöpfe nicht wandern -->
+        <Style x:Key="ValueSample" TargetType="TextBlock" BasedOn="{StaticResource ValueText}">
+            <Setter Property="Visibility" Value="Hidden" />
+        </Style>
         <Style x:Key="Separator" TargetType="Rectangle">
             <Setter Property="Width" Value="1" />
             <Setter Property="Margin" Value="4,6" />
@@ -194,6 +198,11 @@
             </Button>
         </DataTemplate>
     </UserControl.Resources>
+    <!--
+        Eine Zeile, in der nichts unter der Maus wegrutscht: Knöpfe werden höchstens ausgegraut, nie ausgeblendet; die
+        wechselnden Optionen liegen in einem Platz fester Breite („optionsSlot“) neben „Objekt löschen“. Die Leiste ist
+        dadurch in jedem Zustand gleich breit.
+    -->
     <Border Background="#F0262626" BorderBrush="#50FFFFFF" BorderThickness="1" CornerRadius="6" Padding="4">
         <StackPanel Orientation="Horizontal">
             <!-- Abschnitt „tools“: Bereich, Auswahl und Zeichenwerkzeuge -->
@@ -218,217 +227,259 @@
             <Button Style="{StaticResource ToolbarButton}" Command="{Binding ApplyLastSelectionCommand}" ToolTip="{Binding LastSelectionToolTip}">
                 <Path Style="{StaticResource Icon}" Data="M3,7 V3 H7 M13,3 H17 V7 M17,13 V17 H13 M7,17 H3 V13 M7.5,8 A3.5,3.5 0 1 1 6.5,11 M7.5,8 V5.5 M7.5,8 H10" />
             </Button>
-
-            <!-- Abschnitt „options“: nur die zum Werkzeug bzw. ausgewählten Objekt passenden Optionen -->
-            <StackPanel x:Name="options" Orientation="Horizontal">
-                <Rectangle Style="{StaticResource Separator}" Visibility="{Binding ShowOptions, Converter={StaticResource BoolToVisibility}}" />
-                <Grid Visibility="{Binding ShowColorOption, Converter={StaticResource BoolToVisibility}}">
-                    <ToggleButton x:Name="colorButton" Style="{StaticResource MenuButton}" Padding="0" ToolTip="{loc:Str OptionColor}"
-                                  IsChecked="{Binding IsOpen, ElementName=colorPopup}"
-                                  IsHitTestVisible="{Binding IsOpen, ElementName=colorPopup, Converter={StaticResource InverseBool}}">
-                        <Border Width="20" Height="20" CornerRadius="10" BorderBrush="White" BorderThickness="1.5" Background="{Binding CurrentColorBrush}" />
-                    </ToggleButton>
-                    <Popup x:Name="colorPopup" Style="{StaticResource MenuPopup}" PlacementTarget="{Binding ElementName=colorButton}">
-                        <Border Style="{StaticResource PopupPanel}">
-                            <ItemsControl ItemsSource="{Binding ColorChoices}" ItemTemplate="{StaticResource ColorTemplate}" Width="180" Focusable="False">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <WrapPanel />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                            </ItemsControl>
-                        </Border>
-                    </Popup>
-                </Grid>
-                <Grid Visibility="{Binding ShowThicknessOption, Converter={StaticResource BoolToVisibility}}">
-                    <ToggleButton x:Name="thicknessButton" Style="{StaticResource MenuButton}" ToolTip="{loc:Str OptionThickness}"
-                                  IsChecked="{Binding IsOpen, ElementName=thicknessPopup}"
-                                  IsHitTestVisible="{Binding IsOpen, ElementName=thicknessPopup, Converter={StaticResource InverseBool}}">
-                        <StackPanel Orientation="Horizontal">
-                            <Path Style="{StaticResource Icon}" Data="M3,5 H17 M3,10 H17 M3,15 H17" />
-                            <TextBlock Style="{StaticResource ValueText}" Text="{Binding CurrentThicknessText}" />
-                        </StackPanel>
-                    </ToggleButton>
-                    <Popup x:Name="thicknessPopup" Style="{StaticResource MenuPopup}" PlacementTarget="{Binding ElementName=thicknessButton}">
-                        <Border Style="{StaticResource PopupPanel}">
-                            <ItemsControl ItemsSource="{Binding ThicknessChoices}" ItemTemplate="{StaticResource ThicknessTemplate}" Focusable="False" />
-                        </Border>
-                    </Popup>
-                </Grid>
-                <Grid Visibility="{Binding ShowFillColorOption, Converter={StaticResource BoolToVisibility}}">
-                    <ToggleButton x:Name="fillButton" Style="{StaticResource MenuButton}" Padding="0" ToolTip="{loc:Str OptionFill}"
-                                  IsChecked="{Binding IsOpen, ElementName=fillPopup}"
-                                  IsHitTestVisible="{Binding IsOpen, ElementName=fillPopup, Converter={StaticResource InverseBool}}">
-                        <Grid Width="20" Height="20">
-                            <Border CornerRadius="3" Background="{StaticResource Checker}" />
-                            <Border CornerRadius="3" BorderBrush="White" BorderThickness="1.5" Background="{Binding CurrentFillBrush}" />
-                        </Grid>
-                    </ToggleButton>
-                    <Popup x:Name="fillPopup" Style="{StaticResource MenuPopup}" PlacementTarget="{Binding ElementName=fillButton}">
-                        <Border Style="{StaticResource PopupPanel}">
-                            <ItemsControl ItemsSource="{Binding FillColorChoices}" ItemTemplate="{StaticResource FillTemplate}" Width="216" Focusable="False">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <WrapPanel />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                            </ItemsControl>
-                        </Border>
-                    </Popup>
-                </Grid>
-                <Button Style="{StaticResource StateButton}" Tag="{Binding IsTextBackgroundActive}" Command="{Binding ToggleTextBackgroundCommand}" ToolTip="{loc:Str OptionTextBackground}"
-                        Visibility="{Binding ShowTextBackgroundOption, Converter={StaticResource BoolToVisibility}}">
-                    <Path Style="{StaticResource Icon}" Data="M4,4 H16 V16 H4 Z M4,10 L10,4 M4,16 L16,4 M10,16 L16,10" />
-                </Button>
-                <Grid Visibility="{Binding ShowLineCapOptions, Converter={StaticResource BoolToVisibility}}">
-                    <ToggleButton x:Name="startCapButton" Style="{StaticResource MenuButton}" ToolTip="{loc:Str OptionStartCap}"
-                                  IsChecked="{Binding IsOpen, ElementName=startCapPopup}"
-                                  IsHitTestVisible="{Binding IsOpen, ElementName=startCapPopup, Converter={StaticResource InverseBool}}">
-                        <Path Style="{StaticResource Icon}" Fill="White" Data="{Binding CurrentStartCapIcon}" />
-                    </ToggleButton>
-                    <Popup x:Name="startCapPopup" Style="{StaticResource MenuPopup}" PlacementTarget="{Binding ElementName=startCapButton}">
-                        <Border Style="{StaticResource PopupPanel}">
-                            <ItemsControl ItemsSource="{Binding StartCapChoices}" ItemTemplate="{StaticResource CapTemplate}" Focusable="False" />
-                        </Border>
-                    </Popup>
-                </Grid>
-                <Grid Visibility="{Binding ShowLineCapOptions, Converter={StaticResource BoolToVisibility}}">
-                    <ToggleButton x:Name="endCapButton" Style="{StaticResource MenuButton}" ToolTip="{loc:Str OptionEndCap}"
-                                  IsChecked="{Binding IsOpen, ElementName=endCapPopup}"
-                                  IsHitTestVisible="{Binding IsOpen, ElementName=endCapPopup, Converter={StaticResource InverseBool}}">
-                        <Path Style="{StaticResource Icon}" Fill="White" Data="{Binding CurrentEndCapIcon}" />
-                    </ToggleButton>
-                    <Popup x:Name="endCapPopup" Style="{StaticResource MenuPopup}" PlacementTarget="{Binding ElementName=endCapButton}">
-                        <Border Style="{StaticResource PopupPanel}">
-                            <ItemsControl ItemsSource="{Binding EndCapChoices}" ItemTemplate="{StaticResource CapTemplate}" Focusable="False" />
-                        </Border>
-                    </Popup>
-                </Grid>
-                <Button Style="{StaticResource StateButton}" Tag="{Binding IsSmoothActive}" Command="{Binding ToggleSmoothCommand}" ToolTip="{loc:Str OptionSmooth}"
-                        Visibility="{Binding ShowSmoothOption, Converter={StaticResource BoolToVisibility}}">
-                    <Path Style="{StaticResource Icon}" Data="M3,14 C6,3 14,17 17,6" />
-                </Button>
-                <Grid Visibility="{Binding ShowFontSizeOption, Converter={StaticResource BoolToVisibility}}">
-                    <ToggleButton x:Name="fontSizeButton" Style="{StaticResource MenuButton}" ToolTip="{loc:Str OptionFontSize}"
-                                  IsChecked="{Binding IsOpen, ElementName=fontSizePopup}"
-                                  IsHitTestVisible="{Binding IsOpen, ElementName=fontSizePopup, Converter={StaticResource InverseBool}}">
-                        <StackPanel Orientation="Horizontal">
-                            <Path Style="{StaticResource Icon}" Data="M2,16 L7,4 L12,16 M4,12 H10 M13,16 L15.5,10 L18,16 M14,14 H17" />
-                            <TextBlock Style="{StaticResource ValueText}" Text="{Binding CurrentFontSizeText}" />
-                        </StackPanel>
-                    </ToggleButton>
-                    <!-- „Auto“, eigene Größe (Eingabe, Enter übernimmt) und die festen Größen -->
-                    <Popup x:Name="fontSizePopup" Style="{StaticResource MenuPopup}" PlacementTarget="{Binding ElementName=fontSizeButton}"
-                           Opened="onFontSizePopupOpened" Closed="onFontSizePopupClosed">
-                        <Border Style="{StaticResource PopupPanel}">
-                            <StackPanel>
-                                <TextBox x:Name="fontSizeInput" Margin="4,2,4,4" Padding="4,3" MinWidth="80" FontSize="12"
-                                         Foreground="White" CaretBrush="White" Background="#FF3A3A3A" BorderBrush="#70FFFFFF" BorderThickness="1"
-                                         ToolTip="{loc:Str OptionFontSizeInput}" PreviewKeyDown="onFontSizeInputKeyDown" />
-                                <ItemsControl ItemsSource="{Binding FontSizeChoices}" ItemTemplate="{StaticResource ChoiceTemplate}" Focusable="False" />
+            <Rectangle Style="{StaticResource Separator}" />
+            <!-- Ausgewähltes Objekt löschen: immer da, ohne Auswahl ausgegraut (CanExecute), damit nichts in der Zeile wandert -->
+            <Button Style="{StaticResource ToolbarButton}" Command="{Binding DeleteSelectedCommand}" ToolTip="{loc:Str ToolbarDeleteObject}">
+                <Path Style="{StaticResource Icon}" Data="M4,6 H16 M8,6 V4 H12 V6 M6,6 L7,17 H13 L14,6 M9,9 V14 M11,9 V14" />
+            </Button>
+            <!--
+                Optionen des Werkzeugs bzw. ausgewählten Objekts direkt neben „Objekt löschen“, in einem Platz fester Breite
+                (OptionsSlotWidth, breiteste Kombination): die Leiste ist immer gleich breit, alle Knöpfe außerhalb stehen fest.
+                Je Typ immer dieselben Knöpfe; was nur bei Auswahl wirkt, ist sonst ausgegraut.
+            -->
+            <Canvas x:Name="optionsSlot" Width="{x:Static views:EditorToolbar.OptionsSlotWidth}" Height="34" ClipToBounds="True">
+                <StackPanel x:Name="options" Orientation="Horizontal">
+                    <Grid Visibility="{Binding ShowColorOption, Converter={StaticResource BoolToVisibility}}">
+                        <ToggleButton x:Name="colorButton" Style="{StaticResource MenuButton}" Padding="0" ToolTip="{loc:Str OptionColor}"
+                                      IsChecked="{Binding IsOpen, ElementName=colorPopup}"
+                                      IsHitTestVisible="{Binding IsOpen, ElementName=colorPopup, Converter={StaticResource InverseBool}}">
+                            <Border Width="20" Height="20" CornerRadius="10" BorderBrush="White" BorderThickness="1.5" Background="{Binding CurrentColorBrush}" />
+                        </ToggleButton>
+                        <Popup x:Name="colorPopup" Style="{StaticResource MenuPopup}" PlacementTarget="{Binding ElementName=colorButton}">
+                            <Border Style="{StaticResource PopupPanel}">
+                                <ItemsControl ItemsSource="{Binding ColorChoices}" ItemTemplate="{StaticResource ColorTemplate}" Width="180" Focusable="False">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                </ItemsControl>
+                            </Border>
+                        </Popup>
+                    </Grid>
+                    <Grid Visibility="{Binding ShowThicknessOption, Converter={StaticResource BoolToVisibility}}">
+                        <ToggleButton x:Name="thicknessButton" Style="{StaticResource MenuButton}" ToolTip="{loc:Str OptionThickness}"
+                                      IsChecked="{Binding IsOpen, ElementName=thicknessPopup}"
+                                      IsHitTestVisible="{Binding IsOpen, ElementName=thicknessPopup, Converter={StaticResource InverseBool}}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource Icon}" Data="M3,5 H17 M3,10 H17 M3,15 H17" />
+                                <Grid>
+                                    <TextBlock Style="{StaticResource ValueSample}" Text="{Binding PixelValueSample}" />
+                                    <TextBlock Style="{StaticResource ValueText}" Text="{Binding CurrentThicknessText}" />
+                                </Grid>
                             </StackPanel>
-                        </Border>
-                    </Popup>
-                </Grid>
-                <Grid Visibility="{Binding ShowTextAlignmentOption, Converter={StaticResource BoolToVisibility}}">
-                    <ToggleButton x:Name="alignmentButton" Style="{StaticResource MenuButton}" ToolTip="{loc:Str OptionTextAlignment}"
-                                  IsChecked="{Binding IsOpen, ElementName=alignmentPopup}"
-                                  IsHitTestVisible="{Binding IsOpen, ElementName=alignmentPopup, Converter={StaticResource InverseBool}}">
-                        <Path Style="{StaticResource Icon}" Data="{Binding CurrentTextAlignmentIcon}" />
-                    </ToggleButton>
-                    <Popup x:Name="alignmentPopup" Style="{StaticResource MenuPopup}" PlacementTarget="{Binding ElementName=alignmentButton}">
-                        <Border Style="{StaticResource PopupPanel}">
-                            <ItemsControl ItemsSource="{Binding TextAlignmentChoices}" ItemTemplate="{StaticResource AlignmentTemplate}" Focusable="False">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <UniformGrid Columns="3" Rows="3" />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                            </ItemsControl>
-                        </Border>
-                    </Popup>
-                </Grid>
-                <Grid Visibility="{Binding ShowBlockSizeOption, Converter={StaticResource BoolToVisibility}}">
-                    <ToggleButton x:Name="blockSizeButton" Style="{StaticResource MenuButton}" ToolTip="{loc:Str OptionBlockSize}"
-                                  IsChecked="{Binding IsOpen, ElementName=blockSizePopup}"
-                                  IsHitTestVisible="{Binding IsOpen, ElementName=blockSizePopup, Converter={StaticResource InverseBool}}">
-                        <StackPanel Orientation="Horizontal">
-                            <Path Style="{StaticResource Icon}" Data="M3,3 H17 V17 H3 Z M3,10 H17 M10,3 V17" />
-                            <TextBlock Style="{StaticResource ValueText}" Text="{Binding CurrentBlockSizeText}" />
-                        </StackPanel>
-                    </ToggleButton>
-                    <Popup x:Name="blockSizePopup" Style="{StaticResource MenuPopup}" PlacementTarget="{Binding ElementName=blockSizeButton}">
-                        <Border Style="{StaticResource PopupPanel}">
-                            <ItemsControl ItemsSource="{Binding BlockSizeChoices}" ItemTemplate="{StaticResource ChoiceTemplate}" Focusable="False" />
-                        </Border>
-                    </Popup>
-                </Grid>
-                <Grid Visibility="{Binding ShowBlurRadiusOption, Converter={StaticResource BoolToVisibility}}">
-                    <ToggleButton x:Name="blurButton" Style="{StaticResource MenuButton}" ToolTip="{loc:Str OptionBlurRadius}"
-                                  IsChecked="{Binding IsOpen, ElementName=blurPopup}"
-                                  IsHitTestVisible="{Binding IsOpen, ElementName=blurPopup, Converter={StaticResource InverseBool}}">
-                        <StackPanel Orientation="Horizontal">
-                            <Path Style="{StaticResource Icon}" Data="M10,3 C10,3 4,9.5 4,12.5 A6,6 0 0 0 16,12.5 C16,9.5 10,3 10,3 Z" />
-                            <TextBlock Style="{StaticResource ValueText}" Text="{Binding CurrentBlurRadiusText}" />
-                        </StackPanel>
-                    </ToggleButton>
-                    <Popup x:Name="blurPopup" Style="{StaticResource MenuPopup}" PlacementTarget="{Binding ElementName=blurButton}">
-                        <Border Style="{StaticResource PopupPanel}">
-                            <ItemsControl ItemsSource="{Binding BlurRadiusChoices}" ItemTemplate="{StaticResource ChoiceTemplate}" Focusable="False" />
-                        </Border>
-                    </Popup>
-                </Grid>
-                <Grid Visibility="{Binding ShowStampSizeOption, Converter={StaticResource BoolToVisibility}}">
-                    <ToggleButton x:Name="stampSizeButton" Style="{StaticResource MenuButton}" ToolTip="{loc:Str OptionStampSize}"
-                                  IsChecked="{Binding IsOpen, ElementName=stampSizePopup}"
-                                  IsHitTestVisible="{Binding IsOpen, ElementName=stampSizePopup, Converter={StaticResource InverseBool}}">
-                        <StackPanel Orientation="Horizontal">
-                            <Path Style="{StaticResource Icon}" Data="M3,10 A7,7 0 1 1 17,10 A7,7 0 1 1 3,10 Z" />
-                            <TextBlock Style="{StaticResource ValueText}" Text="{Binding CurrentStampSizeText}" />
-                        </StackPanel>
-                    </ToggleButton>
-                    <Popup x:Name="stampSizePopup" Style="{StaticResource MenuPopup}" PlacementTarget="{Binding ElementName=stampSizeButton}">
-                        <Border Style="{StaticResource PopupPanel}">
-                            <ItemsControl ItemsSource="{Binding StampSizeChoices}" ItemTemplate="{StaticResource ChoiceTemplate}" Focusable="False" />
-                        </Border>
-                    </Popup>
-                </Grid>
-                <!-- Nummer des ausgewählten Stempels: − Nummer + -->
-                <StackPanel Orientation="Horizontal" Visibility="{Binding ShowStampNumberOption, Converter={StaticResource BoolToVisibility}}">
-                    <Button Style="{StaticResource ToolbarButton}" Command="{Binding DecreaseStampNumberCommand}" ToolTip="{loc:Str OptionStampNumberDecrease}">
-                        <Path Style="{StaticResource Icon}" Data="M5,10 H15" />
+                        </ToggleButton>
+                        <Popup x:Name="thicknessPopup" Style="{StaticResource MenuPopup}" PlacementTarget="{Binding ElementName=thicknessButton}">
+                            <Border Style="{StaticResource PopupPanel}">
+                                <ItemsControl ItemsSource="{Binding ThicknessChoices}" ItemTemplate="{StaticResource ThicknessTemplate}" Focusable="False" />
+                            </Border>
+                        </Popup>
+                    </Grid>
+                    <Grid Visibility="{Binding ShowFillColorOption, Converter={StaticResource BoolToVisibility}}">
+                        <ToggleButton x:Name="fillButton" Style="{StaticResource MenuButton}" Padding="0" ToolTip="{loc:Str OptionFill}"
+                                      IsChecked="{Binding IsOpen, ElementName=fillPopup}"
+                                      IsHitTestVisible="{Binding IsOpen, ElementName=fillPopup, Converter={StaticResource InverseBool}}">
+                            <Grid Width="20" Height="20">
+                                <Border CornerRadius="3" Background="{StaticResource Checker}" />
+                                <Border CornerRadius="3" BorderBrush="White" BorderThickness="1.5" Background="{Binding CurrentFillBrush}" />
+                            </Grid>
+                        </ToggleButton>
+                        <Popup x:Name="fillPopup" Style="{StaticResource MenuPopup}" PlacementTarget="{Binding ElementName=fillButton}">
+                            <Border Style="{StaticResource PopupPanel}">
+                                <ItemsControl ItemsSource="{Binding FillColorChoices}" ItemTemplate="{StaticResource FillTemplate}" Width="216" Focusable="False">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                </ItemsControl>
+                            </Border>
+                        </Popup>
+                    </Grid>
+                    <Button Style="{StaticResource StateButton}" Tag="{Binding IsTextBackgroundActive}" Command="{Binding ToggleTextBackgroundCommand}" ToolTip="{loc:Str OptionTextBackground}"
+                            Visibility="{Binding ShowTextBackgroundOption, Converter={StaticResource BoolToVisibility}}">
+                        <Path Style="{StaticResource Icon}" Data="M4,4 H16 V16 H4 Z M4,10 L10,4 M4,16 L16,4 M10,16 L16,10" />
                     </Button>
-                    <TextBlock Style="{StaticResource ValueText}" Margin="2,0" MinWidth="18" TextAlignment="Center" ToolTip="{loc:Str OptionStampNumber}"
-                               Text="{Binding CurrentStampNumberText}" />
-                    <Button Style="{StaticResource ToolbarButton}" Command="{Binding IncreaseStampNumberCommand}" ToolTip="{loc:Str OptionStampNumberIncrease}">
-                        <Path Style="{StaticResource Icon}" Data="M5,10 H15 M10,5 V15" />
+                    <Grid Visibility="{Binding ShowLineCapOptions, Converter={StaticResource BoolToVisibility}}">
+                        <ToggleButton x:Name="startCapButton" Style="{StaticResource MenuButton}" ToolTip="{loc:Str OptionStartCap}"
+                                      IsChecked="{Binding IsOpen, ElementName=startCapPopup}"
+                                      IsHitTestVisible="{Binding IsOpen, ElementName=startCapPopup, Converter={StaticResource InverseBool}}">
+                            <Path Style="{StaticResource Icon}" Fill="White" Data="{Binding CurrentStartCapIcon}" />
+                        </ToggleButton>
+                        <Popup x:Name="startCapPopup" Style="{StaticResource MenuPopup}" PlacementTarget="{Binding ElementName=startCapButton}">
+                            <Border Style="{StaticResource PopupPanel}">
+                                <ItemsControl ItemsSource="{Binding StartCapChoices}" ItemTemplate="{StaticResource CapTemplate}" Focusable="False" />
+                            </Border>
+                        </Popup>
+                    </Grid>
+                    <Grid Visibility="{Binding ShowLineCapOptions, Converter={StaticResource BoolToVisibility}}">
+                        <ToggleButton x:Name="endCapButton" Style="{StaticResource MenuButton}" ToolTip="{loc:Str OptionEndCap}"
+                                      IsChecked="{Binding IsOpen, ElementName=endCapPopup}"
+                                      IsHitTestVisible="{Binding IsOpen, ElementName=endCapPopup, Converter={StaticResource InverseBool}}">
+                            <Path Style="{StaticResource Icon}" Fill="White" Data="{Binding CurrentEndCapIcon}" />
+                        </ToggleButton>
+                        <Popup x:Name="endCapPopup" Style="{StaticResource MenuPopup}" PlacementTarget="{Binding ElementName=endCapButton}">
+                            <Border Style="{StaticResource PopupPanel}">
+                                <ItemsControl ItemsSource="{Binding EndCapChoices}" ItemTemplate="{StaticResource CapTemplate}" Focusable="False" />
+                            </Border>
+                        </Popup>
+                    </Grid>
+                    <Button Style="{StaticResource StateButton}" Tag="{Binding IsSmoothActive}" Command="{Binding ToggleSmoothCommand}" ToolTip="{loc:Str OptionSmooth}"
+                            Visibility="{Binding ShowSmoothOption, Converter={StaticResource BoolToVisibility}}">
+                        <Path Style="{StaticResource Icon}" Data="M3,14 C6,3 14,17 17,6" />
+                    </Button>
+                    <Grid Visibility="{Binding ShowFontSizeOption, Converter={StaticResource BoolToVisibility}}">
+                        <ToggleButton x:Name="fontSizeButton" Style="{StaticResource MenuButton}" ToolTip="{loc:Str OptionFontSize}"
+                                      IsChecked="{Binding IsOpen, ElementName=fontSizePopup}"
+                                      IsHitTestVisible="{Binding IsOpen, ElementName=fontSizePopup, Converter={StaticResource InverseBool}}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource Icon}" Data="M2,16 L7,4 L12,16 M4,12 H10 M13,16 L15.5,10 L18,16 M14,14 H17" />
+                                <Grid>
+                                    <TextBlock Style="{StaticResource ValueSample}" Text="{Binding FontSizeTextSample}" />
+                                    <TextBlock Style="{StaticResource ValueText}" Text="{Binding CurrentFontSizeText}" />
+                                </Grid>
+                            </StackPanel>
+                        </ToggleButton>
+                        <!-- „Auto“, eigene Größe (Eingabe, Enter übernimmt) und die festen Größen -->
+                        <Popup x:Name="fontSizePopup" Style="{StaticResource MenuPopup}" PlacementTarget="{Binding ElementName=fontSizeButton}"
+                               Opened="onFontSizePopupOpened" Closed="onFontSizePopupClosed">
+                            <Border Style="{StaticResource PopupPanel}">
+                                <StackPanel>
+                                    <TextBox x:Name="fontSizeInput" Margin="4,2,4,4" Padding="4,3" MinWidth="80" FontSize="12"
+                                             Foreground="White" CaretBrush="White" Background="#FF3A3A3A" BorderBrush="#70FFFFFF" BorderThickness="1"
+                                             ToolTip="{loc:Str OptionFontSizeInput}" PreviewKeyDown="onFontSizeInputKeyDown" />
+                                    <ItemsControl ItemsSource="{Binding FontSizeChoices}" ItemTemplate="{StaticResource ChoiceTemplate}" Focusable="False" />
+                                </StackPanel>
+                            </Border>
+                        </Popup>
+                    </Grid>
+                    <Grid Visibility="{Binding ShowTextAlignmentOption, Converter={StaticResource BoolToVisibility}}">
+                        <ToggleButton x:Name="alignmentButton" Style="{StaticResource MenuButton}" ToolTip="{loc:Str OptionTextAlignment}"
+                                      IsChecked="{Binding IsOpen, ElementName=alignmentPopup}"
+                                      IsHitTestVisible="{Binding IsOpen, ElementName=alignmentPopup, Converter={StaticResource InverseBool}}">
+                            <Path Style="{StaticResource Icon}" Data="{Binding CurrentTextAlignmentIcon}" />
+                        </ToggleButton>
+                        <Popup x:Name="alignmentPopup" Style="{StaticResource MenuPopup}" PlacementTarget="{Binding ElementName=alignmentButton}">
+                            <Border Style="{StaticResource PopupPanel}">
+                                <ItemsControl ItemsSource="{Binding TextAlignmentChoices}" ItemTemplate="{StaticResource AlignmentTemplate}" Focusable="False">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <UniformGrid Columns="3" Rows="3" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                </ItemsControl>
+                            </Border>
+                        </Popup>
+                    </Grid>
+                    <Grid Visibility="{Binding ShowBlockSizeOption, Converter={StaticResource BoolToVisibility}}">
+                        <ToggleButton x:Name="blockSizeButton" Style="{StaticResource MenuButton}" ToolTip="{loc:Str OptionBlockSize}"
+                                      IsChecked="{Binding IsOpen, ElementName=blockSizePopup}"
+                                      IsHitTestVisible="{Binding IsOpen, ElementName=blockSizePopup, Converter={StaticResource InverseBool}}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource Icon}" Data="M3,3 H17 V17 H3 Z M3,10 H17 M10,3 V17" />
+                                <Grid>
+                                    <TextBlock Style="{StaticResource ValueSample}" Text="{Binding PixelValueSample}" />
+                                    <TextBlock Style="{StaticResource ValueText}" Text="{Binding CurrentBlockSizeText}" />
+                                </Grid>
+                            </StackPanel>
+                        </ToggleButton>
+                        <Popup x:Name="blockSizePopup" Style="{StaticResource MenuPopup}" PlacementTarget="{Binding ElementName=blockSizeButton}">
+                            <Border Style="{StaticResource PopupPanel}">
+                                <ItemsControl ItemsSource="{Binding BlockSizeChoices}" ItemTemplate="{StaticResource ChoiceTemplate}" Focusable="False" />
+                            </Border>
+                        </Popup>
+                    </Grid>
+                    <Grid Visibility="{Binding ShowBlurRadiusOption, Converter={StaticResource BoolToVisibility}}">
+                        <ToggleButton x:Name="blurButton" Style="{StaticResource MenuButton}" ToolTip="{loc:Str OptionBlurRadius}"
+                                      IsChecked="{Binding IsOpen, ElementName=blurPopup}"
+                                      IsHitTestVisible="{Binding IsOpen, ElementName=blurPopup, Converter={StaticResource InverseBool}}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource Icon}" Data="M10,3 C10,3 4,9.5 4,12.5 A6,6 0 0 0 16,12.5 C16,9.5 10,3 10,3 Z" />
+                                <Grid>
+                                    <TextBlock Style="{StaticResource ValueSample}" Text="{Binding PixelValueSample}" />
+                                    <TextBlock Style="{StaticResource ValueText}" Text="{Binding CurrentBlurRadiusText}" />
+                                </Grid>
+                            </StackPanel>
+                        </ToggleButton>
+                        <Popup x:Name="blurPopup" Style="{StaticResource MenuPopup}" PlacementTarget="{Binding ElementName=blurButton}">
+                            <Border Style="{StaticResource PopupPanel}">
+                                <ItemsControl ItemsSource="{Binding BlurRadiusChoices}" ItemTemplate="{StaticResource ChoiceTemplate}" Focusable="False" />
+                            </Border>
+                        </Popup>
+                    </Grid>
+                    <Grid Visibility="{Binding ShowStampSizeOption, Converter={StaticResource BoolToVisibility}}">
+                        <ToggleButton x:Name="stampSizeButton" Style="{StaticResource MenuButton}" ToolTip="{loc:Str OptionStampSize}"
+                                      IsChecked="{Binding IsOpen, ElementName=stampSizePopup}"
+                                      IsHitTestVisible="{Binding IsOpen, ElementName=stampSizePopup, Converter={StaticResource InverseBool}}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource Icon}" Data="M3,10 A7,7 0 1 1 17,10 A7,7 0 1 1 3,10 Z" />
+                                <Grid>
+                                    <TextBlock Style="{StaticResource ValueSample}" Text="{Binding PixelValueSample}" />
+                                    <TextBlock Style="{StaticResource ValueText}" Text="{Binding CurrentStampSizeText}" />
+                                </Grid>
+                            </StackPanel>
+                        </ToggleButton>
+                        <Popup x:Name="stampSizePopup" Style="{StaticResource MenuPopup}" PlacementTarget="{Binding ElementName=stampSizeButton}">
+                            <Border Style="{StaticResource PopupPanel}">
+                                <ItemsControl ItemsSource="{Binding StampSizeChoices}" ItemTemplate="{StaticResource ChoiceTemplate}" Focusable="False" />
+                            </Border>
+                        </Popup>
+                    </Grid>
+                    <!--
+                        Nummer: − Nummer + (immer zusammen mit den Stempel-Optionen, damit sich die Leiste beim Stempeln nicht
+                        ändert). Ohne ausgewählten Stempel sind − und + ausgegraut und die Anzeige zeigt gedimmt die nächste Nummer.
+                    -->
+                    <StackPanel Orientation="Horizontal" Visibility="{Binding ShowStampNumberOption, Converter={StaticResource BoolToVisibility}}">
+                        <Button Style="{StaticResource ToolbarButton}" Command="{Binding DecreaseStampNumberCommand}" ToolTip="{loc:Str OptionStampNumberDecrease}">
+                            <Path Style="{StaticResource Icon}" Data="M5,10 H15" />
+                        </Button>
+                        <!-- Breite für drei Ziffern, damit „+“ bei 9 → 10 → 100 nicht wandert -->
+                        <Grid Margin="2,0" Background="Transparent" ToolTip="{Binding StampNumberToolTip}">
+                            <TextBlock Style="{StaticResource ValueSample}" Margin="0" Text="{Binding StampNumberTextSample}" />
+                            <TextBlock Margin="0" TextAlignment="Center" Text="{Binding CurrentStampNumberText}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource ValueText}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding CanChangeStampNumber}" Value="False">
+                                                <Setter Property="Opacity" Value="0.5" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+                        <Button Style="{StaticResource ToolbarButton}" Command="{Binding IncreaseStampNumberCommand}" ToolTip="{loc:Str OptionStampNumberIncrease}">
+                            <Path Style="{StaticResource Icon}" Data="M5,10 H15 M10,5 V15" />
+                        </Button>
+                    </StackPanel>
+                    <Grid Visibility="{Binding ShowCursorKindOption, Converter={StaticResource BoolToVisibility}}">
+                        <ToggleButton x:Name="cursorKindButton" Style="{StaticResource MenuButton}" ToolTip="{loc:Str OptionCursorKind}"
+                                      IsChecked="{Binding IsOpen, ElementName=cursorKindPopup}"
+                                      IsHitTestVisible="{Binding IsOpen, ElementName=cursorKindPopup, Converter={StaticResource InverseBool}}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource Icon}" Data="M5,2.5 V16 L8.5,12.5 L11,18 L13,17 L10.5,11.5 L15,11.5 Z" />
+                                <Grid>
+                                    <TextBlock Style="{StaticResource ValueSample}" Text="{loc:Str CursorKindCaptured}" />
+                                    <TextBlock Style="{StaticResource ValueSample}" Text="{loc:Str CursorKindArrow}" />
+                                    <TextBlock Style="{StaticResource ValueSample}" Text="{loc:Str CursorKindHand}" />
+                                    <TextBlock Style="{StaticResource ValueSample}" Text="{loc:Str CursorKindIBeam}" />
+                                    <TextBlock Style="{StaticResource ValueText}" Text="{Binding CurrentCursorKindLabel}" />
+                                </Grid>
+                            </StackPanel>
+                        </ToggleButton>
+                        <Popup x:Name="cursorKindPopup" Style="{StaticResource MenuPopup}" PlacementTarget="{Binding ElementName=cursorKindButton}">
+                            <Border Style="{StaticResource PopupPanel}">
+                                <ItemsControl ItemsSource="{Binding CursorKindChoices}" ItemTemplate="{StaticResource ChoiceTemplate}" Focusable="False" />
+                            </Border>
+                        </Popup>
+                    </Grid>
+                    <!-- Ein-/Ausblenden wirkt nur auf eine ausgewählte Maus; beim Werkzeug allein ausgegraut statt ausgeblendet -->
+                    <Button Style="{StaticResource StateButton}" Tag="{Binding IsCursorVisible}" Command="{Binding ToggleCursorVisibleCommand}" ToolTip="{loc:Str OptionCursorVisible}"
+                            Visibility="{Binding ShowCursorVisibleOption, Converter={StaticResource BoolToVisibility}}">
+                        <Path Style="{StaticResource Icon}" Data="M2,10 C5,4 15,4 18,10 C15,16 5,16 2,10 Z M7.5,10 A2.5,2.5 0 1 1 12.5,10 A2.5,2.5 0 1 1 7.5,10 Z" />
                     </Button>
                 </StackPanel>
-                <Grid Visibility="{Binding ShowCursorKindOption, Converter={StaticResource BoolToVisibility}}">
-                    <ToggleButton x:Name="cursorKindButton" Style="{StaticResource MenuButton}" ToolTip="{loc:Str OptionCursorKind}"
-                                  IsChecked="{Binding IsOpen, ElementName=cursorKindPopup}"
-                                  IsHitTestVisible="{Binding IsOpen, ElementName=cursorKindPopup, Converter={StaticResource InverseBool}}">
-                        <StackPanel Orientation="Horizontal">
-                            <Path Style="{StaticResource Icon}" Data="M5,2.5 V16 L8.5,12.5 L11,18 L13,17 L10.5,11.5 L15,11.5 Z" />
-                            <TextBlock Style="{StaticResource ValueText}" Text="{Binding CurrentCursorKindLabel}" />
-                        </StackPanel>
-                    </ToggleButton>
-                    <Popup x:Name="cursorKindPopup" Style="{StaticResource MenuPopup}" PlacementTarget="{Binding ElementName=cursorKindButton}">
-                        <Border Style="{StaticResource PopupPanel}">
-                            <ItemsControl ItemsSource="{Binding CursorKindChoices}" ItemTemplate="{StaticResource ChoiceTemplate}" Focusable="False" />
-                        </Border>
-                    </Popup>
-                </Grid>
-                <Button Style="{StaticResource StateButton}" Tag="{Binding IsCursorVisible}" Command="{Binding ToggleCursorVisibleCommand}" ToolTip="{loc:Str OptionCursorVisible}"
-                        Visibility="{Binding ShowCursorVisibleOption, Converter={StaticResource BoolToVisibility}}">
-                    <Path Style="{StaticResource Icon}" Data="M2,10 C5,4 15,4 18,10 C15,16 5,16 2,10 Z M7.5,10 A2.5,2.5 0 1 1 12.5,10 A2.5,2.5 0 1 1 7.5,10 Z" />
-                </Button>
-                <Button Style="{StaticResource ToolbarButton}" Command="{Binding DeleteSelectedCommand}" ToolTip="{loc:Str ToolbarDeleteObject}"
-                        Visibility="{Binding HasSelectedAnnotation, Converter={StaticResource BoolToVisibility}}">
-                    <Path Style="{StaticResource Icon}" Data="M4,6 H16 M8,6 V4 H12 V6 M6,6 L7,17 H13 L14,6 M9,9 V14 M11,9 V14" />
-                </Button>
-            </StackPanel>
-
+            </Canvas>
             <Rectangle Style="{StaticResource Separator}" />
             <!-- Ausgabe -->
             <Button Style="{StaticResource ToolbarButton}" Command="{Binding CopySelectionCommand}" ToolTip="{loc:Str ToolbarCopySelection}">

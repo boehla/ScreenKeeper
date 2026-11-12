@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.14.0
+
+- **Werkzeugleiste ohne „Wackler“:** Vorher verschob z. B. ein Klick auf „+“ die Leiste, und der nächste Klick traf
+  ein anderes Symbol. Jetzt folgt auf die Werkzeuge „Objekt löschen“ (ohne ausgewähltes Objekt ausgegraut) und direkt
+  daneben ein Platz fester Breite für die Optionen des Werkzeugs bzw. ausgewählten Objekts. Die Leiste ist dadurch
+  immer gleich breit, und alle Knöpfe außerhalb dieses Platzes (Kopieren, Speichern, Rückgängig …) stehen immer an
+  derselben Stelle. Je Objekttyp sind die Optionen immer dieselben: „−“ Nummer „+“ stehen bei allen Stempel-Optionen
+  (ohne ausgewählten Stempel ausgegraut, die Anzeige zeigt dann gedimmt die nächste Nummer), der Augen-Knopf bei allen
+  Optionen der virtuellen Maus. Wert-Anzeigen (Stempelnummer bis 999, Pixelwerte, Schriftgröße, Zeigerart) sind fest
+  breit. Solange die Maus über der Leiste ist oder ein Menü offen ist, bleibt die Leiste ganz stehen (auch wenn z. B.
+  „Rückgängig“ den Bereich ändert) und wird erst danach neu platziert.
+
 ## 0.13.0
 
 - **Stempelnummer ändern:** Ist ein Nummern-Stempel ausgewählt (auch direkt nach dem Stempeln), stehen in der

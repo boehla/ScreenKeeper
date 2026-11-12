@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Windows.Input;
 using ScreenKeeper.Models;
+using ScreenKeeper.Resources;
 using ScreenKeeper.Services;
 using ScreenKeeper.ViewModels;
 using ScreenKeeper.ViewModels.Tools;
@@ -110,35 +111,51 @@ public class StampNumberTests {
     }
 
     [Fact]
-    public void Buttons_OnlyForSelectedStamp_NotForToolAlone() {
+    public void Buttons_AlwaysWithStampOptions_ButOnlyEnabledForSelectedStamp() {
         Sta.Run(() => {
             EditorViewModel vm = create();
             Assert.True(vm.SelectToolByKey(NumberStampTool.ToolKey));
             Assert.True(vm.ShowStampSizeOption);
-            Assert.False(vm.ShowStampNumberOption);
-            Assert.Equal("", vm.CurrentStampNumberText);
+            // beim Werkzeug allein: Knöpfe sichtbar, aber ausgegraut; die Anzeige zeigt die nächste Nummer
+            Assert.True(vm.ShowStampNumberOption);
+            Assert.False(vm.CanChangeStampNumber);
+            Assert.False(vm.IncreaseStampNumberCommand.CanExecute(null));
+            Assert.False(vm.DecreaseStampNumberCommand.CanExecute(null));
+            Assert.Equal("1", vm.CurrentStampNumberText);
+            Assert.Equal(Strings.OptionStampNumberNext, vm.StampNumberToolTip);
             // ohne ausgewählten Stempel ändert sich nichts (die Tasten gehen dann an die Lupe)
             Assert.False(vm.ChangeSelectedStampNumber(1));
 
             click(vm, "", 50, 50);
             Assert.True(vm.ShowStampNumberOption);
+            Assert.True(vm.CanChangeStampNumber);
+            Assert.True(vm.IncreaseStampNumberCommand.CanExecute(null));
+            Assert.Equal(Strings.OptionStampNumber, vm.StampNumberToolTip);
 
-            // anderes Objekt ausgewählt: keine Knöpfe
+            // anderes Objekt ausgewählt: keine Stempel-Optionen
             Assert.True(vm.SelectToolByKey(RectangleTool.ToolKey));
             vm.PointerDown(at(100, 100, 1));
             vm.PointerMove(at(150, 140));
             vm.PointerUp(at(150, 140));
             Assert.IsType<RectangleAnnotation>(vm.SelectedAnnotation);
             Assert.False(vm.ShowStampNumberOption);
+            Assert.False(vm.CanChangeStampNumber);
             Assert.False(vm.ChangeSelectedStampNumber(1));
             Assert.Equal(new[] { 1 }, numbers(vm));
+            Assert.Equal("", vm.CurrentStampNumberText);
 
-            // Stempel mit „Auswahl“ wählen, Auswahl aufheben
+            // Stempel mit „Auswahl“ wählen, Auswahl aufheben: dann gar keine Stempel-Optionen mehr
             click(vm, ObjectSelectTool.ToolKey, 50, 50);
             Assert.True(vm.ShowStampNumberOption);
+            Assert.True(vm.CanChangeStampNumber);
             vm.SelectAnnotation(null);
             Assert.False(vm.ShowStampNumberOption);
+            Assert.False(vm.DecreaseStampNumberCommand.CanExecute(null));
             Assert.Equal("", vm.CurrentStampNumberText);
+
+            // Stempel-Werkzeug ohne Auswahl: nächste Nummer = höchste + 1
+            Assert.True(vm.SelectToolByKey(NumberStampTool.ToolKey));
+            Assert.Equal("2", vm.CurrentStampNumberText);
         });
     }
 

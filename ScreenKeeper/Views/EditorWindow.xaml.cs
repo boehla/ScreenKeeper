@@ -89,6 +89,10 @@ public partial class EditorWindow : Window, IEditorHost {
         Closed += (s, e) => closed = true;
         root.SizeChanged += onRootSizeChanged;
         viewModel.OverlayChanged += (s, e) => updateOverlay();
+        // nach dem Bedienen der Leiste nachholen, was an Platzierung liegen geblieben ist (verzögert: kann aus updateToolbar kommen)
+        toolbar.UseEnded += (s, e) => Dispatcher.BeginInvoke(DispatcherPriority.Input, new Action(() => {
+            if(!closed) updateOverlay();
+        }));
         viewModel.DocumentChanged += onDocumentChanged;
         viewModel.DuplicateRequested += onDuplicateRequested;
         viewModel.CommentEditRequested += onCommentEditRequested;
@@ -412,11 +416,15 @@ public partial class EditorWindow : Window, IEditorHost {
             toolbar.Visibility = Visibility.Hidden;
             return;
         }
+        // Solange die Leiste bedient wird (Maus darüber, Menü offen), bleibt sie stehen – auch wenn z. B. „Rückgängig“ den
+        // Bereich ändert; neu platziert wird nach dem Verlassen (UseEnded)
+        if(toolbar.Visibility == Visibility.Visible && toolbar.IsInUse) return;
         toolbar.Visibility = Visibility.Visible;
         toolbar.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
         int monitor = displayed.HasValue
             ? SelectionGeometry.FindMonitorIndex(document.Monitors, displayed.Value)
             : SelectionGeometry.FindPrimaryMonitorIndex(document.Monitors);
+        // die Leiste ist immer gleich groß (Optionen in festem Platz): Werkzeug, Auswahl und Optionen ändern die Lage nicht
         Point position = ToolbarPlacement.Place(selectionView, toolbar.DesiredSize, getMonitorView(monitor), toolbarGap);
         setOverlayPosition(toolbar, position);
     }

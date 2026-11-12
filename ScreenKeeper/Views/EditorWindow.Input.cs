@@ -259,7 +259,7 @@ public partial class EditorWindow {
                 // +/-: Nummer des ausgewählten Stempels, sonst Lupengröße (nur solange die Lupe zu sehen ist)
                 if(control) return;
                 int delta = key == Key.OemPlus || key == Key.Add ? 1 : -1;
-                if(viewModel.ShowStampNumberOption) {
+                if(viewModel.CanChangeStampNumber) {
                     e.Handled = true;
                     if(pointerCaptured) return;
                     viewModel.ChangeSelectedStampNumber(delta);
