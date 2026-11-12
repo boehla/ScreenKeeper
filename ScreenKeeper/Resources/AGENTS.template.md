@@ -172,7 +172,7 @@ Text, der nicht hineinpasst, am Feldrand ab.
 | Feld | Typ | Standard | Bedeutung |
 |---|---|---|---|
 | `rect` | Rechteck | | markierte Fläche |
-| `color` | Farbe | `#FFFFEB3B` | Farbe; gezeichnet mit halbem Alpha-Wert der Farbe |
+| `color` | Farbe | `#FFFFEB3B` | Farbe; gezeichnet im Modus „Multiplizieren“ (je Kanal unten × Farbe / 255: Weiß wird zur Markerfarbe, dunkler Text bleibt dunkel), der Alpha-Wert wirkt als Stärke |
 
 ### `pixelate` – Verpixeln
 

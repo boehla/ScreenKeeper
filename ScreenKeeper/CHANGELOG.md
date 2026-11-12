@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.11.0
+## 0.12.0
 
 - **Autostart mit Adminrechten:** Neue, optionale Einstellung unter „Programm“. Ist ein Programm mit Adminrechten im
   Vordergrund (Admin-PowerShell, IIS-Manager), kam die Druck-Taste wegen UIPI bisher nicht bei ScreenKeeper an. Mit dem
@@ -20,6 +20,15 @@
   öffnen Ablageordner und Release-Seite über `explorer.exe`, damit Explorer und Browser nicht mit Adminrechten laufen.
 - **Installer:** legt den `Run`-Wert nicht an, solange der Admin-Autostart eingeschaltet ist, und entfernt die Aufgabe
   bei der Deinstallation (ohne Adminrechte; klappt das nicht, Hinweis zum Löschen in der Aufgabenplanung).
+
+## 0.11.0
+
+- **Textmarker wie ein echter Marker:** Der Textmarker wird nicht mehr halbtransparent darübergelegt, sondern im Modus
+  „Multiplizieren“ gezeichnet. Text darunter bleibt kräftig dunkel, weißer Hintergrund wird voll gelb. Der Alpha-Wert
+  der Farbe wirkt als Stärke (Standard `#FFFFEB3B` = volle Stärke).
+- Unter dem Marker ist zu sehen, was vorher gezeichnet wurde: Rahmen, Pfeile, Stempel und frühere Marker bleiben
+  getönt sichtbar, und über einer Verpixelung oder Unschärfe scheint nie das Original durch. Mehrere Marker
+  übereinander werden entsprechend dunkler.
 
 ## 0.10.1
 

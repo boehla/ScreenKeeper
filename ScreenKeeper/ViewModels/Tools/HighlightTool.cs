@@ -4,7 +4,7 @@ using ScreenKeeper.Resources;
 namespace ScreenKeeper.ViewModels.Tools;
 
 /// <summary>
-/// Werkzeug „Textmarker“: halbtransparentes Rechteck aufziehen (Standardfarbe Gelb).
+/// Werkzeug „Textmarker“: Rechteck aufziehen, das den Untergrund multiplikativ einfärbt (Standardfarbe Gelb).
 /// </summary>
 public sealed class HighlightTool : DrawingToolBase {
     public const string ToolKey = "highlight";

@@ -104,7 +104,7 @@ Ein Screenshot-Tool für Windows als Ersatz für Greenshot. Kernidee:
 | Linie, Pfeil | Farbe, Strichstärke; Shift = 45°-Raster |
 | Freihand | Farbe, Strichstärke, Glättung |
 | Text | Klick = freier Text (wächst mit dem Inhalt); Aufziehen = festes Textfeld wie ein Rechteck (verschieben, an allen Anfassern in Breite/Höhe ändern, Text wird umbrochen und am Feldrand abgeschnitten); Schriftgröße fest (Liste oder eigene Eingabe 6–400 px) oder „Auto“ (größte Schrift, bei der der Text ins Feld passt); Ausrichtung 3×3 (horizontal Zeilen, vertikal Lage im Feld); Farbe, Hintergrund optional; Doppelklick zum Bearbeiten (ab 0.10) |
-| Highlight (Textmarker) | halbtransparentes Rechteck, Farbe (Standard Gelb) |
+| Highlight (Textmarker) | Rechteck im Modus „Multiplizieren“ (Text darunter bleibt dunkel, Weiß wird zur Markerfarbe), Farbe (Standard Gelb) |
 | Verpixeln | Rechteck, Blockgröße einstellbar |
 | Weichzeichnen | Rechteck, Stärke einstellbar |
 | Nummern-Stempel | fortlaufend 1, 2, 3 …, Farbe, Größe |
