@@ -67,7 +67,7 @@ Pfade relativ zu `ScreenKeeper\`.
 | Highlight (ab 0.11 Multiplizieren statt halbtransparent), Standard Gelb | erfüllt | `ViewModels\Tools\HighlightTool.cs`, `Services\RenderService.cs`, `Services\ImageEffects.cs` | `HighlightMultiplyTests` |
 | Verpixeln mit Blockgröße | erfüllt | `ViewModels\Tools\PixelateTool.cs`, `Services\ImageEffects.cs` | |
 | Weichzeichnen mit Stärke | erfüllt | `ViewModels\Tools\BlurTool.cs`, `Services\ImageEffects.cs` | |
-| Nummern-Stempel fortlaufend, Farbe, Größe | erfüllt | `ViewModels\Tools\NumberStampTool.cs` | |
+| Nummern-Stempel fortlaufend, Farbe, Größe | erfüllt | `ViewModels\Tools\NumberStampTool.cs` | ab 0.12 Nummer des ausgewählten Stempels mit „−“/„+“ bzw. Tasten -/+ änderbar (`ViewModels\EditorViewModel.Annotations.cs`, `StampNumberTests`) |
 | Farbe/Strichstärke über Werkzeugleiste, zuletzt verwendete gemerkt | erfüllt | `Views\EditorToolbar.xaml`, `ViewModels\ToolOptions.cs` | beim Schließen in den Einstellungen |
 | Rückgängig/Wiederholen (Strg+Z/Strg+Y) für alles inkl. Bereich und Maus | erfüllt | `ViewModels\Undo\` | 200 Schritte; `AnnotationCommandTests` (60 Schritte) |
 | Verpixeln/Weichzeichnen nicht destruktiv, aus dem Original berechnet | erfüllt | `Services\RenderService.cs`, `Services\ImageEffects.cs` | `ImageEffectsTests` |

@@ -153,7 +153,8 @@ Nach der Aufnahme wird das eingefrorene Bild 1:1 über alle Monitore angezeigt.
   vergrößert mit Raster und Fadenkreuz, darunter Position, Bereichsgröße und Farbwert des Pixels unter dem Fadenkreuz.
   Gleichzeitig laufen durch den Zielpixel ein dezenter waagerechter und ein senkrechter Strich über alle Monitore,
   damit sich der Bereich an weit entfernten Kanten ausrichten lässt.
-  **Mausrad** ändert den Zoom der Lupe (4–16×, im Fenster-Modus **Alt+Mausrad**), **+/-** ihre Größe (80–400 px);
+  **Mausrad** ändert den Zoom der Lupe (4–16×, im Fenster-Modus **Alt+Mausrad**), **+/-** ihre Größe (80–400 px;
+  ist ein Nummern-Stempel ausgewählt, ändern **+/-** stattdessen dessen Nummer);
   die Werte gelten auch für die nächsten Aufnahmen. Eine kleine Zeile unter der Lupe nennt Belegung und Werte
   (abschaltbar in den Einstellungen).
 - **Tastatur:** Pfeiltasten bewegen den Mauszeiger (bzw. beim Ziehen die Kante) um genau 1 Pixel, mit Shift um 10.
@@ -180,7 +181,7 @@ Objekts. Alle Zeichnungen bleiben einzelne Objekte und lassen sich jederzeit aus
 | Textmarker | H | Rechteck aufziehen (Standard Gelb); färbt wie ein echter Marker: Text darunter bleibt dunkel |
 | Verpixeln | P | Rechteck aufziehen; Blockgröße |
 | Weichzeichnen | B | Rechteck aufziehen; Stärke |
-| Nummern-Stempel | N | klicken: 1, 2, 3 … (nächste Nummer = höchste + 1); Farbe, Größe |
+| Nummern-Stempel | N | klicken: 1, 2, 3 … (nächste Nummer = höchste + 1); Farbe, Größe; ausgewählter Stempel: Nummer mit „−“/„+“ bzw. Tasten **-**/**+** ändern (1–999) |
 | Virtuelle Maus | M | klicken setzt einen Mauszeiger; Zeigerart wählbar |
 
 - **Linienenden (Anfang, Ende):** Linie, Pfeil und Freihand können an jedem Ende ein Symbol tragen: ohne, Pfeil,

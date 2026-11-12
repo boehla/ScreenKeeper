@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.13.0
+
+- **Stempelnummer ändern:** Ist ein Nummern-Stempel ausgewählt (auch direkt nach dem Stempeln), stehen in der
+  Werkzeugleiste neben der Stempelgröße „−“ und „+“ mit der aktuellen Nummer dazwischen. Die Tasten **-** und **+**
+  (auch auf dem Ziffernblock) tun dasselbe und haben dabei Vorrang vor der Lupengröße. Jede Änderung ist ein
+  Rückgängig-Schritt; die Nummer bleibt zwischen 1 und 999, doppelte Nummern sind erlaubt.
+- Der nächste Stempel nimmt wie bisher die höchste vorhandene Nummer + 1 – also nach einer geänderten Nummer die
+  darauf folgende.
+
+
 ## 0.12.0
 
 - **Autostart mit Adminrechten:** Neue, optionale Einstellung unter „Programm“. Ist ein Programm mit Adminrechten im

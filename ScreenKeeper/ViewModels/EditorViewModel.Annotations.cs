@@ -30,6 +30,11 @@ public sealed partial class EditorViewModel {
 
     private const double handleHitExtraDevice = 3;
 
+    /// <summary>Kleinste bzw. größte Nummer, die „−“/„+“ am Nummern-Stempel einstellen.</summary>
+    public const int MinStampNumber = 1;
+
+    public const int MaxStampNumber = 999;
+
     private static readonly string[] optionProperties = {
         nameof(ShowColorOption), nameof(ShowThicknessOption), nameof(ShowFillColorOption), nameof(ShowTextBackgroundOption),
         nameof(ShowLineCapOptions), nameof(ShowSmoothOption),
@@ -41,7 +46,8 @@ public sealed partial class EditorViewModel {
         nameof(IsSmoothActive), nameof(CurrentFontSizeText), nameof(CurrentFontSizeValueText), nameof(IsAutoFontSizeActive),
         nameof(ShowTextAlignmentOption), nameof(CurrentTextAlignment), nameof(CurrentTextAlignmentIcon),
         nameof(CurrentBlockSizeText), nameof(CurrentBlurRadiusText), nameof(CurrentStampSizeText),
-        nameof(CurrentCursorKindLabel), nameof(IsCursorVisible), nameof(SelectedAnnotation)
+        nameof(CurrentCursorKindLabel), nameof(IsCursorVisible), nameof(SelectedAnnotation),
+        nameof(ShowStampNumberOption), nameof(CurrentStampNumberText)
     };
 
     /// <summary>Deckkraft der halbtransparenten Füllfarben in der Werkzeugleiste.</summary>
@@ -70,6 +76,8 @@ public sealed partial class EditorViewModel {
     private ICommand? toggleSmoothCommand;
     private ICommand? toggleCursorVisibleCommand;
     private ICommand? deleteSelectedCommand;
+    private ICommand? increaseStampNumberCommand;
+    private ICommand? decreaseStampNumberCommand;
 
     /// <summary>Aktuelle Werkzeug-Optionen (zuletzt verwendete Werte).</summary>
     public ToolOptions Options { get; }
@@ -358,6 +366,10 @@ public sealed partial class EditorViewModel {
 
     public ICommand DeleteSelectedCommand => deleteSelectedCommand ??= new RelayCommand(DeleteSelectedAnnotation);
 
+    public ICommand IncreaseStampNumberCommand => increaseStampNumberCommand ??= new RelayCommand(() => ChangeSelectedStampNumber(1));
+
+    public ICommand DecreaseStampNumberCommand => decreaseStampNumberCommand ??= new RelayCommand(() => ChangeSelectedStampNumber(-1));
+
     public bool ShowColorOption => isTarget(AnnotationTypes.Rectangle, AnnotationTypes.Ellipse, AnnotationTypes.Line, AnnotationTypes.Arrow,
         AnnotationTypes.Freehand, AnnotationTypes.Text, AnnotationTypes.Highlight, AnnotationTypes.NumberStamp);
 
@@ -381,6 +393,9 @@ public sealed partial class EditorViewModel {
     public bool ShowBlurRadiusOption => isTarget(AnnotationTypes.Blur);
 
     public bool ShowStampSizeOption => isTarget(AnnotationTypes.NumberStamp);
+
+    /// <summary>„−“/„+“ für die Nummer gibt es nur für einen ausgewählten Nummern-Stempel (nicht beim bloßen Werkzeug).</summary>
+    public bool ShowStampNumberOption => editingText == null && SelectedAnnotation is NumberStampAnnotation;
 
     public bool ShowCursorKindOption => isTarget(AnnotationTypes.Cursor);
 
@@ -479,6 +494,9 @@ public sealed partial class EditorViewModel {
     public string CurrentBlurRadiusText => formatPixels(optionTargetAnnotation is BlurAnnotation blur ? blur.Radius : Options.BlurRadius);
 
     public string CurrentStampSizeText => formatPixels(optionTargetAnnotation is NumberStampAnnotation stamp ? stamp.Size : Options.StampSize);
+
+    /// <summary>Nummer des ausgewählten Stempels (leer, wenn keiner ausgewählt ist).</summary>
+    public string CurrentStampNumberText => SelectedAnnotation is NumberStampAnnotation stamp ? stamp.Number.ToString(CultureInfo.CurrentCulture) : "";
 
     public string CurrentCursorKindLabel => GetCursorKindLabel(optionTargetAnnotation is CursorAnnotation cursor ? cursor.Kind : EffectiveCursorKind);
 
@@ -607,6 +625,19 @@ public sealed partial class EditorViewModel {
         changeTarget(a => {
             if(a is NumberStampAnnotation stamp) stamp.Size = size;
         });
+    }
+
+    /// <summary>
+    /// Nummer des ausgewählten Stempels um <paramref name="delta"/> ändern (begrenzt auf 1–999, ein Rückgängig-Schritt;
+    /// am Rand passiert nichts). False, wenn kein Stempel ausgewählt ist.
+    /// </summary>
+    public bool ChangeSelectedStampNumber(int delta) {
+        if(!ShowStampNumberOption || SelectedAnnotation is not NumberStampAnnotation selected) return false;
+        int value = Math.Clamp(selected.Number + delta, MinStampNumber, MaxStampNumber);
+        changeTarget(a => {
+            if(a is NumberStampAnnotation stamp) stamp.Number = value;
+        });
+        return true;
     }
 
     public void SetCursorKind(string kind) {

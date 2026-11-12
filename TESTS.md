@@ -19,7 +19,7 @@ Erwartet: `0 Warning(s)`, `0 Error(s)` (bzw. `0 Warnung(en)`, `0 Fehler` bei deu
 dotnet test ScreenKeeper.Tests\ScreenKeeper.Tests.csproj
 ```
 
-Erwartet: `Passed!  - Failed: 0, Passed: 414, Skipped: 0, Total: 414` (Stand 0.12.0). In einer getrennten
+Erwartet: `Passed!  - Failed: 0, Passed: 419, Skipped: 0, Total: 419` (Stand 0.13.0). In einer getrennten
 Remotedesktop-Sitzung scheitern die drei `RenderServiceTests` `Render_FullImageIsIdentical`,
 `Render_DrawsCapturedCursorAtHotspot` und `Render_CutsRegionExactly` (kein Rendern ohne Bildschirm). Die Tests schreiben nur in
 `%TEMP%\ScreenKeeperTests\…` und räumen danach auf; sie brauchen keinen entsperrten Desktop.
@@ -145,6 +145,7 @@ Nicht automatisierbar (braucht eine echte Remotedesktop-Verbindung bzw. Fokus un
    Einstellungen → Editor zeigt dieselben Werte. Ist das Einstellungsfenster dabei offen, zieht es die Werte nach;
    Übernehmen schreibt nicht die alten zurück.
 4. Text-Werkzeug, Text mit + und - tippen: Zeichen landen im Text, die Lupe ändert sich nicht.
+   Ist ein Nummern-Stempel ausgewählt (ab 0.12), ändern + und - dessen Nummer statt der Lupengröße.
 5. Aufnahme mit anderer Monitor-Anordnung aus der History (Fenster-Editor): Rad scrollt, Strg+Rad zoomt die Ansicht,
    **Alt+Rad** ändert den Lupen-Zoom; Zeile `Alt+Rad: …`; nach dem Loslassen von Alt ist das Fenstermenü nicht aktiv
    (der nächste Tastendruck wirkt normal).

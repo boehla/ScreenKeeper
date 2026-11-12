@@ -256,10 +256,18 @@ public partial class EditorWindow {
             case Key.Add:
             case Key.OemMinus:
             case Key.Subtract:
-                // +/-: Lupengröße, nur solange die Lupe zu sehen ist
-                if(control || !isMagnifierShown) return;
+                // +/-: Nummer des ausgewählten Stempels, sonst Lupengröße (nur solange die Lupe zu sehen ist)
+                if(control) return;
+                int delta = key == Key.OemPlus || key == Key.Add ? 1 : -1;
+                if(viewModel.ShowStampNumberOption) {
+                    e.Handled = true;
+                    if(pointerCaptured) return;
+                    viewModel.ChangeSelectedStampNumber(delta);
+                    return;
+                }
+                if(!isMagnifierShown) return;
                 e.Handled = true;
-                changeMagnifierSize(key == Key.OemPlus || key == Key.Add ? 1 : -1);
+                changeMagnifierSize(delta);
                 return;
             case Key.C:
                 if(!control) return;

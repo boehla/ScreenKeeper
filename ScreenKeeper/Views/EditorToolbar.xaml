@@ -393,6 +393,17 @@
                         </Border>
                     </Popup>
                 </Grid>
+                <!-- Nummer des ausgewählten Stempels: − Nummer + -->
+                <StackPanel Orientation="Horizontal" Visibility="{Binding ShowStampNumberOption, Converter={StaticResource BoolToVisibility}}">
+                    <Button Style="{StaticResource ToolbarButton}" Command="{Binding DecreaseStampNumberCommand}" ToolTip="{loc:Str OptionStampNumberDecrease}">
+                        <Path Style="{StaticResource Icon}" Data="M5,10 H15" />
+                    </Button>
+                    <TextBlock Style="{StaticResource ValueText}" Margin="2,0" MinWidth="18" TextAlignment="Center" ToolTip="{loc:Str OptionStampNumber}"
+                               Text="{Binding CurrentStampNumberText}" />
+                    <Button Style="{StaticResource ToolbarButton}" Command="{Binding IncreaseStampNumberCommand}" ToolTip="{loc:Str OptionStampNumberIncrease}">
+                        <Path Style="{StaticResource Icon}" Data="M5,10 H15 M10,5 V15" />
+                    </Button>
+                </StackPanel>
                 <Grid Visibility="{Binding ShowCursorKindOption, Converter={StaticResource BoolToVisibility}}">
                     <ToggleButton x:Name="cursorKindButton" Style="{StaticResource MenuButton}" ToolTip="{loc:Str OptionCursorKind}"
                                   IsChecked="{Binding IsOpen, ElementName=cursorKindPopup}"

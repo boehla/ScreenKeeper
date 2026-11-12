@@ -107,7 +107,7 @@ Ein Screenshot-Tool für Windows als Ersatz für Greenshot. Kernidee:
 | Highlight (Textmarker) | Rechteck im Modus „Multiplizieren“ (Text darunter bleibt dunkel, Weiß wird zur Markerfarbe), Farbe (Standard Gelb) |
 | Verpixeln | Rechteck, Blockgröße einstellbar |
 | Weichzeichnen | Rechteck, Stärke einstellbar |
-| Nummern-Stempel | fortlaufend 1, 2, 3 …, Farbe, Größe |
+| Nummern-Stempel | fortlaufend 1, 2, 3 … (nächste = höchste + 1), Farbe, Größe; Nummer des ausgewählten Stempels mit „−“/„+“ bzw. Tasten -/+ ändern (1–999, Rückgängig-Schritt, Vorrang vor der Lupengröße) (ab 0.12) |
 | **Virtuelle Maus** | siehe unten |
 
 - Farbe und Strichstärke über die Werkzeugleiste; zuletzt verwendete Werte werden gemerkt (beim Text auch
