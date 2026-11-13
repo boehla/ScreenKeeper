@@ -7,6 +7,7 @@ namespace ScreenKeeper.Services.Native;
 /// </summary>
 public static class Advapi32 {
     public const uint TOKEN_QUERY = 0x0008;
+    public const int TokenElevationType = 18;
     public const int TokenElevation = 20;
 
     [DllImport("advapi32.dll", SetLastError = true)]
@@ -37,6 +38,20 @@ public static class ProcessElevation {
     public static bool? IsCurrentElevated() {
         // Pseudo-Handle, muss nicht geschlossen werden
         return isElevated(Kernel32.GetCurrentProcess());
+    }
+
+    /// <summary>
+    /// Art des eigenen Tokens (<c>TOKEN_ELEVATION_TYPE</c>): 1 = Default (kein geteiltes Token – Standardbenutzer, UAC aus
+    /// oder eingebauter Administrator), 2 = Full (erhöht), 3 = Limited (Admin mit UAC, nicht erhöht). Null = nicht ermittelbar.
+    /// </summary>
+    public static int? GetCurrentElevationType() {
+        if(!Advapi32.OpenProcessToken(Kernel32.GetCurrentProcess(), Advapi32.TOKEN_QUERY, out IntPtr token)) return null;
+        try {
+            if(!Advapi32.GetTokenInformation(token, Advapi32.TokenElevationType, out int type, sizeof(int), out _)) return null;
+            return type;
+        } finally {
+            Kernel32.CloseHandle(token);
+        }
     }
 
     private static bool? isElevated(IntPtr process) {

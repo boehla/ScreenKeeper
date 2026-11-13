@@ -602,6 +602,12 @@ Ordner: {2}</value>
   <data name="SettingsElevatedAutostartHint" xml:space="preserve">
     <value>Damit kommt die Druck-Taste auch an, wenn ein Programm mit Adminrechten im Vordergrund ist. ScreenKeeper läuft dann mit Adminrechten (Aufgabenplanung, bei der Anmeldung, EXE am aktuellen Ort). Ein- und Ausschalten erfordert einmalig eine Bestätigung; wirkt ab dem nächsten Start.</value>
   </data>
+  <data name="SettingsElevatedAutostartNoAdmin" xml:space="preserve">
+    <value>Dein Konto hat keine Adminrechte – die Option wirkt nur bei Administrator-Konten.</value>
+  </data>
+  <data name="SettingsElevatedAutostartNoAdminCanDisable" xml:space="preserve">
+    <value>Dein Konto hat keine Adminrechte – die Option wirkt nur bei Administrator-Konten. Die Aufgabe ist noch angelegt; du kannst sie hier ausschalten.</value>
+  </data>
   <data name="SettingsElevatedAutostartFailed" xml:space="preserve">
     <value>Der Autostart mit Adminrechten konnte nicht geändert werden: {0}</value>
   </data>

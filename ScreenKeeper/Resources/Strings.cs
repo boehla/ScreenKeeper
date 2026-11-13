@@ -209,6 +209,8 @@ public static class Strings {
     public static string SettingsAutostartViaTask => Get(nameof(SettingsAutostartViaTask));
     public static string SettingsElevatedAutostart => Get(nameof(SettingsElevatedAutostart));
     public static string SettingsElevatedAutostartHint => Get(nameof(SettingsElevatedAutostartHint));
+    public static string SettingsElevatedAutostartNoAdmin => Get(nameof(SettingsElevatedAutostartNoAdmin));
+    public static string SettingsElevatedAutostartNoAdminCanDisable => Get(nameof(SettingsElevatedAutostartNoAdminCanDisable));
     public static string SettingsElevatedAutostartFailed => Get(nameof(SettingsElevatedAutostartFailed));
     public static string ElevatedAutostartExitCode => Get(nameof(ElevatedAutostartExitCode));
     public static string ElevatedAutostartTimeout => Get(nameof(ElevatedAutostartTimeout));

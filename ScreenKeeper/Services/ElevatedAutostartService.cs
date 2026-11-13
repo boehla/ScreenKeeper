@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using ScreenKeeper.Resources;
+using ScreenKeeper.Services.Native;
 
 namespace ScreenKeeper.Services;
 
@@ -23,6 +24,12 @@ public sealed record ElevatedAutostartRequest(bool Enable, string Sid, string Ex
 public interface IElevatedAutostartService {
     /// <summary>Gibt es die Aufgabe? Fragt die Aufgabenplanung ohne Erhöhung ab (ca. 0,1 s) – nicht im UI-Thread verwenden.</summary>
     bool IsEnabled { get; }
+
+    /// <summary>
+    /// Kann dieses Konto überhaupt Adminrechte bekommen? Bei Standardbenutzern liefert „höchste Privilegien“ ohne Fehler nur
+    /// ein normales Token – die Einstellung bringt dann nichts. Schnell (Token-Abfrage), im UI-Thread erlaubt.
+    /// </summary>
+    bool CanElevate { get; }
 
     /// <summary>
     /// Aufgabe anlegen bzw. löschen: startet die eigene EXE einmal erhöht (UAC-Abfrage) und wartet auf das Ende.
@@ -53,6 +60,49 @@ public sealed class ElevatedAutostartService : IElevatedAutostartService {
         get {
             string? sid = CurrentUserSid;
             return sid != null && QueryTaskXml(sid) != null;
+        }
+    }
+
+    private bool? canElevate;
+
+    public bool CanElevate => canElevate ??= CurrentUserCanElevate();
+
+    /// <summary>Token des eigenen Prozesses auswerten (siehe <see cref="CanUserElevate"/>); im Zweifel true.</summary>
+    public static bool CurrentUserCanElevate() {
+        try {
+            bool result = CanUserElevate(ProcessElevation.IsCurrentElevated(), ProcessElevation.GetCurrentElevationType(), isAdministratorMember);
+            if(!result) Log.Info("Konto ohne Adminrechte – Autostart mit Adminrechten ist nicht verfügbar");
+            return result;
+        } catch(Exception ex) {
+            Log.Error(ex, "Nicht ermittelbar, ob das Konto Adminrechte bekommen kann");
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// Bereits erhöht oder geteiltes Token (Full/Limited = Admin mit UAC) → ja. Token-Typ Default (kein geteiltes Token) →
+    /// nur, wenn das Token Mitglied der Administratoren (S-1-5-32-544) ist (UAC aus, eingebauter Administrator).
+    /// Nicht ermittelbar → ja, damit die Option nie fälschlich gesperrt ist.
+    /// </summary>
+    public static bool CanUserElevate(bool? isElevated, int? elevationType, Func<bool> isAdministratorMember) {
+        if(isElevated == true) return true;
+        switch(elevationType) {
+            case tokenElevationTypeFull:
+            case tokenElevationTypeLimited:
+                return true;
+            case tokenElevationTypeDefault:
+                return isAdministratorMember();
+        }
+        return true;
+    }
+
+    private const int tokenElevationTypeDefault = 1;
+    private const int tokenElevationTypeFull = 2;
+    private const int tokenElevationTypeLimited = 3;
+
+    private static bool isAdministratorMember() {
+        using (WindowsIdentity identity = WindowsIdentity.GetCurrent()) {
+            return new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
         }
     }
 

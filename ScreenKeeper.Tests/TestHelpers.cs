@@ -53,6 +53,8 @@ public sealed class TempFolder : IDisposable {
 public sealed class FakeElevatedAutostart : IElevatedAutostartService {
     public bool IsEnabled { get; set; }
 
+    public bool CanElevate { get; set; } = true;
+
     public ElevatedAutostartResult Result { get; set; } = ElevatedAutostartResult.Success;
 
     public List<bool> Calls { get; } = new List<bool>();

@@ -152,8 +152,8 @@
 
                         <TextBlock Style="{StaticResource Section}" Text="{loc:Str SettingsProgram}" />
                         <CheckBox Content="{loc:Str SettingsAutostart}" IsChecked="{Binding Autostart}" IsEnabled="{Binding CanChangeAutostart}" ToolTip="{Binding AutostartToolTip}" ToolTipService.ShowOnDisabled="True" />
-                        <CheckBox Content="{loc:Str SettingsElevatedAutostart}" IsChecked="{Binding ElevatedAutostart}" />
-                        <TextBlock Style="{StaticResource Info}" Margin="20,0,0,4" Text="{loc:Str SettingsElevatedAutostartHint}" />
+                        <CheckBox Content="{loc:Str SettingsElevatedAutostart}" IsChecked="{Binding ElevatedAutostart}" IsEnabled="{Binding CanChangeElevatedAutostart, Mode=OneWay}" />
+                        <TextBlock Style="{StaticResource Info}" Margin="20,0,0,4" Text="{Binding ElevatedAutostartHint, Mode=OneWay}" />
                         <CheckBox Content="{loc:Str SettingsNotifyOnSaveOnly}" IsChecked="{Binding NotifyOnSaveOnly}" />
 
                         <TextBlock Style="{StaticResource Section}" Text="{loc:Str SettingsUpdates}" />

@@ -1,4 +1,12 @@
-# Changelog
+﻿# Changelog
+
+## 0.14.1
+
+- **„Autostart mit Adminrechten“ nur, wenn es wirkt:** Bei einem Konto ohne Adminrechte startet die Aufgabe ScreenKeeper
+  trotz „höchster Privilegien“ ohne Fehlermeldung nur mit normalen Rechten – die Druck-Taste kam über Admin-Fenstern
+  also weiterhin nicht an. ScreenKeeper prüft jetzt das Token (Admin mit UAC, bereits erhöht oder Mitglied der
+  Administratoren) und graut das Häkchen sonst aus, mit dem Hinweis „Dein Konto hat keine Adminrechte – die Option
+  wirkt nur bei Administrator-Konten.“ Ist die Aufgabe schon angelegt, bleibt Ausschalten möglich.
 
 ## 0.14.0
 

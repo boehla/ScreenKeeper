@@ -45,6 +45,8 @@ public sealed class SettingsViewModel : ViewModelBase {
     private string retentionDaysText = "0";
     private bool autostartEnabled;
     private bool elevatedAutostartEnabled;
+    private bool savedElevatedAutostart;
+    private readonly bool canElevate;
     private bool notifyOnSaveOnly;
     private bool checkForUpdates;
     private string hotkeyCaptureEdit = "";
@@ -81,6 +83,7 @@ public sealed class SettingsViewModel : ViewModelBase {
         this.settings = settings;
         this.autostart = autostart;
         this.elevatedAutostart = elevatedAutostart;
+        canElevate = elevatedAutostart.CanElevate;
         this.hotkeys = hotkeys;
         this.isSnippingEnabled = isSnippingEnabled;
         this.clock = clock ?? (() => DateTime.Now);
@@ -273,6 +276,20 @@ public sealed class SettingsViewModel : ViewModelBase {
             if(!SetProperty(ref elevatedAutostartEnabled, value)) return;
             OnPropertyChanged(nameof(CanChangeAutostart));
             OnPropertyChanged(nameof(AutostartToolTip));
+        }
+    }
+
+    /// <summary>
+    /// Ohne Adminrechte im Konto ist das Häkchen ausgegraut – außer die Aufgabe ist schon angelegt, dann bleibt Ausschalten
+    /// möglich (maßgeblich ist der gespeicherte Stand, nicht das gerade gesetzte Häkchen).
+    /// </summary>
+    public bool CanChangeElevatedAutostart => canElevate || savedElevatedAutostart;
+
+    /// <summary>Erklärung unter dem Häkchen: normal, bzw. warum es bei diesem Konto nicht wirkt.</summary>
+    public string ElevatedAutostartHint {
+        get {
+            if(canElevate) return Strings.SettingsElevatedAutostartHint;
+            return savedElevatedAutostart ? Strings.SettingsElevatedAutostartNoAdminCanDisable : Strings.SettingsElevatedAutostartNoAdmin;
         }
     }
 
@@ -675,6 +692,7 @@ public sealed class SettingsViewModel : ViewModelBase {
         cursorVisible = source.CursorVisible;
         // Admin-Autostart: Merker in den Einstellungen (die Abfrage der Aufgabenplanung wäre im UI-Thread zu langsam)
         elevatedAutostartEnabled = source.ElevatedAutostart;
+        savedElevatedAutostart = source.ElevatedAutostart;
         if(elevatedAutostartEnabled) {
             // es gibt dann keinen Run-Wert – angezeigt wird der gemerkte Wunsch
             autostartEnabled = source.Autostart;
