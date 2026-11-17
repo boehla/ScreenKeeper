@@ -203,7 +203,7 @@
         wechselnden Optionen liegen in einem Platz fester Breite („optionsSlot“) neben „Objekt löschen“. Die Leiste ist
         dadurch in jedem Zustand gleich breit.
     -->
-    <Border Background="#F0262626" BorderBrush="#50FFFFFF" BorderThickness="1" CornerRadius="6" Padding="4">
+    <Border x:Name="toolbarFrame" Background="#F0262626" BorderBrush="#50FFFFFF" BorderThickness="1" CornerRadius="6" Padding="4">
         <StackPanel Orientation="Horizontal">
             <!-- Abschnitt „tools“: Bereich, Auswahl und Zeichenwerkzeuge -->
             <ItemsControl x:Name="tools" ItemsSource="{Binding Tools}" Focusable="False">

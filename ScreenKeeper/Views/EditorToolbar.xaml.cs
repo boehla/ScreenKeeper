@@ -2,6 +2,7 @@
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Media;
 using ScreenKeeper.ViewModels;
 
 namespace ScreenKeeper.Views;
@@ -22,7 +23,11 @@ public partial class EditorToolbar : UserControl {
     /// </summary>
     public const double OptionsSlotWidth = 230;
 
+    private static readonly Brush normalFrameBrush = createBrush(Color.FromArgb(0x50, 0xFF, 0xFF, 0xFF));
+    private static readonly Brush pinnedFrameBrush = createBrush(Color.FromRgb(0x1E, 0x88, 0xE5));
+
     private readonly Popup[] popups;
+    private bool pinned;
 
     public EditorToolbar() {
         InitializeComponent();
@@ -44,11 +49,35 @@ public partial class EditorToolbar : UserControl {
     /// Wird die Leiste gerade bedient (Maus darüber oder ein Menü offen)? Dann bleibt sie stehen, damit kein Knopf unter
     /// der Maus wegrutscht (z. B. wenn „Rückgängig“ den Bereich ändert).
     /// </summary>
-    public bool IsInUse => IsMouseOver || popups.Any(p => p.IsOpen);
+    public bool IsInUse => IsMouseOver || IsPopupOpen;
+
+    /// <summary>Ist gerade ein Auswahlmenü offen?</summary>
+    public bool IsPopupOpen => popups.Any(p => p.IsOpen);
+
+    /// <summary>
+    /// Mit Strg festgehalten (weicht dem Zeiger nicht aus): blauer, doppelt so dicker Rahmen. Der Innenabstand gleicht die
+    /// Rahmenstärke aus, die Leiste bleibt also gleich groß.
+    /// </summary>
+    public bool IsPinned {
+        get => pinned;
+        set {
+            if(pinned == value) return;
+            pinned = value;
+            toolbarFrame.BorderBrush = value ? pinnedFrameBrush : normalFrameBrush;
+            toolbarFrame.BorderThickness = new Thickness(value ? 2 : 1);
+            toolbarFrame.Padding = new Thickness(value ? 3 : 4);
+        }
+    }
 
     /// <summary>Alle Auswahlmenüs schließen (z. B. wenn die Leiste versteckt wird).</summary>
     public void ClosePopups() {
         foreach(Popup popup in popups) popup.IsOpen = false;
+    }
+
+    private static Brush createBrush(Color color) {
+        SolidColorBrush brush = new SolidColorBrush(color);
+        brush.Freeze();
+        return brush;
     }
 
     private void raiseUseEnded() {

@@ -33,6 +33,8 @@ public partial class EditorWindow : Window, IEditorHost {
     private const double minZoomFactor = 0.1;
     private const double maxZoomFactor = 8;
     private const double toolbarGap = 10;
+    // so nah darf der Zeiger der Leiste kommen, bevor sie beim Werkzeug „Bereich“ (ohne Bereich) ausweicht
+    private const double toolbarEvadeMargin = 12;
     private const double magnifierGap = 26;
 
     private readonly CaptureDocument document;
@@ -48,6 +50,8 @@ public partial class EditorWindow : Window, IEditorHost {
     private bool warmUp;
     private bool closed;
     private bool discarded;
+    // Werkzeugleiste steht unten statt oben (dem Zeiger ausgewichen, siehe ToolbarPlacement.UpdateFlipped)
+    private bool toolbarFlipped;
 
     public EditorWindow(CaptureDocument doc, BitmapSource original, string jsonPath, EditorMode mode, long startTimestamp = 0) {
         InitializeComponent();
@@ -93,6 +97,7 @@ public partial class EditorWindow : Window, IEditorHost {
         toolbar.UseEnded += (s, e) => Dispatcher.BeginInvoke(DispatcherPriority.Input, new Action(() => {
             if(!closed) updateOverlay();
         }));
+        toolbar.MouseEnter += (s, e) => onToolbarMouseEnter();
         viewModel.DocumentChanged += onDocumentChanged;
         viewModel.DuplicateRequested += onDuplicateRequested;
         viewModel.CommentEditRequested += onCommentEditRequested;
@@ -406,6 +411,7 @@ public partial class EditorWindow : Window, IEditorHost {
         annotationOverlay.Update(transform, deviceScale, viewModel.GetSelectionVisual(), viewModel.GetHiddenCursorBounds(), viewModel.ToolPreviewRect);
         updateTextEditorLayout();
         updateToolbar(displayed, selectionView);
+        updateToolbarPin();
         updateMagnifier();
     }
 
@@ -420,13 +426,47 @@ public partial class EditorWindow : Window, IEditorHost {
         // Bereich ändert; neu platziert wird nach dem Verlassen (UseEnded)
         if(toolbar.Visibility == Visibility.Visible && toolbar.IsInUse) return;
         toolbar.Visibility = Visibility.Visible;
+        placeToolbar(displayed, selectionView);
+    }
+
+    /// <summary>
+    /// Leiste platzieren. Beim Werkzeug „Bereich“ (ohne Bereich, ohne laufenden Vorgang) weicht sie dem Zeiger an die
+    /// Gegenkante aus (oben ↔ unten), damit man auch dort einen Bereich beginnen kann – außer Strg ist gedrückt.
+    /// </summary>
+    private void placeToolbar(PixelRect? displayed, Rect? selectionView) {
         toolbar.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
         int monitor = displayed.HasValue
             ? SelectionGeometry.FindMonitorIndex(document.Monitors, displayed.Value)
             : SelectionGeometry.FindPrimaryMonitorIndex(document.Monitors);
+        Rect bounds = getMonitorView(monitor);
+        // Strg hält die Leiste fest: nur so erreicht man sie beim Werkzeug „Bereich“ ohne Bereich
+        bool canEvade = toolbarEvades && !isControlDown;
+        toolbarFlipped = ToolbarPlacement.UpdateFlipped(toolbarFlipped, canEvade, selectionView, getMouseInViewport(), toolbar.DesiredSize, bounds, toolbarGap, toolbarEvadeMargin);
         // die Leiste ist immer gleich groß (Optionen in festem Platz): Werkzeug, Auswahl und Optionen ändern die Lage nicht
-        Point position = ToolbarPlacement.Place(selectionView, toolbar.DesiredSize, getMonitorView(monitor), toolbarGap);
+        Point position = ToolbarPlacement.Place(selectionView, toolbar.DesiredSize, bounds, toolbarGap, toolbarFlipped);
         setOverlayPosition(toolbar, position);
+    }
+
+    /// <summary>Würde die Leiste dem Zeiger gerade ausweichen (Werkzeug „Bereich“, kein Bereich, kein laufender Vorgang)?</summary>
+    private bool toolbarEvades => ReferenceEquals(viewModel.ActiveTool, viewModel.SelectionTool) && !viewModel.IsGestureActive
+        && !viewModel.HasSelection && !viewModel.PreviewSelection.HasValue;
+
+    private static bool isControlDown => Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl);
+
+    /// <summary>Solange Strg die sonst ausweichende Leiste festhält, zeigt sie das mit einem blauen Rahmen.</summary>
+    private void updateToolbarPin() {
+        toolbar.IsPinned = toolbarEvades && isControlDown;
+    }
+
+    /// <summary>
+    /// Ein schneller Zeiger springt über den Rand direkt in die Leiste (die Fläche bekommt dann keine Mausbewegung mehr):
+    /// trotzdem ausweichen. Wird nur beim Hineinfahren geprüft – wechselt man über die Leiste zu „Bereich“, bleibt sie
+    /// unter der Maus stehen; ebenso, solange ein Menü offen ist.
+    /// </summary>
+    private void onToolbarMouseEnter() {
+        if(!IsLoaded || !viewInitialized || closed || toolbar.Visibility != Visibility.Visible) return;
+        if(viewModel.PreviewSelection.HasValue || viewModel.HasSelection || toolbar.IsPopupOpen) return;
+        placeToolbar(null, null);
     }
 
     private void updateMagnifier() {

@@ -19,7 +19,7 @@ Erwartet: `0 Warning(s)`, `0 Error(s)` (bzw. `0 Warnung(en)`, `0 Fehler` bei deu
 dotnet test ScreenKeeper.Tests\ScreenKeeper.Tests.csproj
 ```
 
-Erwartet: `Passed!  - Failed: 0, Passed: 435, Skipped: 0, Total: 435` (Stand 0.14.1). In einer getrennten
+Erwartet: `Passed!  - Failed: 0, Passed: 444, Skipped: 0, Total: 444` (Stand 0.14.1). In einer getrennten
 Remotedesktop-Sitzung scheitern die drei `RenderServiceTests` `Render_FullImageIsIdentical`,
 `Render_DrawsCapturedCursorAtHotspot` und `Render_CutsRegionExactly` (kein Rendern ohne Bildschirm). Die Tests schreiben nur in
 `%TEMP%\ScreenKeeperTests\…` und räumen danach auf; sie brauchen keinen entsperrten Desktop.
@@ -176,6 +176,18 @@ Nicht automatisierbar (braucht eine echte Remotedesktop-Verbindung bzw. Fokus un
 6. Editor schließen, neu öffnen: das nächste Textfeld übernimmt Auto/feste Größe, Ausrichtung, Farbe, Hintergrund
    (`settings.json`: `defaultTextAutoFontSize`, `defaultTextAlignment`).
 7. Eine Aufnahme aus 0.9 mit Text öffnen: Text sieht unverändert aus.
+
+**Werkzeugleiste weicht beim Bereich-Wählen aus** (ab 0.14.1, frische Aufnahme per Druck, Werkzeug „Bereich“):
+
+1. Zeiger langsam von unten an die Leiste (oben mittig) heranführen: etwa 12 px davor springt sie nach unten mittig
+   (gleicher Monitor). Ebenso bei einem schnellen Schwung direkt in die Leiste.
+2. Direkt unter der früheren Lage einen Bereich aufziehen: geht, während des Ziehens ist die Leiste ausgeblendet, danach
+   steht sie unter dem Bereich (bzw. darüber/innen wie gewohnt).
+3. Ohne Bereich zur Leiste unten fahren: sie springt wieder nach oben mittig, unten lässt sich ein Bereich beginnen.
+   Mit gedrückter Strg-Taste hinfahren: sie bleibt stehen, Knöpfe und Menüs sind bedienbar. Solange Strg gedrückt ist,
+   hat die Leiste einen blauen Rahmen (gleiche Größe, nichts verrutscht); nach dem Loslassen ist er wieder grau.
+4. Bereich mit Strg+Z zurücknehmen: Leiste wieder oben mittig. Anderes Werkzeug (z. B. Rechteck) aktiv: kein Ausweichen.
+5. Werkzeug „Rechteck“, über die Leiste auf „Bereich“ klicken: die Leiste bleibt unter der Maus stehen.
 
 ## 6. Kodierung
 

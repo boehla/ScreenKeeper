@@ -7,6 +7,14 @@
   also weiterhin nicht an. ScreenKeeper prüft jetzt das Token (Admin mit UAC, bereits erhöht oder Mitglied der
   Administratoren) und graut das Häkchen sonst aus, mit dem Hinweis „Dein Konto hat keine Adminrechte – die Option
   wirkt nur bei Administrator-Konten.“ Ist die Aufgabe schon angelegt, bleibt Ausschalten möglich.
+- **Werkzeugleiste weicht beim Bereich-Wählen aus:** Ist das Werkzeug „Bereich“ aktiv und noch kein Bereich gewählt,
+  springt die Leiste (oben mittig), sobald der Mauszeiger ihr auf 12 px nahe kommt oder hineinfährt, an den unteren
+  Rand desselben Monitors (unten mittig) – so lässt sich auch direkt unter ihr ein Bereich beginnen. Kommt der
+  Zeiger ihr später unten nahe, springt sie ebenso wieder nach oben. Mit gedrückter **Strg**-Taste bleibt sie
+  stehen und lässt sich bedienen; ein blauer Rahmen zeigt, dass sie festgehalten ist. Wäre der Zeiger an der
+  Gegenkante ebenso nah (sehr niedriger Monitor), bleibt sie stehen. Während des Aufziehens ist sie wie bisher ausgeblendet (die Fläche hält
+  den Mausfang), danach steht sie wie gewohnt unter bzw. über dem Bereich. Wechselt man über die Leiste zu „Bereich“
+  oder ist ein Menü offen, bleibt sie unter der Maus stehen.
 
 ## 0.14.0
 

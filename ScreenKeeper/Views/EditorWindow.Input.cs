@@ -184,6 +184,7 @@ public partial class EditorWindow {
     }
 
     private void onPreviewKeyDown(object sender, KeyEventArgs e) {
+        updateToolbarPin();
         // Während der Textbearbeitung gehören alle Tasten dem Textfeld (Enter/Esc behandelt es selbst)
         if(viewModel.IsTextEditing) return;
         // ebenso während der Eingabe einer eigenen Schriftgröße in der Werkzeugleiste
@@ -322,6 +323,7 @@ public partial class EditorWindow {
     }
 
     private void onPreviewKeyUp(object sender, KeyEventArgs e) {
+        updateToolbarPin();
         Key key = e.Key == Key.System ? e.SystemKey : e.Key;
         if(altWheelUsed && (key == Key.LeftAlt || key == Key.RightAlt)) {
             // Alt wurde für Alt+Rad benutzt: das Loslassen nicht an Windows weitergeben (würde das Fenstermenü aktivieren)
