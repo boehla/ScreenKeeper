@@ -51,6 +51,11 @@ public static class CaptureDocumentSerializer {
             window.Title ??= "";
             window.Process ??= "";
         }
+        // Lage der erkannten Wörter (Vorabversionen von 0.15) nicht als unbekanntes Feld mitschleppen – sie bläht die JSON auf
+        if(document.ExtensionData != null) {
+            document.ExtensionData.Remove(CaptureDocument.DroppedOcrField);
+            if(document.ExtensionData.Count == 0) document.ExtensionData = null;
+        }
         if(document.Foreground != null) {
             document.Foreground.Title ??= "";
             document.Foreground.Process ??= "";

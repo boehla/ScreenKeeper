@@ -48,6 +48,8 @@ public sealed class SettingsViewModel : ViewModelBase {
     private bool savedElevatedAutostart;
     private readonly bool canElevate;
     private bool notifyOnSaveOnly;
+    private bool saveCropImage;
+    private bool recognizeText;
     private bool checkForUpdates;
     private string hotkeyCaptureEdit = "";
     private string hotkeyCaptureSave = "";
@@ -302,6 +304,18 @@ public sealed class SettingsViewModel : ViewModelBase {
     public bool NotifyOnSaveOnly {
         get => notifyOnSaveOnly;
         set => SetProperty(ref notifyOnSaveOnly, value);
+    }
+
+    /// <summary>Zuschnitt immer zusätzlich als <c>&lt;Name&gt;.crop.png</c> neben dem Original ablegen.</summary>
+    public bool SaveCropImage {
+        get => saveCropImage;
+        set => SetProperty(ref saveCropImage, value);
+    }
+
+    /// <summary>Text im Bereich per Windows-OCR erkennen (für Suche und Textauswahl).</summary>
+    public bool RecognizeText {
+        get => recognizeText;
+        set => SetProperty(ref recognizeText, value);
     }
 
     /// <summary>Einmal täglich im Hintergrund nach Updates suchen.</summary>
@@ -591,6 +605,8 @@ public sealed class SettingsViewModel : ViewModelBase {
         target.Autostart = autostartEnabled;
         target.RetentionDays = retentionDays;
         target.NotifyOnSaveOnly = notifyOnSaveOnly;
+        target.SaveCropImage = saveCropImage;
+        target.RecognizeText = recognizeText;
         target.CheckForUpdates = checkForUpdates;
 
         applyElevatedAutostart(target);
@@ -663,6 +679,8 @@ public sealed class SettingsViewModel : ViewModelBase {
         exportFolder = source.ExportFolder;
         retentionDaysText = source.RetentionDays.ToString(CultureInfo.CurrentCulture);
         notifyOnSaveOnly = source.NotifyOnSaveOnly;
+        saveCropImage = source.SaveCropImage;
+        recognizeText = source.RecognizeText;
         checkForUpdates = source.CheckForUpdates;
         hotkeyCaptureEdit = source.HotkeyCaptureEdit;
         hotkeyCaptureSave = source.HotkeyCaptureSave;

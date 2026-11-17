@@ -238,6 +238,8 @@ public partial class EditorWindow : Window, IEditorHost {
         TimeSpan elapsed = Stopwatch.GetElapsedTime(startTimestamp);
         Log.Info($"Editor sichtbar nach {elapsed.TotalMilliseconds:0} ms ({mode}, {original.PixelWidth}×{original.PixelHeight}, DPI-Faktor {deviceScale:0.##})");
         BringToFront();
+        // erst nach dem ersten Zeichnen und verzögert, damit die Erkennung den Editor nie ausbremst
+        scheduleOcr();
     }
 
     private void onDpiChanged(object sender, DpiChangedEventArgs e) {
@@ -263,6 +265,7 @@ public partial class EditorWindow : Window, IEditorHost {
 
     private void onDocumentChanged(object? sender, DocumentChangeKind kind) {
         if((kind & DocumentChangeKind.Annotations) != 0) RefreshAnnotations();
+        if((kind & DocumentChangeKind.Selection) != 0) scheduleOcr();
     }
 
     private void onDuplicateRequested(object? sender, EventArgs e) {
@@ -298,10 +301,13 @@ public partial class EditorWindow : Window, IEditorHost {
         viewModel.CancelGesture();
         storeSettings();
         if(discarded) {
+            cancelOcr();
             // nichts speichern – sonst entstünden JSON und Vorschaubild neu; gelöscht wird nach dem Schließen
             Log.Info($"Bearbeitungsstand verworfen: {jsonPath}");
             return;
         }
+        // schon fertige Erkennung noch mit diesem Stand speichern, veralteten Text ggf. entfernen
+        prepareOcrForClose();
         try {
             long start = Stopwatch.GetTimestamp();
             AppServices.Storage.SaveDocument(document, jsonPath);
@@ -314,6 +320,8 @@ public partial class EditorWindow : Window, IEditorHost {
             // z. B. Ablageordner schreibgeschützt oder Laufwerk getrennt: melden statt still verlieren
             ((IEditorHost)this).ShowError(Strings.Format(Strings.ErrorEditStateSaveFailed, ex.Message));
         }
+        // erst nach dem Speichern: eine noch fehlende Erkennung läuft im Hintergrund weiter und landet danach in der JSON
+        finishOcrOnClose();
     }
 
     /// <summary>
@@ -408,7 +416,7 @@ public partial class EditorWindow : Window, IEditorHost {
         Rect imageArea = transform.ToView(viewModel.ImageBounds);
         Rect? selectionView = displayed.HasValue ? transform.ToView(displayed.Value) : null;
         selectionOverlay.Update(imageArea, selectionView, displayed, deviceScale, displayed.HasValue);
-        annotationOverlay.Update(transform, deviceScale, viewModel.GetSelectionVisual(), viewModel.GetHiddenCursorBounds(), viewModel.ToolPreviewRect);
+        annotationOverlay.Update(transform, deviceScale, viewModel.GetSelectionVisual(), viewModel.GetHiddenCursorBounds(), viewModel.ToolPreviewRect, viewModel.GetTextHighlights());
         updateTextEditorLayout();
         updateToolbar(displayed, selectionView);
         updateToolbarPin();

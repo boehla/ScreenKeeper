@@ -274,6 +274,11 @@ public class Phase6Tests {
                 BitmapSource thumb = ImageFiles.LoadBgra32(firstSaved.Files.ThumbPath);
                 Assert.Equal(100, thumb.PixelWidth);
                 Assert.Equal(50, thumb.PixelHeight);
+                // ab 0.15 auch der Zuschnitt: nacheinander geschrieben, der spätere Stand (Bereich) gewinnt
+                storage.WaitForBackgroundWrites(TimeSpan.FromSeconds(30));
+                BitmapSource crop = ImageFiles.LoadBgra32(firstSaved.Files.CropPath);
+                Assert.Equal(100, crop.PixelWidth);
+                Assert.Equal(50, crop.PixelHeight);
                 Assert.Empty(Directory.GetFiles(Path.GetDirectoryName(firstSaved.Files.JsonPath)!, "*.tmp"));
             });
         }

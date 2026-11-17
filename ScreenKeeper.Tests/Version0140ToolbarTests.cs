@@ -123,7 +123,8 @@ public class ToolbarLayoutTests {
             Rect selection = new Rect(700, 300, 300, 200);
             Point expectedPosition = ToolbarPlacement.Place(selection, expectedSize, monitor, 10);
             output.WriteLine($"Leiste {expectedSize.Width} × {expectedSize.Height}, Optionsplatz {slot.DesiredSize.Width}, {expectedButtons.Count} feste Knöpfe");
-            Assert.Equal(27, expectedButtons.Count);
+            // 28 ab 0.15 (Werkzeug „Text auswählen“)
+            Assert.Equal(28, expectedButtons.Count);
 
             double widestOptions = 0;
             string widestState = "";

@@ -83,6 +83,7 @@ public static class Strings {
     public static string ToolBlur => Get(nameof(ToolBlur));
     public static string ToolNumber => Get(nameof(ToolNumber));
     public static string ToolCursor => Get(nameof(ToolCursor));
+    public static string ToolTextSelect => Get(nameof(ToolTextSelect));
     public static string OptionColor => Get(nameof(OptionColor));
     public static string OptionThickness => Get(nameof(OptionThickness));
     public static string OptionFill => Get(nameof(OptionFill));
@@ -217,6 +218,10 @@ public static class Strings {
     public static string ElevatedAutostartTaskFailed => Get(nameof(ElevatedAutostartTaskFailed));
     public static string ElevatedAutostartTaskDescription => Get(nameof(ElevatedAutostartTaskDescription));
     public static string SettingsNotifyOnSaveOnly => Get(nameof(SettingsNotifyOnSaveOnly));
+    public static string SettingsSaveCropImage => Get(nameof(SettingsSaveCropImage));
+    public static string SettingsSaveCropImageHint => Get(nameof(SettingsSaveCropImageHint));
+    public static string SettingsRecognizeText => Get(nameof(SettingsRecognizeText));
+    public static string SettingsRecognizeTextHint => Get(nameof(SettingsRecognizeTextHint));
     public static string SettingsFileLocation => Get(nameof(SettingsFileLocation));
     public static string SettingsHotkeyHelp => Get(nameof(SettingsHotkeyHelp));
     public static string SettingsHotkeyCaptureEdit => Get(nameof(SettingsHotkeyCaptureEdit));

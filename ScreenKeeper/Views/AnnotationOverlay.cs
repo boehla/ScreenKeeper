@@ -13,12 +13,15 @@ namespace ScreenKeeper.Views;
 /// </summary>
 public sealed class AnnotationOverlay : FrameworkElement {
     private static readonly Brush hiddenBrush = freeze(new SolidColorBrush(Color.FromArgb(0xC0, 0xFF, 0xFF, 0xFF)));
+    // markierter Text (Werkzeug „Text auswählen“): halbtransparentes Blau wie eine Textauswahl
+    private static readonly Brush textHighlightBrush = freeze(new SolidColorBrush(Color.FromArgb(0x60, 0x33, 0x99, 0xFF)));
 
     private ViewTransform? transform;
     private double deviceScale = 1;
     private ObjectSelectionVisual? selection;
     private IReadOnlyList<Rect> hiddenCursors = Array.Empty<Rect>();
     private PixelRect? preview;
+    private IReadOnlyList<PixelRect> textHighlights = Array.Empty<PixelRect>();
 
     public AnnotationOverlay() {
         IsHitTestVisible = false;
@@ -31,18 +34,29 @@ public sealed class AnnotationOverlay : FrameworkElement {
     /// <param name="selection">ausgewähltes Objekt (Bildpixel) oder null</param>
     /// <param name="hiddenCursors">Umrisse ausgeblendeter Zeiger (Bildpixel)</param>
     /// <param name="preview">gerade aufgezogenes Textfeld (Bildpixel) oder null</param>
-    public void Update(ViewTransform transform, double deviceScale, ObjectSelectionVisual? selection, IReadOnlyList<Rect> hiddenCursors, PixelRect? preview) {
+    /// <param name="textHighlights">markierter erkannter Text (Bildpixel), je Zeile ein Rechteck</param>
+    public void Update(ViewTransform transform, double deviceScale, ObjectSelectionVisual? selection, IReadOnlyList<Rect> hiddenCursors, PixelRect? preview, IReadOnlyList<PixelRect> textHighlights) {
         this.transform = transform;
         this.deviceScale = deviceScale;
         this.selection = selection;
         this.hiddenCursors = hiddenCursors;
         this.preview = preview;
+        this.textHighlights = textHighlights;
         InvalidateVisual();
     }
 
     protected override void OnRender(DrawingContext dc) {
         if(transform == null) return;
         double px = 1 / deviceScale;
+
+        foreach(PixelRect highlight in textHighlights) {
+            Rect view = transform.ToView(highlight);
+            double left = Math.Round(view.Left * deviceScale) / deviceScale;
+            double top = Math.Round(view.Top * deviceScale) / deviceScale;
+            double right = Math.Round(view.Right * deviceScale) / deviceScale;
+            double bottom = Math.Round(view.Bottom * deviceScale) / deviceScale;
+            dc.DrawRectangle(textHighlightBrush, null, new Rect(left, top, Math.Max(0, right - left), Math.Max(0, bottom - top)));
+        }
         Pen white = new Pen(Brushes.White, px);
         Pen dashed = new Pen(Brushes.Black, px) { DashStyle = new DashStyle(new double[] { 4, 4 }, 0) };
 

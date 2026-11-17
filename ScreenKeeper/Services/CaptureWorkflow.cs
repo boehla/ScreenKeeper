@@ -9,7 +9,8 @@ namespace ScreenKeeper.Services;
 
 /// <summary>
 /// Ablauf: Aufnahme → Dokument bauen → sofort JSON speichern (PNG und Vorschaubild im Hintergrund) → Editor öffnen.
-/// Wird die Aufnahme im Editor verworfen, wandern danach alle drei Dateien in den Papierkorb. Läuft im UI-Thread.
+/// Wird die Aufnahme im Editor verworfen, wandern danach alle Dateien (auch der Zuschnitt) in den Papierkorb. Läuft im
+/// UI-Thread.
 /// </summary>
 public sealed class CaptureWorkflow {
     private readonly List<Task> pendingWrites = new List<Task>();
@@ -130,23 +131,51 @@ public sealed class CaptureWorkflow {
     }
 
     /// <summary>
-    /// Wartet (höchstens <paramref name="timeout"/>) auf laufende PNG-Schreibvorgänge, z. B. vor dem Beenden.
+    /// Texterkennung einer gespeicherten Aufnahme im Hintergrund (bzw. eine schon laufende, <paramref name="running"/>)
+    /// abwarten und das Ergebnis in die JSON schreiben – nur, wenn deren Bereich dann noch zu <paramref name="region"/>
+    /// passt. Nur bei eingeschalteter Erkennung oder mit <paramref name="force"/> (der Editor hat einen veralteten Text
+    /// entfernt und braucht den neuen); zählt zu den ausstehenden Schreibvorgängen. Fehler nur im Protokoll.
     /// </summary>
-    public void WaitForPendingWrites(TimeSpan timeout) {
-        Task[] tasks;
-        lock(sync) {
-            tasks = pendingWrites.ToArray();
-        }
-        if(tasks.Length == 0) return;
+    public Task RecognizeAndStore(string jsonPath, BitmapSource original, PixelRect region, Task<RecognizedText?>? running = null, bool force = false) {
+        if(!force && !AppServices.Settings.Settings.RecognizeText) return Task.CompletedTask;
+        Task task = recognizeAndStore(Path.GetFullPath(jsonPath), original, region, running);
+        trackTask(task);
+        return task;
+    }
+
+    private static async Task recognizeAndStore(string jsonPath, BitmapSource original, PixelRect region, Task<RecognizedText?>? running) {
         try {
-            if(!Task.WaitAll(tasks, timeout)) Log.Warn("Nicht alle Bilder wurden rechtzeitig geschrieben.");
-        } catch(AggregateException ex) {
-            Log.Error(ex, "Fehler beim Schreiben der Bilder");
+            RecognizedText? text = running != null ? await running.ConfigureAwait(false) : await AppServices.Ocr.RecognizeAsync(original, region, CancellationToken.None).ConfigureAwait(false);
+            if(text == null) return;
+            await Task.Run(() => AppServices.Storage.SetRecognizedText(jsonPath, text, original.PixelWidth, original.PixelHeight)).ConfigureAwait(false);
+        } catch(Exception ex) {
+            Log.Warn($"Texterkennung für {jsonPath} nicht gespeichert: {ex.Message}");
         }
     }
 
     /// <summary>
-    /// „Aufnahme verwerfen“: PNG, JSON und Vorschaubild in den Papierkorb (wie Löschen in der History, ohne Rückfrage).
+    /// Wartet (höchstens <paramref name="timeout"/>) auf laufende Schreibvorgänge (PNGs, Zuschnitte, Texterkennung),
+    /// z. B. vor dem Beenden.
+    /// </summary>
+    public void WaitForPendingWrites(TimeSpan timeout) {
+        Stopwatch watch = Stopwatch.StartNew();
+        Task[] tasks;
+        lock(sync) {
+            tasks = pendingWrites.ToArray();
+        }
+        if(tasks.Length > 0) {
+            try {
+                if(!Task.WaitAll(tasks, timeout)) Log.Warn("Nicht alle Bilder wurden rechtzeitig geschrieben.");
+            } catch(AggregateException ex) {
+                Log.Error(ex, "Fehler beim Schreiben der Bilder");
+            }
+        }
+        TimeSpan rest = timeout - watch.Elapsed;
+        AppServices.Storage.WaitForBackgroundWrites(rest > TimeSpan.Zero ? rest : TimeSpan.Zero);
+    }
+
+    /// <summary>
+    /// „Aufnahme verwerfen“: PNG, JSON, Vorschaubild und Zuschnitt in den Papierkorb (wie Löschen in der History, ohne Rückfrage).
     /// Der Editor hat beim Schließen nichts gespeichert; ein noch laufendes Hintergrund-Schreiben einer neuen Aufnahme
     /// wartet <see cref="IStorageService.DeleteToRecycleBin(CaptureFiles)"/> ab. Läuft auf einem eigenen STA-Thread und
     /// zählt zu den ausstehenden Schreibvorgängen, damit ein Programmende nicht mittendrin abbricht.

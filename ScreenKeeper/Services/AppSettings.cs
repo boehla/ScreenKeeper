@@ -175,6 +175,15 @@ public sealed class AppSettings {
     /// <summary>Tray-Benachrichtigung bei „nur speichern“.</summary>
     public bool NotifyOnSaveOnly { get; set; } = true;
 
+    /// <summary>
+    /// Zuschnitt (Bereich mit Zeichnungen, ohne Bereich das ganze Bild) immer zusätzlich als
+    /// <c>&lt;Name&gt;.crop.png</c> neben dem Original ablegen (ab 0.15). Fehlt das Feld, gilt der Standard „an“.
+    /// </summary>
+    public bool SaveCropImage { get; set; } = true;
+
+    /// <summary>Text im Bereich (ohne Bereich im ganzen Bild) per Windows-OCR erkennen und in der JSON ablegen (ab 0.15).</summary>
+    public bool RecognizeText { get; set; } = true;
+
     /// <summary>Größe und Position des History-Fensters; null = Standard.</summary>
     public WindowPlacement? HistoryWindow { get; set; }
 

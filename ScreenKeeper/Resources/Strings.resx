@@ -222,6 +222,9 @@ Details stehen in {1}.</value>
   <data name="ToolCursor" xml:space="preserve">
     <value>Virtuelle Maus (M)</value>
   </data>
+  <data name="ToolTextSelect" xml:space="preserve">
+    <value>Text auswählen (I) – erkannten Text markieren: Ziehen, Doppelklick = Wort, Strg+A = alles, Strg+C kopiert</value>
+  </data>
   <data name="OptionColor" xml:space="preserve">
     <value>Farbe</value>
   </data>
@@ -468,7 +471,7 @@ Ordner: {2}</value>
     <value>Alle</value>
   </data>
   <data name="HistorySearchPlaceholder" xml:space="preserve">
-    <value>Suche: Name, Programm, Titel, Kommentar</value>
+    <value>Suche: Name, Programm, Titel, Kommentar, Text im Bild</value>
   </data>
   <data name="HistoryStatusLoading" xml:space="preserve">
     <value>Aufnahmen werden geladen …</value>
@@ -625,6 +628,18 @@ Ordner: {2}</value>
   </data>
   <data name="SettingsNotifyOnSaveOnly" xml:space="preserve">
     <value>Benachrichtigung bei „nur speichern“ anzeigen</value>
+  </data>
+  <data name="SettingsSaveCropImage" xml:space="preserve">
+    <value>Zuschnitt zusätzlich als Bild speichern</value>
+  </data>
+  <data name="SettingsSaveCropImageHint" xml:space="preserve">
+    <value>Legt den Bereich mit Zeichnungen (ohne Bereich das ganze Bild) als &lt;Name&gt;.crop.png neben das Original und hält ihn beim Bearbeiten aktuell – z. B. für andere Programme.</value>
+  </data>
+  <data name="SettingsRecognizeText" xml:space="preserve">
+    <value>Text erkennen (OCR)</value>
+  </data>
+  <data name="SettingsRecognizeTextHint" xml:space="preserve">
+    <value>Erkennt im Hintergrund den Text im Bereich (Windows-Texterkennung) und speichert ihn in der JSON – für die Suche in der History und das Werkzeug „Text auswählen“.</value>
   </data>
   <data name="SettingsFileLocation" xml:space="preserve">
     <value>Einstellungsdatei:</value>

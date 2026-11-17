@@ -65,7 +65,13 @@ Ein Screenshot-Tool für Windows als Ersatz für Greenshot. Kernidee:
    2026-11-09_14-32-05.png        ← Original, verlustfrei, wird nie überschrieben
    2026-11-09_14-32-05.json       ← Metadaten und Bearbeitungsstand (Abschnitt 4)
    2026-11-09_14-32-05.thumb.jpg  ← Vorschaubild für die History (max. 320 px breit)
+   2026-11-09_14-32-05.crop.png   ← Zuschnitt (ab 0.15, abschaltbar): Bereich mit Zeichnungen, ohne Bereich das ganze Bild
 ```
+
+- Zuschnitt (ab 0.15, Einstellung `saveCropImage`, Standard an): dasselbe Bild wie „Bereich → Zwischenablage“, bei der
+  Aufnahme im Hintergrund geschrieben und bei jedem Schließen des Editors (aus dem Render des Vorschaubilds) atomar
+  erneuert, damit andere Programme einen festen Pfad haben. Löschen, Aufräumen, Verwerfen und „Kopie anlegen“
+  behandeln ihn mit; History und Aufräumen zählen `*.crop.png` nicht als Aufnahme.
 
 - Standard-Ablageordner: **Bilder-Ordner des Benutzers** (Known Folder *Pictures*) `\ScreenKeeper`. Konfigurierbar.
 - Dateinamen-Muster konfigurierbar mit Platzhaltern `{yyyy} {MM} {dd} {HH} {mm} {ss}`; bei Namensgleichheit Suffix `_2`, `_3` …
@@ -109,6 +115,7 @@ Ein Screenshot-Tool für Windows als Ersatz für Greenshot. Kernidee:
 | Weichzeichnen | Rechteck, Stärke einstellbar |
 | Nummern-Stempel | fortlaufend 1, 2, 3 … (nächste = höchste + 1), Farbe, Größe; Nummer des ausgewählten Stempels mit „−“/„+“ bzw. Tasten -/+ ändern (1–999, Rückgängig-Schritt, Vorrang vor der Lupengröße) (ab 0.12) |
 | **Virtuelle Maus** | siehe unten |
+| Text auswählen (ab 0.15, Taste I) | Textcursor; markiert erkannten Text (OCR) wie in einem Dokument: Ziehen = Wörter in Lesereihenfolge vom Start- bis zum Endpunkt (zeilenübergreifend), Doppelklick = Wort, Strg+A = alles; Strg+C kopiert den markierten Text (Zeilen durch Zeilenumbruch), ohne Markierung wie bisher den Bereich als Bild; Esc hebt zuerst die Markierung auf. Reine Ansicht (kein Objekt, kein Export, kein Rückgängig-Schritt); ohne Erkennungsergebnis wirkungslos |
 
 - Farbe und Strichstärke über die Werkzeugleiste; zuletzt verwendete Werte werden gemerkt (beim Text auch
   Auto/feste Schriftgröße und Ausrichtung, auch wenn sie an einem vorhandenen Text geändert wurden).
@@ -142,6 +149,7 @@ Ein Screenshot-Tool für Windows als Ersatz für Greenshot. Kernidee:
 - Anzeige je Eintrag: Vorschaubild, Uhrzeit, Kennzeichen „bearbeitet“ (Bereich oder Zeichnungen vorhanden).
 - Aktionen: **Bearbeiten** (Doppelklick), erneut in Zwischenablage, im Explorer anzeigen, löschen (**in den Papierkorb**, alle zugehörigen Dateien), **Kommentar bearbeiten** (ab 0.9).
 - **Kommentar** (ab 0.9): freier, mehrzeiliger Text je Aufnahme, im Editor (Knopf in der Werkzeugleiste, ein Rückgängig-Schritt) und in der History bearbeitbar, in der History angezeigt und von der Textsuche erfasst.
+- **Texterkennung** (ab 0.15, Einstellung `recognizeText`, Standard an): Windows-OCR (`Windows.Media.Ocr`, `TryCreateFromUserProfileLanguages`) im Hintergrund auf den reinen Bildpixeln des Bereichs (ohne Bereich des ganzen Bildes; ohne Zeichnungen). Ausschnitte bis 2 Megapixel werden 2-fach vergrößert, Ausschnitte über `OcrEngine.MaxImageDimension` verkleinert; Rechtecke werden in Bildpixel des Originals zurückgerechnet. Im Editor (auch beim Öffnen einer vorhandenen Aufnahme immer neu) 0,5 s nach dem Erscheinen und nach jeder Bereichsänderung (verzögert), ein Ergebnis für einen inzwischen geänderten Bereich wird verworfen; das Ergebnis mit Lage der Wörter (für „Text auswählen“) bleibt im Arbeitsspeicher, in die JSON geht nur `ocrText`. Passt `ocrText` beim Schließen nicht zum Bereich, läuft die Erkennung im Hintergrund weiter und ihr Text wird danach in die JSON geschrieben, wenn der Bereich noch passt. „Nur speichern“ erkennt das ganze Bild. Nicht verfügbar oder Fehler: still ignoriert (nur Protokoll). Ein vorhandener `ocrText` darf nach einer Bereichsänderung nie veraltet stehen bleiben: dann wird auch bei ausgeschalteter Einstellung neu erkannt (im Editor bzw. per Übergabe beim Schließen; ausgeschaltet wird der alte Text schon vor dem Speichern entfernt), und schlägt das fehl, ist `ocrText` danach `null`. Ausgeschaltet und ohne `ocrText`: keine Erkennung. Die Textsuche der History erfasst `ocrText`.
 - **Bearbeiten öffnet denselben Editor** wie bei einer neuen Aufnahme, mit allen gespeicherten Daten:
   - Ist die aktuelle Monitor-Anordnung gleich der aufgenommenen → Vollbild 1:1 über die Monitore.
   - Sonst → maximiertes Fenster mit Zoom (Strg+Mausrad) und Verschieben (Leertaste+Ziehen bzw. mittlere Maustaste). Alle Funktionen gleich.
@@ -150,7 +158,7 @@ Ein Screenshot-Tool für Windows als Ersatz für Greenshot. Kernidee:
 
 ### 3.5 Einstellungen
 
-Ablageordner · Dateinamen-Muster · Exportordner · Hotkeys (mit Konfliktprüfung) · Lupe (Zoom, Größe, Tastenhilfe) · Standardfarben und Strichstärke · Mauszeiger standardmäßig sichtbar · Autostart mit Windows (`HKCU\...\Run`) · Aufbewahrungsdauer · Tray-Benachrichtigung bei „nur speichern“ ein/aus · Hotkeys in Remotedesktop-Sitzungen abfangen · verzögerte Aufnahme (Sekunden, jedes Mal fragen, danach Editor oder nur speichern).
+Ablageordner · Dateinamen-Muster · Exportordner · Hotkeys (mit Konfliktprüfung) · Lupe (Zoom, Größe, Tastenhilfe) · Standardfarben und Strichstärke · Mauszeiger standardmäßig sichtbar · Autostart mit Windows (`HKCU\...\Run`) · Aufbewahrungsdauer · Tray-Benachrichtigung bei „nur speichern“ ein/aus · Zuschnitt zusätzlich speichern (ab 0.15) · Texterkennung (ab 0.15) · Hotkeys in Remotedesktop-Sitzungen abfangen · verzögerte Aufnahme (Sekunden, jedes Mal fragen, danach Editor oder nur speichern).
 
 ---
 
@@ -187,6 +195,10 @@ Ablageordner · Dateinamen-Muster · Exportordner · Hotkeys (mit Konfliktprüfu
 - `monitors[].bounds` und `windows[].bounds` sind **ebenfalls in Bildpixeln** (umgerechnet über `virtualScreen`); `virtualScreen` hält die ursprünglichen Bildschirmkoordinaten fest.
 - `annotations` ist eine polymorphe Liste (`type`-Diskriminator) in Zeichenreihenfolge.
 - Optional (ab 0.9, `formatVersion` bleibt 1): `"comment": "…"` – Kommentar zur Aufnahme; fehlt das Feld oder ist es leer, gibt es keinen Kommentar (leer wird nicht geschrieben).
+- Texterkennung (ab 0.15, `formatVersion` bleibt 1): `ocrText` = erkannter Text des Bereichs (ohne Bereich des ganzen
+  Bildes), Zeilen durch `\n` (`null` = keine Erkennung, `""` = nichts gefunden). Die Lage der Zeilen und Wörter wird
+  **nicht** gespeichert (die JSON bliebe sonst nicht klein); sie existiert nur im Editor im Arbeitsspeicher, der beim
+  Öffnen neu erkennt. Ein Feld `ocr` (Vorabversionen von 0.15) wird beim Lesen ignoriert und nicht wieder geschrieben.
 - Im Ablageordner liegt eine automatisch gepflegte `AGENTS.md` (Inhalt im Programm eingebettet, mit Programmversion), die Ordnerstruktur, Dateinamen und dieses Format für KI-Agenten und Skripte beschreibt. Sie wird nur geschrieben, wenn sie fehlt oder abweicht; History, Aufräumen und Export ignorieren sie.
 
 ---
@@ -264,7 +276,7 @@ ScreenKeeper\
 
 | Ausbau | Beschreibung | Aufwand |
 |---|---|---|
-| OCR | „Text aus Bereich kopieren“ über `Windows.Media.Ocr` (offline, Deutsch/Englisch); Ergebnis in `ocrText`, durchsuchbar in der History | 1–2 Tage |
+| ~~OCR~~ | umgesetzt in 0.15 (Abschnitt 3.4, Werkzeug „Text auswählen“, Abschnitt 4) | – |
 | Fenster einrasten | Klick ohne Ziehen wählt das Fenster unter dem Cursor (Daten aus `windows`) | 1 Tag |
 | Gemischte Skalierung | Ein Editor-Fenster **pro Monitor** mit gemeinsamem Modell statt eines Fensters über alles | 2–3 Tage |
 | Englische Oberfläche | Zweite Ressourcendatei | ½ Tag |

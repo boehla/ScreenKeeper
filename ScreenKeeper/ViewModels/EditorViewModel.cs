@@ -48,6 +48,7 @@ public sealed partial class EditorViewModel : ViewModelBase {
         Measure = new AnnotationMeasure(document);
         selectedObject = new ObjectManipulator(this);
         initializeAnnotationTools();
+        initializeOcr();
 
         CopySelectionCommand = new RelayCommand(CopySelection, () => HasSelection);
         SaveSelectionCommand = new RelayCommand(SaveSelection, () => HasSelection);

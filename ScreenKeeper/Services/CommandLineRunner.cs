@@ -72,6 +72,16 @@ public sealed class CommandLineRunner {
         if(hasFlag(args, "--test-capture-timing")) return await runCaptureTiming();
         (CaptureResult result, SavedCapture saved) = AppServices.Workflow.CaptureAndSave();
         await Task.WhenAll(saved.PngTask, saved.ThumbnailTask);
+        try {
+            await saved.CropTask;
+        } catch(Exception ex) {
+            // nur protokolliert (siehe StorageService); die Aufnahme selbst ist gespeichert
+            Log.Warn($"Zuschnitt nicht geschrieben: {ex.Message}");
+        }
+        if(noEditor) {
+            // wie „nur speichern“ im Tray-Betrieb: Texterkennung des ganzen Bildes, hier abgewartet
+            await AppServices.Workflow.RecognizeAndStore(saved.Files.JsonPath, result.Bitmap, StorageService.GetCropRegion(result.Document, result.Bitmap.PixelWidth, result.Bitmap.PixelHeight));
+        }
         Console.Out.WriteLine(saved.Files.PngPath);
         Console.Out.WriteLine(saved.Files.JsonPath);
         Console.Out.WriteLine(saved.Files.ThumbPath);
@@ -229,7 +239,7 @@ public sealed class CommandLineRunner {
         if(daysText != null && !int.TryParse(daysText, NumberStyles.Integer, CultureInfo.InvariantCulture, out days)) throw new ArgumentException(Strings.Format(Strings.CliMissingArgument, "--days"));
         RetentionService retention = new RetentionService(AppServices.Storage, AppServices.Settings);
         RetentionResult result = await StaTask.Run(() => retention.Run(DateTime.Now, days, dryRun));
-        int left = result.Expired.Count(e => File.Exists(e.Files.PngPath) || File.Exists(e.Files.JsonPath) || File.Exists(e.Files.ThumbPath));
+        int left = result.Expired.Count(e => e.Files.AllPaths.Any(File.Exists));
         Console.Out.WriteLine($"days={result.Days} cutoff={result.Cutoff:yyyy-MM-dd HH:mm} expired={result.Expired.Count} keptPermanent={result.Kept} dryRun={result.DryRun} filesLeft={left}");
         Console.Out.Flush();
         return 0;

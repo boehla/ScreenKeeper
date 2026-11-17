@@ -14,12 +14,27 @@ using ScreenKeeper.Services.Native;
 namespace ScreenKeeper.Services;
 
 /// <summary>
-/// Die drei Dateien einer Aufnahme: Original-PNG, JSON und Vorschaubild.
+/// Die Dateien einer Aufnahme: Original-PNG, JSON, Vorschaubild und (ab 0.15, wenn eingeschaltet) der Zuschnitt
+/// <see cref="CropPath"/>.
 /// </summary>
 public sealed record CaptureFiles(string PngPath, string JsonPath, string ThumbPath) {
     public const string PngExtension = ".png";
     public const string JsonExtension = ".json";
     public const string ThumbExtension = ".thumb.jpg";
+
+    /// <summary>Endung des Zuschnitts (Bereich mit Zeichnungen) neben dem Original, z. B. <c>2026-11-09_14-32-05.crop.png</c>.</summary>
+    public const string CropExtension = ".crop.png";
+
+    /// <summary>Zuschnitt: gleicher Ordner und Basisname wie die JSON-Datei, Endung <see cref="CropExtension"/>.</summary>
+    public string CropPath => stripExtension(JsonPath, JsonExtension) + CropExtension;
+
+    /// <summary>Alle Dateien der Aufnahme (Original, JSON, Vorschaubild, Zuschnitt), ob vorhanden oder nicht.</summary>
+    public IEnumerable<string> AllPaths => new[] { PngPath, JsonPath, ThumbPath, CropPath };
+
+    /// <summary>Ist die Datei ein Zuschnitt (<c>*.crop.png</c>) und damit keine eigene Aufnahme?</summary>
+    public static bool IsCropFile(string path) {
+        return path.EndsWith(CropExtension, StringComparison.OrdinalIgnoreCase);
+    }
 
     public static CaptureFiles FromBase(string folder, string baseName) {
         string basePath = Path.Combine(folder, baseName);
@@ -36,10 +51,10 @@ public sealed record CaptureFiles(string PngPath, string JsonPath, string ThumbP
         return new CaptureFiles(basePath + PngExtension, jsonPath, basePath + ThumbExtension);
     }
 
-    /// <summary>Dateiname ohne <c>.png</c>, <c>.json</c> bzw. <c>.thumb.jpg</c>.</summary>
+    /// <summary>Dateiname ohne <c>.png</c>, <c>.json</c>, <c>.thumb.jpg</c> bzw. <c>.crop.png</c>.</summary>
     public static string GetBaseName(string path) {
         string name = Path.GetFileName(path);
-        foreach(string extension in new[] { ThumbExtension, PngExtension, JsonExtension }) {
+        foreach(string extension in new[] { ThumbExtension, CropExtension, PngExtension, JsonExtension }) {
             if(name.EndsWith(extension, StringComparison.OrdinalIgnoreCase)) return name.Substring(0, name.Length - extension.Length);
         }
         return name;
@@ -54,7 +69,10 @@ public sealed record CaptureFiles(string PngPath, string JsonPath, string ThumbP
 /// Ergebnis von <see cref="IStorageService.SaveNewCapture"/>: Die JSON-Datei ist bereits geschrieben, das PNG
 /// (<see cref="PngTask"/>) und das Vorschaubild (<see cref="ThumbnailTask"/>) werden im Hintergrund geschrieben.
 /// </summary>
-public sealed record SavedCapture(CaptureFiles Files, Task PngTask, Task ThumbnailTask);
+public sealed record SavedCapture(CaptureFiles Files, Task PngTask, Task ThumbnailTask) {
+    /// <summary>Schreiben des Zuschnitts (<see cref="CaptureFiles.CropPath"/>); erledigt, wenn ausgeschaltet.</summary>
+    public Task CropTask { get; init; } = Task.CompletedTask;
+}
 
 /// <summary>
 /// Eintrag für die History. <see cref="Time"/> ist die lokale Aufnahmezeit (aus dem Dateinamen, sonst das Änderungsdatum
@@ -91,7 +109,18 @@ public interface IStorageService {
 
     void SaveDocument(CaptureDocument document, string jsonPath);
 
+    /// <summary>
+    /// Vorschaubild neu erzeugen und – wenn eingeschaltet – den Zuschnitt (<see cref="CaptureFiles.CropPath"/>) aus
+    /// demselben gerenderten Bild im Hintergrund neu schreiben.
+    /// </summary>
     void UpdateThumbnail(CaptureDocument document, BitmapSource original, string jsonPath);
+
+    /// <summary>
+    /// Zuschnitt (Bereich mit Zeichnungen, ohne Bereich das ganze Bild) im Hintergrund rendern und atomar schreiben, wenn
+    /// <see cref="AppSettings.SaveCropImage"/> an ist (sonst sofort erledigt). Das Dokument wird beim Aufruf kopiert.
+    /// Fehler stehen nur im Protokoll.
+    /// </summary>
+    Task WriteCropInBackground(CaptureDocument document, BitmapSource original, string jsonPath);
 
     CaptureDocument LoadDocument(string jsonPath);
 
@@ -147,6 +176,15 @@ public interface IStorageService {
     /// </summary>
     void EnsureAgentsFile();
 
+    /// <summary>
+    /// Text der Texterkennung in die JSON schreiben (nur <c>ocrText</c>, keine Lage), aber nur, wenn der Ausschnitt der
+    /// Aufnahme (Bereich bzw. ganzes Bild) noch <see cref="RecognizedText.Region"/> entspricht. True, wenn gespeichert.
+    /// </summary>
+    bool SetRecognizedText(string jsonPath, RecognizedText text, int imageWidth, int imageHeight);
+
+    /// <summary>Wartet (höchstens <paramref name="timeout"/>) auf laufende Hintergrund-Schreibvorgänge (z. B. Zuschnitte).</summary>
+    void WaitForBackgroundWrites(TimeSpan timeout);
+
     void DeleteToRecycleBin(CaptureFiles files);
 
     /// <summary>Verschiebt alle Dateien mehrerer Aufnahmen in einem Vorgang in den Papierkorb.</summary>
@@ -168,6 +206,7 @@ public sealed class StorageService : IStorageService {
     // Gelesene Kennzeichen je JSON-Datei mit deren Änderungszeit (UTC), damit Filter und History sie nicht erneut lesen
     private readonly ConcurrentDictionary<string, (DateTime Stamp, CaptureMetadata Metadata)> metadataCache = new ConcurrentDictionary<string, (DateTime Stamp, CaptureMetadata Metadata)>(StringComparer.OrdinalIgnoreCase);
     private readonly object agentsSync = new object();
+    private readonly object chainSync = new object();
     // Ablageordner, für den die AGENTS.md in diesem Programmlauf schon geprüft wurde
     private string? agentsCheckedRoot;
 
@@ -216,7 +255,9 @@ public sealed class StorageService : IStorageService {
         SaveDocument(document, files.JsonPath);
         Task thumbnailTask = startWrite(files.ThumbPath, () => WriteThumbnail(original, files.ThumbPath));
         Task pngTask = startWrite(files.PngPath, () => ImageFiles.WritePng(original, files.PngPath));
-        return new SavedCapture(files, pngTask, thumbnailTask);
+        // Zuschnitt sofort, damit andere Programme einen festen Pfad haben (ohne Bereich: ganzes Bild mit Zeichnungen)
+        Task cropTask = WriteCropInBackground(document, original, files.JsonPath);
+        return new SavedCapture(files, pngTask, thumbnailTask) { CropTask = cropTask };
     }
 
     public void SaveDocument(CaptureDocument document, string jsonPath) {
@@ -226,15 +267,41 @@ public sealed class StorageService : IStorageService {
     }
 
     /// <summary>
-    /// Vorschaubild neu erzeugen: gewählter Bereich mit Zeichnungen, ohne Bereich das ganze Bild.
+    /// Vorschaubild neu erzeugen: gewählter Bereich mit Zeichnungen, ohne Bereich das ganze Bild. Ist der Zuschnitt
+    /// eingeschaltet, wird dasselbe Bild im Hintergrund als <see cref="CaptureFiles.CropPath"/> geschrieben.
     /// </summary>
     public void UpdateThumbnail(CaptureDocument document, BitmapSource original, string jsonPath) {
-        PixelRect region = document.Selection ?? new PixelRect(0, 0, original.PixelWidth, original.PixelHeight);
+        PixelRect region = GetCropRegion(document, original.PixelWidth, original.PixelHeight);
         BitmapSource rendered = render.Render(document, original, region);
-        string thumbPath = CaptureFiles.FromJson(jsonPath).ThumbPath;
+        CaptureFiles files = CaptureFiles.FromJson(jsonPath);
+        if(settings.Settings.SaveCropImage) startChainedWrite(files.CropPath, () => Task.Run(() => ImageFiles.WritePng(rendered, files.CropPath)));
         // Das erste Vorschaubild einer neuen Aufnahme darf das aktuelle nicht überholen
-        waitForPendingWrite(thumbPath);
-        WriteThumbnail(rendered, thumbPath);
+        waitForPendingWrite(files.ThumbPath);
+        WriteThumbnail(rendered, files.ThumbPath);
+    }
+
+    public Task WriteCropInBackground(CaptureDocument document, BitmapSource original, string jsonPath) {
+        if(!settings.Settings.SaveCropImage) return Task.CompletedTask;
+        string cropPath = CaptureFiles.FromJson(jsonPath).CropPath;
+        // Kopie des Stands: der Editor ändert das Dokument weiter, während im Hintergrund gerendert wird
+        string snapshot = CaptureDocumentSerializer.Serialize(document);
+        return startChainedWrite(cropPath, () => StaTask.Run(() => {
+            CaptureDocument copy = CaptureDocumentSerializer.Deserialize(snapshot);
+            // eigener Renderer: der gemeinsame hält Zwischenspeicher für den UI-Thread
+            BitmapSource image = new RenderService().Render(copy, original, GetCropRegion(copy, original.PixelWidth, original.PixelHeight));
+            ImageFiles.WritePng(image, cropPath);
+        }));
+    }
+
+    /// <summary>
+    /// Bildausschnitt des Zuschnitts (und der Texterkennung): der Bereich, auf das Bild begrenzt; ohne Bereich (oder
+    /// wenn er außerhalb liegt) das ganze Bild.
+    /// </summary>
+    public static PixelRect GetCropRegion(CaptureDocument document, int imageWidth, int imageHeight) {
+        PixelRect image = new PixelRect(0, 0, imageWidth, imageHeight);
+        if(!document.Selection.HasValue) return image;
+        PixelRect clipped = document.Selection.Value.Intersect(image);
+        return clipped.IsEmpty ? image : clipped;
     }
 
     public CaptureDocument LoadDocument(string jsonPath) {
@@ -295,6 +362,8 @@ public sealed class StorageService : IStorageService {
         List<FileInfo> pngs = new List<FileInfo>();
         foreach(FileInfo file in new DirectoryInfo(folder).EnumerateFiles()) {
             names.Add(file.Name);
+            // der Zuschnitt (*.crop.png) gehört zur Aufnahme daneben und ist keine eigene
+            if(CaptureFiles.IsCropFile(file.Name)) continue;
             if(file.Name.EndsWith(CaptureFiles.PngExtension, StringComparison.OrdinalIgnoreCase)) {
                 pngs.Add(file);
             } else if(file.Name.EndsWith(CaptureFiles.JsonExtension, StringComparison.OrdinalIgnoreCase)) {
@@ -367,7 +436,7 @@ public sealed class StorageService : IStorageService {
     public CaptureFiles DuplicateCapture(string pngOrJsonPath) {
         CaptureFiles source = filesFor(pngOrJsonPath);
         // Ein laufendes Hintergrund-Schreiben (neue Aufnahme) zuerst abschließen, sonst würde eine halbe Datei kopiert
-        foreach(string path in new[] { source.PngPath, source.JsonPath, source.ThumbPath }) waitForPendingWrite(path);
+        foreach(string path in source.AllPaths) waitForPendingWrite(path);
         string pattern = settings.Settings.FileNamePattern;
         CaptureDocument document;
         string pngPath = source.PngPath;
@@ -392,6 +461,11 @@ public sealed class StorageService : IStorageService {
                 File.Copy(source.ThumbPath, copy.ThumbPath, false);
                 created.Add(copy.ThumbPath);
             }
+            // Zuschnitt mitkopieren (gleicher Bereich, gleiche Zeichnungen); fehlt er, entsteht er unten neu
+            if(File.Exists(source.CropPath)) {
+                File.Copy(source.CropPath, copy.CropPath, false);
+                created.Add(copy.CropPath);
+            }
             SaveDocument(document, copy.JsonPath);
             created.Add(copy.JsonPath);
         } catch(Exception ex) {
@@ -405,6 +479,13 @@ public sealed class StorageService : IStorageService {
                 EnsureThumbnail(copy);
             } catch(Exception ex) {
                 Log.Error(ex, $"Vorschaubild für {copy.PngPath} konnte nicht erzeugt werden");
+            }
+        }
+        if(!File.Exists(copy.CropPath) && settings.Settings.SaveCropImage) {
+            try {
+                WriteCropInBackground(document, ImageFiles.LoadBgra32(copy.PngPath), copy.JsonPath);
+            } catch(Exception ex) {
+                Log.Error(ex, $"Zuschnitt für {copy.PngPath} konnte nicht erzeugt werden");
             }
         }
         Log.Info($"Kopie angelegt: {source.JsonPath} → {copy.JsonPath} ({document.Annotations.Count} Zeichenobjekt(e))");
@@ -463,6 +544,32 @@ public sealed class StorageService : IStorageService {
         }
         Log.Info($"Aufnahme {opened.JsonPath}: Kommentar {(normalized == null ? "entfernt" : $"gesetzt ({normalized.Length} Zeichen)")}");
         return opened.Document;
+    }
+
+    public bool SetRecognizedText(string jsonPath, RecognizedText text, int imageWidth, int imageHeight) {
+        string fullPath = Path.GetFullPath(jsonPath);
+        // verworfen oder gelöscht: nichts neu anlegen
+        if(!File.Exists(fullPath)) return false;
+        CaptureDocument document = LoadDocument(fullPath);
+        if(GetCropRegion(document, imageWidth, imageHeight) != text.Region) {
+            Log.Info($"Texterkennung für {fullPath} verworfen: Bereich wurde inzwischen geändert");
+            return false;
+        }
+        // nur der Text; die Lage der Wörter gilt nur im Editor (Speicher)
+        document.OcrText = text.GetText();
+        SaveDocument(document, fullPath);
+        Log.Info($"Texterkennung gespeichert: {fullPath} ({text.Lines.Count} Zeile(n))");
+        return true;
+    }
+
+    public void WaitForBackgroundWrites(TimeSpan timeout) {
+        Task[] tasks = pendingWrites.Values.ToArray();
+        if(tasks.Length == 0) return;
+        try {
+            if(!Task.WaitAll(tasks, timeout)) Log.Warn("Nicht alle Hintergrund-Schreibvorgänge wurden rechtzeitig fertig.");
+        } catch(AggregateException ex) {
+            Log.Warn($"Hintergrund-Schreiben fehlgeschlagen: {ex.GetBaseException().Message}");
+        }
     }
 
     public void EnsureAgentsFile() {
@@ -536,12 +643,13 @@ public sealed class StorageService : IStorageService {
     }
 
     /// <summary>
-    /// Verschiebt alle vorhandenen Dateien der Aufnahmen (PNG, JSON, Vorschaubild) in einem Vorgang in den Papierkorb.
+    /// Verschiebt alle vorhandenen Dateien der Aufnahmen (PNG, JSON, Vorschaubild, Zuschnitt) in einem Vorgang in den
+    /// Papierkorb.
     /// </summary>
     public void DeleteToRecycleBin(IEnumerable<CaptureFiles> captures) {
         List<string> existing = new List<string>();
         foreach(CaptureFiles files in captures) {
-            foreach(string path in new[] { files.PngPath, files.JsonPath, files.ThumbPath }) {
+            foreach(string path in files.AllPaths) {
                 // sonst entstünde die Datei nach dem Löschen neu bzw. die .tmp-Datei bliebe liegen
                 waitForPendingWrite(path);
                 if(File.Exists(path)) existing.Add(Path.GetFullPath(path));
@@ -618,6 +726,24 @@ public sealed class StorageService : IStorageService {
     }
 
     /// <summary>
+    /// Hintergrund-Schreiben, das erst nach einem laufenden Schreiben derselben Datei beginnt (der Zuschnitt kann kurz
+    /// nacheinander mehrfach geschrieben werden; der letzte Stand gewinnt). Fehler werden protokolliert.
+    /// </summary>
+    private Task startChainedWrite(string path, Func<Task> write) {
+        string key = Path.GetFullPath(path);
+        lock(chainSync) {
+            Task previous = pendingWrites.TryGetValue(key, out Task? running) ? running : Task.CompletedTask;
+            Task task = previous.ContinueWith(_ => write(), CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap();
+            pendingWrites[key] = task;
+            task.ContinueWith(done => {
+                pendingWrites.TryRemove(new KeyValuePair<string, Task>(key, done));
+                if(done.Exception != null) Log.Error(done.Exception.GetBaseException(), $"Zuschnitt {path} konnte nicht geschrieben werden");
+            }, TaskScheduler.Default);
+            return task;
+        }
+    }
+
+    /// <summary>
     /// Wartet auf ein laufendes Hintergrund-Schreiben der Datei. Dessen Fehler meldet der Aufrufer von
     /// <see cref="SaveNewCapture"/>; hier wird er nur protokolliert.
     /// </summary>
@@ -645,7 +771,7 @@ public sealed class StorageService : IStorageService {
 
     private static bool isTaken(string folder, string baseName) {
         CaptureFiles files = CaptureFiles.FromBase(folder, baseName);
-        return File.Exists(files.PngPath) || File.Exists(files.JsonPath) || File.Exists(files.ThumbPath) || File.Exists(files.PngPath + ".tmp");
+        return File.Exists(files.PngPath) || File.Exists(files.JsonPath) || File.Exists(files.ThumbPath) || File.Exists(files.CropPath) || File.Exists(files.PngPath + ".tmp");
     }
 
     private static IEnumerable<string> getNumericFolders(string parent, int digits) {

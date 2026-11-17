@@ -144,7 +144,7 @@ public partial class HistoryWindow {
                 return 1;
             }
         }
-        int left = new[] { files.PngPath, files.JsonPath, files.ThumbPath }.Count(File.Exists);
+        int left = files.AllPaths.Count(File.Exists);
         Console.Out.WriteLine($"deleted={name} before={before} remaining={viewModel.ItemCount} filesLeft={left}");
         Console.Out.Flush();
         return left == 0 ? 0 : 1;
@@ -170,7 +170,8 @@ public partial class HistoryWindow {
             Console.Error.WriteLine("Kopie wurde nicht angelegt");
             return 1;
         }
-        List<string> created = Directory.GetFiles(folder).Where(f => !before.Contains(f)).ToList();
+        // der Zuschnitt (*.crop.png) wird kopiert bzw. im Hintergrund neu geschrieben und zählt hier nicht mit
+        List<string> created = Directory.GetFiles(folder).Where(f => !before.Contains(f) && !CaptureFiles.IsCropFile(f)).ToList();
         CaptureDocument copied = CaptureDocumentSerializer.Load(copy.Files.JsonPath);
         List<string> copyIds = copied.Annotations.Select(a => a.Id).ToList();
         bool newIds = copyIds.Count == originalIds.Count && !copyIds.Intersect(originalIds).Any() && copyIds.Distinct().Count() == copyIds.Count;

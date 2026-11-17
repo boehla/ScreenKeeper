@@ -759,6 +759,7 @@ public sealed partial class EditorViewModel {
         Tools.Add(new ToolItem(new BlurTool(this)));
         Tools.Add(new ToolItem(new NumberStampTool(this)));
         Tools.Add(new ToolItem(new CursorTool(this)));
+        Tools.Add(new ToolItem(new TextSelectTool(this)));
     }
 
     /// <summary>Ist gerade „Auswahl“ oder „Bereich“ aktiv? (Dann hebt Esc zuerst die Objektauswahl auf.)</summary>

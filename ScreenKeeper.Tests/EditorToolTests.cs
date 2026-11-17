@@ -68,15 +68,15 @@ public class EditorToolTests {
     public void AllTools_AreRegistered_WithShortcuts() {
         Sta.Run(() => {
             EditorViewModel vm = create();
-            Assert.Equal(13, vm.Tools.Count);
+            Assert.Equal(14, vm.Tools.Count);
             Assert.Same(vm.SelectionTool, vm.Tools[0].Tool);
-            foreach(Key key in new[] { Key.S, Key.R, Key.E, Key.L, Key.A, Key.F, Key.T, Key.H, Key.P, Key.B, Key.N, Key.M }) {
+            foreach(Key key in new[] { Key.S, Key.R, Key.E, Key.L, Key.A, Key.F, Key.T, Key.H, Key.P, Key.B, Key.N, Key.M, Key.I }) {
                 string? toolKey = ToolShortcuts.GetToolKey(key);
                 Assert.NotNull(toolKey);
                 Assert.NotNull(vm.FindTool(toolKey!));
             }
             Assert.Null(ToolShortcuts.GetToolKey(Key.Z));
-            Assert.Equal(12, vm.Tools.Select(t => t.Tool.Key).Count(k => k != SelectionTool.ToolKey));
+            Assert.Equal(13, vm.Tools.Select(t => t.Tool.Key).Distinct().Count(k => k != SelectionTool.ToolKey));
         });
     }
 

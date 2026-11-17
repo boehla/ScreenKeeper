@@ -79,13 +79,13 @@ das Fenster nur; ScreenKeeper läuft im Infobereich weiter.
 | Permanent | P, Stern in der Zeile, Knopf oder Kontextmenü – umschalten; permanente Aufnahmen löscht das Aufräumen nie |
 | Kommentar bearbeiten | K, Knopf oder Kontextmenü – derselbe Dialog wie im Editor; wird sofort in der JSON gespeichert |
 | Im Explorer anzeigen | Knopf oder Kontextmenü |
-| Löschen | Entf (mit Rückfrage, Mehrfachauswahl möglich) – Bild, JSON und Vorschaubild kommen in den Papierkorb |
+| Löschen | Entf (mit Rückfrage, Mehrfachauswahl möglich) – Bild, JSON, Vorschaubild und Zuschnitt kommen in den Papierkorb |
 | Aktualisieren | F5 |
 | Ordner öffnen | öffnet den Ablageordner |
 
 - **Filter:** Von/Bis-Datum, Schnellwahl *Heute*, *7 Tage*, *30 Tage*, *Alle*, zusätzlich der Schalter *Permanent*
   (nur permanente Aufnahmen) und die Suche – sie findet Text im Dateinamen, im Programmnamen und im Fenstertitel des
-  Vordergrundprogramms sowie im **Kommentar**. Dafür werden die JSON-Dateien im Hintergrund einmal gelesen und danach
+  Vordergrundprogramms sowie im **Kommentar** und im **erkannten Text** (OCR, ab 0.15). Dafür werden die JSON-Dateien im Hintergrund einmal gelesen und danach
   im Speicher gehalten.
 - **Kommentar:** Hat eine Aufnahme einen Kommentar, steht er (einzeilig gekürzt, kursiv, mit Sprechblase) unter dem
   Programm im Vordergrund; der Tooltip zeigt ihn vollständig.
@@ -103,6 +103,7 @@ Tray-Menü → *Einstellungen*. Alle Änderungen wirken sofort nach **OK** bzw. 
 
 - **Allgemein:** Ablageordner (leer = `Bilder\ScreenKeeper`), Dateinamen-Muster mit den Platzhaltern
   `{yyyy} {MM} {dd} {HH} {mm} {ss}` und Vorschau, Exportordner (leer = `<Ablageordner>\Export`),
+  *Zuschnitt zusätzlich als Bild speichern* und *Text erkennen (OCR)* (beide Standard an, siehe unten),
   Aufbewahrung, Autostart, Benachrichtigung bei „nur speichern“, Updates.
 - **Hotkeys:** Feld anklicken und die Tastenkombination drücken (Esc bricht ab, Entf schaltet den Hotkey aus).
   Beim Speichern wird geprüft, ob zwei Hotkeys gleich sind (Fehler) und ob ein anderes Programm die Kombination belegt
@@ -125,7 +126,7 @@ Installer, die Aufgabe ohne Adminrechte zu entfernen; gelingt das nicht, bitte i
 
 **Aufbewahrung (Aufräumen):** „Aufnahmen nach X Tagen in den Papierkorb verschieben, außer permanente“. ScreenKeeper
 verschiebt Aufnahmen, die älter als so viele Tage sind, beim Start und danach einmal täglich in den Papierkorb (Bild,
-JSON und Vorschaubild) und schreibt die Anzahl ins Protokoll. **Permanent** markierte Aufnahmen bleiben immer erhalten,
+JSON, Vorschaubild und Zuschnitt) und schreibt die Anzahl ins Protokoll. **Permanent** markierte Aufnahmen bleiben immer erhalten,
 ebenso Aufnahmen, deren JSON nicht lesbar ist; Aufnahmen ganz ohne JSON zählen als nicht permanent. Standard sind
 30 Tage, 0 schaltet das Aufräumen aus. Eine vorhandene Einstellungsdatei ohne diesen Wert bekommt den Standard; wer
 bisher ausdrücklich 0 eingestellt hatte, behält 0.
@@ -186,6 +187,7 @@ die Maus über der Leiste ist, bleibt sie stehen. Alle Zeichnungen bleiben einze
 | Weichzeichnen | B | Rechteck aufziehen; Stärke |
 | Nummern-Stempel | N | klicken: 1, 2, 3 … (nächste Nummer = höchste + 1); Farbe, Größe; ausgewählter Stempel: Nummer mit „−“/„+“ bzw. Tasten **-**/**+** ändern (1–999) |
 | Virtuelle Maus | M | klicken setzt einen Mauszeiger; Zeigerart wählbar |
+| Text auswählen | I | erkannten Text (OCR) markieren: ziehen (auch über Zeilen), Doppelklick = Wort, Strg+A = alles; **Strg+C** kopiert den markierten Text (Editor bleibt offen), ohne Markierung wie sonst das Bild; Esc hebt die Markierung auf. Nur Ansicht – kein Objekt, nicht im Export |
 
 - **Linienenden (Anfang, Ende):** Linie, Pfeil und Freihand können an jedem Ende ein Symbol tragen: ohne, Pfeil,
   Punkt, Quadrat oder Dreieck – gefüllt in der Strichfarbe, Größe passend zur Strichstärke, ausgerichtet an der
@@ -230,7 +232,7 @@ die Maus über der Leiste ist, bleibt sie stehen. Alle Zeichnungen bleiben einze
 | Permanent (Stern) | – | Umschalter, aktiv = blau; wird beim Schließen mitgespeichert |
 | Kommentar (Sprechblase) | – | öffnet einen kleinen Dialog für freien, mehrzeiligen Text (Strg+Enter übernimmt, Esc bricht ab, leer = entfernen); blau hinterlegt, wenn ein Kommentar vorhanden ist, der Tooltip zeigt ihn. Ein Rückgängig-Schritt; gespeichert wird mit dem Dokument |
 | Rückgängig / Wiederholen | Strg+Z / Strg+Y | Bereich, Zeichnungen und Maus |
-| Aufnahme verwerfen (roter Mülleimer mit X) | – | schließt den Editor und speichert nichts: PNG, JSON und Vorschaubild kommen ohne Rückfrage in den Papierkorb, die Aufnahme verschwindet aus der History |
+| Aufnahme verwerfen (roter Mülleimer mit X) | – | schließt den Editor und speichert nichts: PNG, JSON, Vorschaubild und Zuschnitt kommen ohne Rückfrage in den Papierkorb, die Aufnahme verschwindet aus der History |
 | Abbrechen | Esc | kein Export (bricht zuerst ein laufendes Aufziehen ab) |
 
 Ohne Bereich sind die Bereich-Knöpfe deaktiviert. Die Zwischenablage erhält das Bild als Bitmap und als PNG.
@@ -254,7 +256,18 @@ Start- bzw. Endpunkt.
    2026-11-09_14-32-05.png        Original, verlustfrei, wird nie überschrieben
    2026-11-09_14-32-05.json       Metadaten und Bearbeitungsstand
    2026-11-09_14-32-05.thumb.jpg  Vorschaubild (max. 320 px breit)
+   2026-11-09_14-32-05.crop.png   Zuschnitt: Bereich mit Zeichnungen (ohne Bereich das ganze Bild)
 ```
+
+**Zuschnitt** (ab 0.15, abschaltbar): `<Name>.crop.png` ist genau das Bild, das „Bereich → Zwischenablage“ liefern
+würde. Er entsteht bei der Aufnahme und wird bei jedem Schließen des Editors neu geschrieben – ein fester Pfad für
+andere Programme. Löschen, Aufräumen, Verwerfen und „Kopie anlegen“ behandeln ihn mit; in der History erscheint er
+nicht als eigene Aufnahme.
+
+**Texterkennung** (ab 0.15, abschaltbar): Im Hintergrund erkennt die Windows-Texterkennung (offline, Sprachen des
+Benutzerprofils) den Text im Bereich (ohne Bereich im ganzen Bild, ohne Zeichnungen). Das Ergebnis steht in der JSON
+nur als Text in `ocrText` (Zeilen durch `\n`) und ist in der History durchsuchbar. Die Lage der Wörter für „Text
+auswählen“ hält nur der Editor im Speicher; er erkennt beim Öffnen und nach jeder Bereichsänderung neu. Ist keine Erkennungssprache installiert, passiert still nichts (Hinweis nur im Protokoll).
 
 Die JSON enthält seit 0.7 zusätzlich `foreground` (`title`, `process` des Programms im Vordergrund, fehlt bei älteren
 Aufnahmen), beim passenden Fenster in `windows` `"foreground": true` und bei permanenten Aufnahmen `"permanent": true`.

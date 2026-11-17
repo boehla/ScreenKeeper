@@ -141,6 +141,11 @@
                             <Run Text="{loc:Str SettingsResolvedFolder}" /> <Run Text="{Binding ResolvedExportFolder, Mode=OneWay}" />
                         </TextBlock>
 
+                        <CheckBox Margin="0,8,0,0" Content="{loc:Str SettingsSaveCropImage}" IsChecked="{Binding SaveCropImage}" />
+                        <TextBlock Style="{StaticResource Info}" Margin="20,0,0,4" Text="{loc:Str SettingsSaveCropImageHint}" />
+                        <CheckBox Content="{loc:Str SettingsRecognizeText}" IsChecked="{Binding RecognizeText}" />
+                        <TextBlock Style="{StaticResource Info}" Margin="20,0,0,4" Text="{loc:Str SettingsRecognizeTextHint}" />
+
                         <TextBlock Style="{StaticResource Section}" Text="{loc:Str SettingsRetention}" />
                         <WrapPanel>
                             <TextBlock Margin="0,0,8,0" VerticalAlignment="Center" Text="{loc:Str SettingsRetentionPrefix}" />

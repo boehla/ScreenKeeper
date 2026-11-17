@@ -1,5 +1,38 @@
 ﻿# Changelog
 
+## 0.15.0
+
+- **Zuschnitt zusätzlich als Bild:** Neben dem Original liegt jetzt `<Name>.crop.png` – genau das Bild, das
+  „Bereich → Zwischenablage“ liefern würde (Bereich mit Zeichnungen und virtueller Maus; ohne Bereich das ganze Bild).
+  So hat ein anderes Programm einen festen Pfad zum fertigen Ausschnitt. Er entsteht gleich bei der Aufnahme (im
+  Hintergrund, der Editor erscheint so schnell wie bisher) und wird bei jedem Schließen des Editors aus demselben
+  gerenderten Bild wie das Vorschaubild neu geschrieben (atomar, kurz nacheinander folgende Stände der Reihe nach).
+  Löschen, Aufräumen, „Aufnahme verwerfen“ und „Kopie anlegen“ behandeln ihn mit; die History zeigt ihn nicht als
+  eigene Aufnahme. Einstellungen → Ablage: „Zuschnitt zusätzlich als Bild speichern“ (`saveCropImage`, Standard **an**,
+  auch für vorhandene Einstellungsdateien).
+- **Texterkennung (OCR):** Der Text im Bereich (ohne Bereich im ganzen Bild) wird mit der Windows-Texterkennung
+  (offline, Sprachen des Benutzerprofils) im Hintergrund erkannt – auf den reinen Bildpixeln, ohne Zeichnungen, kleine
+  Ausschnitte zweifach vergrößert. In die JSON kommt nur der Text: `ocrText` (Zeilen durch `\n`; `""` = nichts
+  gefunden). Die Lage der Zeilen und Wörter (für „Text auswählen“) hält nur der Editor im Arbeitsspeicher – so bleibt
+  die JSON klein. Im Editor startet die Erkennung 0,5 s nach dem Erscheinen (auch beim Öffnen aus der History immer
+  neu) und nach jeder Bereichsänderung; passt `ocrText` beim Schließen nicht zum Bereich, läuft die Erkennung im
+  Hintergrund weiter und ihr Text wird danach in die JSON geschrieben (nur, wenn der Bereich noch passt). „Nur
+  speichern“ erkennt das ganze Bild. Fehlt die Windows-Erkennung oder schlägt sie fehl, passiert still nichts (nur ein
+  Protokolleintrag). Einstellung „Text erkennen (OCR)“ (`recognizeText`, Standard an). Ein vorhandener `ocrText`
+  bleibt nach einer Bereichsänderung nie veraltet stehen: auch bei ausgeschalteter Erkennung wird dann neu erkannt;
+  schlägt das fehl, wird `ocrText` auf `null` gesetzt (ohne vorhandenen Text und ausgeschaltet: keine Erkennung).
+  Ältere JSON-Dateien bleiben
+  lesbar; ein `ocr`-Objekt aus Vorabständen dieser Version wird beim Lesen ignoriert und nicht wieder geschrieben.
+- **Suche im erkannten Text:** Die Textsuche der History findet auch Wörter aus `ocrText` (Zeilenumbrüche zählen wie
+  Leerzeichen).
+- **Werkzeug „Text auswählen“ (I):** Mit dem Textcursor erkannten Text wie in einem Dokument markieren: Ziehen markiert
+  die Wörter vom Start- bis zum Endpunkt in Lesereihenfolge (auch über mehrere Zeilen), Doppelklick ein Wort, Strg+A
+  alles; markierter Text ist halbtransparent blau hinterlegt. **Strg+C** kopiert den markierten Text (Zeilen durch
+  Zeilenumbruch getrennt) und lässt den Editor offen; ohne Markierung kopiert Strg+C wie bisher den Bereich als Bild.
+  Esc hebt zuerst die Markierung auf. Die Markierung ist reine Ansicht – kein Objekt, nicht im Bild, nicht im
+  Rückgängig-Stapel. Ohne Erkennungsergebnis tut das Werkzeug nichts. Die Werkzeugleiste ist dadurch um einen Knopf
+  breiter, bleibt aber wie bisher immer gleich breit.
+
 ## 0.14.1
 
 - **„Autostart mit Adminrechten“ nur, wenn es wirkt:** Bei einem Konto ohne Adminrechte startet die Aufgabe ScreenKeeper

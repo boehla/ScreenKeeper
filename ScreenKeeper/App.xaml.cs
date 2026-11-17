@@ -451,7 +451,9 @@ public partial class App : Application {
             return;
         }
         try {
-            (_, SavedCapture saved) = AppServices.Workflow.CaptureAndSave();
+            (CaptureResult result, SavedCapture saved) = AppServices.Workflow.CaptureAndSave();
+            // ohne Editor: Text des ganzen Bildes im Hintergrund erkennen (für die Suche)
+            AppServices.Workflow.RecognizeAndStore(saved.Files.JsonPath, result.Bitmap, StorageService.GetCropRegion(result.Document, result.Bitmap.PixelWidth, result.Bitmap.PixelHeight));
             if(AppServices.Settings.Settings.NotifyOnSaveOnly) {
                 tray?.ShowBalloon(Strings.NotifySavedTitle, Strings.Format(Strings.NotifySavedText, Path.GetFileName(saved.Files.PngPath)), false);
             }

@@ -27,7 +27,8 @@ public static class ToolShortcuts {
         { Key.P, PixelateTool.ToolKey },
         { Key.B, BlurTool.ToolKey },
         { Key.N, NumberStampTool.ToolKey },
-        { Key.M, CursorTool.ToolKey }
+        { Key.M, CursorTool.ToolKey },
+        { Key.I, TextSelectTool.ToolKey }
     };
 
     /// <summary>Werkzeug-Schlüssel zur Taste; null, wenn die Taste kein Werkzeug wählt.</summary>

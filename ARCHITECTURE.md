@@ -59,6 +59,23 @@ Alle Services als Klassen mit Interface (`ICaptureService` usw.), ohne DI-Framew
   Dateinamen-Muster mit Platzhaltern, Kollisionssuffix `_2`, `_3` …; `SaveNewCapture` (PNG + JSON + Thumb),
   `SaveDocument` (JSON atomar: `.tmp` + `File.Move(overwrite)`), `UpdateThumbnail`, `LoadDocument`, `EnumerateCaptures`
   (lazy, neueste zuerst), `DeleteToRecycleBin` (SHFileOperation, FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT).
+  Ab 0.15 gehört der Zuschnitt `<Name>.crop.png` (`CaptureFiles.CropPath`, `AllPaths`) zu jeder Aufnahme: bei
+  `SaveNewCapture` per `WriteCropInBackground` (Dokument-Kopie, eigener `RenderService` auf einem STA-Thread), bei
+  `UpdateThumbnail` aus demselben Render wie das Vorschaubild; Schreibvorgänge derselben Datei laufen nacheinander
+  (`startChainedWrite`), Löschen/Kopieren warten darauf. `ReadFolder` überspringt `*.crop.png`.
+  `SetRecognizedText` schreibt nur den Text (`ocrText`) eines OCR-Ergebnisses und nur, wenn der Ausschnitt
+  (`GetCropRegion`) noch passt.
+- `OcrService` (`IOcrService`): `Windows.Media.Ocr` über die WinRT-Projektion des TFM (keine csproj-Änderung nötig),
+  Engine einmal per `TryCreateFromUserProfileLanguages`, Aufrufe nacheinander, nie Ausnahmen nach außen (null + Log).
+  Pixel des Ausschnitts als Bgra32 kopiert und mit `OcrLayout` (rein, testbar) skaliert; Rechtecke über
+  `OcrLayout.ToImage` in Bildpixel des Originals. Modell `RecognizedText`/`RecognizedLine`/`RecognizedWord` gilt
+  **nur im Arbeitsspeicher** (`EditorViewModel.RecognizedText`, für „Text auswählen“); in der JSON steht nur `ocrText`.
+  Ein `ocr`-Feld aus Vorabversionen verwirft der Serializer beim Lesen (nicht in `ExtensionData` aufheben). Im Editor
+  plant `EditorWindow.Ocr.cs` die Erkennung (beim Öffnen immer neu, verzögert, abbrechbar); passt `ocrText` beim
+  Schließen nicht zum Bereich, übernimmt `CaptureWorkflow.RecognizeAndStore` im Hintergrund. Ob erkannt wird,
+  entscheidet `EditorViewModel.ShouldRecognize`/`PrepareOcrTextForClose`: bei ausgeschalteter Einstellung nur für einen
+  durch Bereichsänderung veralteten `ocrText` (der beim Schließen vorher auf null gesetzt, bei Fehlschlag im Editor
+  über `OnOcrFailed` entfernt wird).
 - `CaptureService`: BitBlt von `GetDC(NULL)` über den virtuellen Bildschirm (physische Pixel, Prozess ist PerMonitorV2)
   → `BitmapSource` (Bgra32, eingefroren). Ohne Cursor. Zusätzlich Monitore (`EnumDisplayMonitors`/`GetMonitorInfo`,
   Skalierung über `GetDpiForMonitor`), Cursor (`GetCursorInfo`, `GetIconInfo`, Farb- und Maskenbitmap → PNG-Bytes mit
@@ -100,15 +117,19 @@ Alle Services als Klassen mit Interface (`ICaptureService` usw.), ohne DI-Framew
   Verschieben mit Leertaste+Ziehen oder mittlerer Maustaste). Die Zeichenfläche ist ein Element in Bildpixel-Koordinaten unter einer
   `ScaleTransform`/`TranslateTransform` (Zoom/Pan); im Vollbild ist Zoom = 1 / DPI-Skalierung, damit 1 Bildpixel = 1 Gerätepixel.
   `RenderOptions.BitmapScalingMode=NearestNeighbor`, `UseLayoutRounding=true`, `SnapsToDevicePixels=true`.
-- Beim Schließen (auch Esc) immer: Dokument speichern + Thumbnail aktualisieren.
+- Beim Schließen (auch Esc) immer: Dokument speichern + Thumbnail (und ggf. Zuschnitt) aktualisieren.
+- Reiner Ansichtszustand wie die Textmarkierung des Werkzeugs „Text auswählen“ (`TextSelectTool`, Logik in
+  `OcrTextSelection`) läuft **nicht** über den `UndoStack` und landet nicht im Dokument; ebenso wenig das OCR-Ergebnis
+  (aus dem Bild abgeleitet, `EditorViewModel.ApplyOcrResult`).
 
 ## Kommandozeile (für automatisierte Tests, nicht in der README bewerben)
 
 `App` wertet `Environment.GetCommandLineArgs()` aus; mit einem dieser Schalter läuft **kein** Tray/Mutex, die App arbeitet
 headless und beendet sich mit Exit-Code 0 (Erfolg) bzw. 1 (Fehler, Meldung auf stderr):
 
-- `--capture [--no-editor] [--folder <Ablageordner>]` → Aufnahme machen, PNG/JSON/Thumb speichern, die drei Pfade auf stdout
-  ausgeben (je eine Zeile). Ohne `--no-editor` zusätzlich den Editor öffnen.
+- `--capture [--no-editor] [--folder <Ablageordner>]` → Aufnahme machen, PNG/JSON/Thumb (und ggf. Zuschnitt) speichern, die
+  drei Pfade auf stdout ausgeben (je eine Zeile). Mit `--no-editor` wird vorher die Texterkennung des ganzen Bildes
+  abgewartet und in die JSON geschrieben; ohne `--no-editor` öffnet zusätzlich der Editor.
 - `--render <json> <out.png> [--region selection|full|monitor:<index>]` → Dokument laden, rendern, PNG schreiben.
 - `--open <json>` → Editor für vorhandene Aufnahme öffnen (wie aus der History).
 - `--version` → Version auf stdout.

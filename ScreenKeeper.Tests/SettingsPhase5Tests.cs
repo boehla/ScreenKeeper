@@ -171,6 +171,8 @@ public class SettingsPhase5Tests {
             s.RetentionDays = 90;
             s.CheckForUpdates = false;
             s.NotifyOnSaveOnly = false;
+            s.SaveCropImage = false;
+            s.RecognizeText = false;
             s.HistoryWindow = new WindowPlacement { Left = -1200, Top = 40, Width = 900, Height = 700, Maximized = true };
             s.ShowMagnifierKeyHints = false;
             s.LastSelection = new PixelRect(-1500, 30, 640, 480);

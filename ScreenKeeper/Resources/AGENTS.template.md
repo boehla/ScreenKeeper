@@ -16,6 +16,7 @@ davon in einer JSON-Datei daneben.
       <Name>.png                   ← Original (verlustfrei, unverändert, ohne Mauszeiger)
       <Name>.json                  ← Metadaten und Bearbeitungsstand (siehe unten)
       <Name>.thumb.jpg             ← Vorschaubild für die History (JPEG, höchstens 320 px breit)
+      <Name>.crop.png              ← Zuschnitt: Bereich mit Zeichnungen (ohne Bereich das ganze Bild), siehe unten
    Export\                         ← Standard-Exportordner (gerenderte Ausschnitte, frei benannt; kann umgestellt sein)
 ```
 
@@ -32,8 +33,13 @@ davon in einer JSON-Datei daneben.
 - Das Original-PNG ist **unverändert**: genau die aufgenommenen Bildschirmpixel, ohne Mauszeiger, ohne Bereich, ohne
   Zeichnungen. Zeichnungen, Bereich, virtuelle Maus und Kommentar stehen **nur in der JSON**. Das Vorschaubild
   (`.thumb.jpg`) und die Dateien im Exportordner sind dagegen gerendert (Bereich mit Zeichnungen).
-- Andere Dateien und Ordner (auch diese AGENTS.md) ignoriert ScreenKeeper; gelesen werden nur `JJJJ\MM\*.png` mit der
-  zugehörigen `.json`.
+- **Zuschnitt** `<Name>.crop.png` (Einstellung „Zuschnitt zusätzlich als Bild speichern“, Standard an): genau das Bild,
+  das „Bereich → Zwischenablage“ liefern würde – der Bereich (`selection`) mit allen Zeichnungen und der virtuellen Maus,
+  ohne Bereich das ganze Bild. Er entsteht gleich bei der Aufnahme und wird bei jedem Schließen des Editors neu
+  geschrieben (atomar), hat also einen festen Pfad für andere Programme. Er wird mit der Aufnahme gelöscht, kopiert und
+  verworfen und ist **keine** eigene Aufnahme. Fehlt er (Einstellung aus, ältere Aufnahme), gibt es keinen.
+- Andere Dateien und Ordner (auch diese AGENTS.md) ignoriert ScreenKeeper; gelesen werden nur `JJJJ\MM\*.png` (außer
+  `*.crop.png`) mit der zugehörigen `.json`.
 
 ## Koordinatensystem
 
@@ -68,7 +74,7 @@ haben den genannten Standardwert. Unbekannte Felder (z. B. aus neueren Versionen
 | `comment` | String | **Kommentar** zur Aufnahme, freier mehrzeiliger Text (Zeilenumbruch `\r\n`); nur geschrieben, wenn nicht leer (fehlt = kein Kommentar). Die History durchsucht ihn. |
 | `selection` | Rechteck | gewählter Bereich (Ausschnitt für Zwischenablage, Export, Vorschaubild); fehlt = kein Bereich, gemeint ist dann das ganze Bild |
 | `annotations` | Array | Zeichenobjekte in Zeichenreihenfolge (das erste liegt unten), siehe nächster Abschnitt |
-| `ocrText` | String | erkannter Text (spätere Ausbaustufe); wird immer geschrieben, derzeit `null` |
+| `ocrText` | String | erkannter Text des Bereichs (ohne Bereich des ganzen Bildes), Zeilen durch `\n` getrennt; wird immer geschrieben, `null` = (noch) keine Texterkennung, `""` = kein Text gefunden. Windows-Texterkennung im Hintergrund auf den reinen Bildpixeln ohne Zeichnungen (Einstellung „Text erkennen (OCR)“, Standard an); die Lage der Wörter wird nicht gespeichert. Nach einer Bereichsänderung im Editor wird neu erkannt (auch bei ausgeschalteter Einstellung); gelingt das nicht, wird er `null`. Die History durchsucht ihn. |
 
 `monitors[]`:
 
@@ -233,7 +239,7 @@ Bearbeitung.
     { "type": "pixelate", "rect": { "x": 300, "y": 200, "width": 120, "height": 30 }, "blockSize": 10, "id": "8c1d47…" },
     { "type": "cursor", "x": 512, "y": 300, "kind": "captured", "visible": true, "id": "a7b0e2…" }
   ],
-  "ocrText": null
+  "ocrText": "Speichern fehlgeschlagen\nOK"
 }
 ```
 
@@ -242,5 +248,7 @@ Bearbeitung.
 - Das PNG nie verändern; nur die JSON. Atomar schreiben (temporäre Datei daneben, dann umbenennen), UTF-8, unbekannte
   Felder erhalten.
 - Ist dieselbe Aufnahme gerade im ScreenKeeper-Editor offen, überschreibt der Editor die JSON beim Schließen.
-- Nach einer Änderung an Bereich oder Zeichnungen ist das Vorschaubild veraltet, bis die Aufnahme in ScreenKeeper
-  bearbeitet wird (oder man `.thumb.jpg` löscht – fehlende Vorschaubilder erzeugt ScreenKeeper aus dem PNG neu).
+- Nach einer Änderung an Bereich oder Zeichnungen sind Vorschaubild und Zuschnitt veraltet, bis die Aufnahme in
+  ScreenKeeper bearbeitet wird (oder man `.thumb.jpg` löscht – fehlende Vorschaubilder erzeugt ScreenKeeper aus dem PNG
+  neu). Nach einer Änderung an `selection` passt auch `ocrText` nicht mehr; der Editor erkennt beim nächsten Bearbeiten
+  neu.

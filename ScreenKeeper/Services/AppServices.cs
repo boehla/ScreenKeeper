@@ -14,6 +14,7 @@ public static class AppServices {
     private static IEnvironmentCheckService? environmentCheck;
     private static CaptureWorkflow? workflow;
     private static UpdateService? updates;
+    private static IOcrService? ocr;
 
     public static ISettingsService Settings => settings ?? throw notInitialized();
 
@@ -32,6 +33,9 @@ public static class AppServices {
     public static IEnvironmentCheckService EnvironmentCheck => environmentCheck ?? throw notInitialized();
 
     public static CaptureWorkflow Workflow => workflow ?? throw notInitialized();
+
+    /// <summary>Texterkennung (Windows-OCR); Fehler und fehlende Sprachen nur im Protokoll.</summary>
+    public static IOcrService Ocr => ocr ?? throw notInitialized();
 
     /// <summary>Update-Prüfung (der Timer läuft nur im Tray-Modus, siehe <see cref="UpdateService.Start"/>).</summary>
     public static UpdateService Updates => updates ?? throw notInitialized();
@@ -55,6 +59,7 @@ public static class AppServices {
         autostart = new AutostartService();
         elevatedAutostart = new ElevatedAutostartService();
         environmentCheck = new EnvironmentCheckService();
+        ocr = new OcrService();
         workflow = new CaptureWorkflow();
         updates = new UpdateService(settingsService);
     }

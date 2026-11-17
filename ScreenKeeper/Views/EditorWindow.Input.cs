@@ -217,6 +217,8 @@ public partial class EditorWindow {
                 } else if(viewModel.HasSelectedAnnotation && viewModel.IsSelectingToolActive) {
                     viewModel.SelectAnnotation(null);
                     updateCursorAtMouse();
+                } else if(ReferenceEquals(viewModel.ActiveTool, viewModel.TextSelectTool) && viewModel.TextSelectTool.ClearSelection()) {
+                    // zuerst die Textmarkierung aufheben, erst das nächste Esc schließt
                 } else {
                     Close();
                 }
@@ -273,7 +275,16 @@ public partial class EditorWindow {
             case Key.C:
                 if(!control) return;
                 e.Handled = true;
+                // „Text auswählen“ mit markiertem Text: den Text kopieren (Editor bleibt offen), sonst wie immer das Bild
+                if(!shift && !pointerCaptured && viewModel.CopySelectedRecognizedText()) return;
                 execute(shift ? viewModel.CopyFullCommand : viewModel.CopySelectionCommand);
+                return;
+            case Key.A:
+                // Strg+A: bei „Text auswählen“ den ganzen erkannten Text markieren (A allein wählt den Pfeil, siehe oben)
+                if(!control || shift || !ReferenceEquals(viewModel.ActiveTool, viewModel.TextSelectTool)) return;
+                e.Handled = true;
+                if(pointerCaptured) return;
+                viewModel.TextSelectTool.SelectAll();
                 return;
             case Key.S:
                 if(!control) return;

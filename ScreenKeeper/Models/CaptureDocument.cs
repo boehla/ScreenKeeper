@@ -55,9 +55,19 @@ public sealed class CaptureDocument {
     [JsonConverter(typeof(AnnotationListConverter))]
     public List<Annotation> Annotations { get; set; } = new List<Annotation>();
 
-    /// <summary>Erkannter Text (spätere Ausbaustufe); wird wie in der Spezifikation immer geschrieben, auch als null.</summary>
+    /// <summary>
+    /// Erkannter Text des Bereichs (ab 0.15, Zeilen durch <c>\n</c> getrennt; "" = erkannt, aber kein Text); wird wie in
+    /// der Spezifikation immer geschrieben, auch als null (= keine Erkennung). Die Lage der Wörter wird nicht gespeichert
+    /// (nur im Editor im Speicher, siehe <c>EditorViewModel.RecognizedText</c>).
+    /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
     public string? OcrText { get; set; }
+
+    /// <summary>
+    /// Name des Felds, in dem Vorabversionen von 0.15 Zeilen und Wörter mit Lage gespeichert hatten. Es wird beim Lesen
+    /// verworfen (nicht als unbekanntes Feld aufgehoben), damit die JSON klein bleibt.
+    /// </summary>
+    public const string DroppedOcrField = "ocr";
 
     /// <summary>Unbekannte Felder (z. B. aus neueren Versionen) bleiben beim Speichern erhalten.</summary>
     [JsonExtensionData]

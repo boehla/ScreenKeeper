@@ -19,9 +19,12 @@ Erwartet: `0 Warning(s)`, `0 Error(s)` (bzw. `0 Warnung(en)`, `0 Fehler` bei deu
 dotnet test ScreenKeeper.Tests\ScreenKeeper.Tests.csproj
 ```
 
-Erwartet: `Passed!  - Failed: 0, Passed: 444, Skipped: 0, Total: 444` (Stand 0.14.1). In einer getrennten
+Erwartet: `Passed!  - Failed: 0, Passed: 476, Skipped: 0, Total: 476` (Stand 0.15.0). In einer getrennten
 Remotedesktop-Sitzung scheitern die drei `RenderServiceTests` `Render_FullImageIsIdentical`,
-`Render_DrawsCapturedCursorAtHotspot` und `Render_CutsRegionExactly` (kein Rendern ohne Bildschirm). Die Tests schreiben nur in
+`Render_DrawsCapturedCursorAtHotspot` und `Render_CutsRegionExactly` (kein Rendern ohne Bildschirm), ebenso
+`Version0150OcrTests.Storage_SaveNewCapture_WritesCrop_AndUpdateThumbnailRewritesIt` (rendert den Zuschnitt). Die
+Windows-Texterkennung selbst ist nicht Teil der Unit-Tests (nur Umrechnung, Wortauswahl, Format; siehe unten
+`--capture --no-editor`). Die Tests schreiben nur in
 `%TEMP%\ScreenKeeperTests\…` und räumen danach auf; sie brauchen keinen entsperrten Desktop.
 
 ## 3. Headless-Testschalter
@@ -41,7 +44,7 @@ Testordner (`<Ordner>`) am besten unter `%TEMP%` anlegen, damit nichts im echten
 | Befehl | Was passiert | Erwartete Ausgabe |
 |---|---|---|
 | `--version` | Version ausgeben | `0.6.0` |
-| `--capture --no-editor --folder <Ordner>` | echte Aufnahme aller Monitore, speichern | drei Zeilen: Pfade von `.png`, `.json`, `.thumb.jpg` unter `<Ordner>\JJJJ\MM\` |
+| `--capture --no-editor --folder <Ordner>` | echte Aufnahme aller Monitore, speichern, Zuschnitt und Texterkennung abwarten | drei Zeilen: Pfade von `.png`, `.json`, `.thumb.jpg` unter `<Ordner>\JJJJ\MM\`; daneben `<Name>.crop.png` (gleiche Größe wie das PNG); die JSON enthält `ocrText` (Text des ganzen Bildes, kein `ocr`-Objekt), sofern eine Windows-OCR-Sprache installiert ist (sonst Protokoll `Texterkennung nicht verfügbar …`, `ocrText: null`) |
 | `--capture --folder <Ordner>` | wie oben, danach Vollbild-Editor (Esc schließt) | drei Pfade; Exit 0 nach dem Schließen |
 | `--capture --test-capture-timing --folder <Ordner>` | Editor vorwärmen (wie der Tray-Betrieb beim Start), dann 3× Aufnahme + Editor wie per Hotkey, Zeit bis zum sichtbaren Editor messen, Editor schließen | `warmUpMs=…`, `run=1 visibleMs=…` … `run=3 …`, `min=… max=… warmAvg=…` (Ziel: alle < 300) |
 | `--open <json>` | vorhandene Aufnahme im Editor öffnen (Vollbild bei gleicher Monitor-Anordnung, sonst Fenster) | Exit 0 nach dem Schließen; JSON neu geschrieben |
@@ -188,6 +191,26 @@ Nicht automatisierbar (braucht eine echte Remotedesktop-Verbindung bzw. Fokus un
    hat die Leiste einen blauen Rahmen (gleiche Größe, nichts verrutscht); nach dem Loslassen ist er wieder grau.
 4. Bereich mit Strg+Z zurücknehmen: Leiste wieder oben mittig. Anderes Werkzeug (z. B. Rechteck) aktiv: kein Ausweichen.
 5. Werkzeug „Rechteck“, über die Leiste auf „Bereich“ klicken: die Leiste bleibt unter der Maus stehen.
+
+**Zuschnitt, Texterkennung, „Text auswählen“** (ab 0.15, frische Aufnahme per Druck):
+
+1. Gleich nach der Aufnahme liegt neben dem PNG `<Name>.crop.png` (ganzes Bild mit Mauszeiger). Bereich wählen, einen
+   Pfeil zeichnen, Esc: `.crop.png` zeigt genau den Bereich mit Pfeil (wie Strg+C).
+2. Nach etwa 1 s im Protokoll `Texterkennung (de-DE): … Zeile(n) in B×H bei X,Y …`; nach jeder Bereichsänderung erneut
+   (mit dem neuen Bereich). Editor sofort nach dem Bereich-Wählen mit Esc schließen: kurz danach
+   `Texterkennung gespeichert: …json`, `ocrText` enthält nur den Text des Bereichs, ein `ocr`-Objekt gibt es nicht.
+   Dieselbe Aufnahme aus der History öffnen: wieder `Texterkennung (…)` im Protokoll, „Text auswählen“ funktioniert.
+3. Werkzeug I (Mauszeiger = Textcursor): über Text ziehen → Wörter blau hinterlegt, auch über mehrere Zeilen;
+   Doppelklick markiert ein Wort; Strg+A alles. Strg+C → Text in der Zwischenablage (Zeilenumbrüche), Editor bleibt
+   offen. Esc hebt die Markierung auf, das nächste Esc schließt. Ohne Markierung kopiert Strg+C das Bild und schließt.
+   Rückgängig ist durch das Markieren nicht aktiv geworden; die Werkzeugleiste ändert ihre Breite nicht.
+4. History: Suche nach einem Wort aus dem Bild findet die Aufnahme. Löschen/Verwerfen/Kopie anlegen: `.crop.png`
+   wandert mit bzw. wird mitkopiert; die History zeigt keinen zusätzlichen Eintrag für `.crop.png`.
+5. Einstellungen → Allgemein: beide Häkchen aus → neue Aufnahme ohne `.crop.png`, `ocrText` bleibt `null`, kein
+   Protokolleintrag zur Texterkennung.
+6. Erkennung aus, eine Aufnahme **mit** `ocrText` öffnen und den Bereich ändern: trotzdem `Texterkennung (…)` im
+   Protokoll, `ocrText` passt danach zum neuen Bereich. Sofort nach der Änderung mit Esc schließen: die JSON hat
+   zunächst `ocrText: null`, kurz danach den neuen Text. Ohne installierte OCR-Sprache bleibt `ocrText: null`.
 
 ## 6. Kodierung
 

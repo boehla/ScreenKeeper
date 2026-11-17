@@ -14,8 +14,8 @@ public enum HistoryQuickRange {
 
 /// <summary>
 /// Filter der History: Zeitraum (Tage <see cref="From"/> bis <see cref="To"/>, jeweils einschließlich, lokale Zeit),
-/// Text (ohne Groß-/Kleinschreibung) im Dateinamen, im Programmnamen oder Fenstertitel des Vordergrundprogramms oder im
-/// Kommentar und optional nur permanent markierte Aufnahmen. Null bzw. leer = keine Einschränkung.
+/// Text (ohne Groß-/Kleinschreibung) im Dateinamen, im Programmnamen oder Fenstertitel des Vordergrundprogramms, im
+/// Kommentar oder im erkannten Text (OCR) und optional nur permanent markierte Aufnahmen. Null bzw. leer = keine Einschränkung.
 /// </summary>
 public sealed record HistoryFilter(DateTime? From, DateTime? To, string? Text, bool PermanentOnly = false) {
     public static HistoryFilter All { get; } = new HistoryFilter(null, null, null);
@@ -52,12 +52,20 @@ public sealed record HistoryFilter(DateTime? From, DateTime? To, string? Text, b
         if(!string.IsNullOrWhiteSpace(Text)) {
             string text = Text.Trim();
             if(contains(entry.Name, text)) return true;
-            return metadata != null && (contains(metadata.ForegroundProcess, text) || contains(metadata.ForegroundTitle, text) || contains(metadata.Comment ?? "", text));
+            return metadata != null && (contains(metadata.ForegroundProcess, text) || contains(metadata.ForegroundTitle, text) || contains(metadata.Comment ?? "", text)
+                || containsIgnoringLineBreaks(metadata.OcrText ?? "", text));
         }
         return true;
     }
 
     private static bool contains(string value, string text) {
         return value.IndexOf(text, StringComparison.CurrentCultureIgnoreCase) >= 0;
+    }
+
+    /// <summary>Erkannter Text: Zeilenumbrüche zählen wie Leerzeichen (ein Suchbegriff darf über zwei Zeilen gehen).</summary>
+    private static bool containsIgnoringLineBreaks(string value, string text) {
+        if(value.Length == 0) return false;
+        if(contains(value, text)) return true;
+        return value.IndexOf('\n') >= 0 && contains(value.Replace("\r\n", " ").Replace('\n', ' '), text);
     }
 }
