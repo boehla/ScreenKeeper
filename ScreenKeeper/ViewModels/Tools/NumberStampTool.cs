@@ -6,7 +6,8 @@ namespace ScreenKeeper.ViewModels.Tools;
 
 /// <summary>
 /// Werkzeug „Nummern-Stempel“: Klick setzt einen Stempel (Mittelpunkt am Klickpunkt) mit der nächsten Nummer
-/// (größte vorhandene + 1). Beim Löschen wird nicht umnummeriert.
+/// (größte vorhandene + 1, mit „−“/„+“ änderbar – siehe <see cref="EditorViewModel.NextStampNumber"/>). Beim Löschen
+/// wird nicht umnummeriert.
 /// </summary>
 public sealed class NumberStampTool : IAnnotationTool {
     public const string ToolKey = "number";
@@ -63,12 +64,13 @@ public sealed class NumberStampTool : IAnnotationTool {
         NumberStampAnnotation stamp = new NumberStampAnnotation {
             X = downPixel.X,
             Y = downPixel.Y,
-            Number = GetNextNumber(editor.Document.Annotations),
+            Number = editor.NextStampNumber,
             Color = editor.Options.Color,
             Size = editor.Options.StampSize
         };
         editor.UndoStack.Execute(new AddAnnotationCommand(editor.Document, stamp));
         editor.SelectAnnotation(stamp);
+        editor.ContinueStampNumbersAfter(stamp.Number);
     }
 
     public void CancelGesture() {

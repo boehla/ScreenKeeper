@@ -78,7 +78,7 @@
     <value>ScreenKeeper – Bearbeiten</value>
   </data>
   <data name="ToolRegion" xml:space="preserve">
-    <value>Bereich wählen</value>
+    <value>Bereich wählen (Rechtsklick: zu „Auswahl“ wechseln)</value>
   </data>
   <data name="ToolbarCopySelection" xml:space="preserve">
     <value>Bereich → Zwischenablage (Enter, Strg+C)</value>
@@ -205,7 +205,7 @@ Details stehen in {1}.</value>
     <value>Freihand (F)</value>
   </data>
   <data name="ToolText" xml:space="preserve">
-    <value>Text (T) – Enter neue Zeile, Strg+Enter oder Klick daneben übernimmt, Esc verwirft</value>
+    <value>Text (T) – Enter neue Zeile, Strg+Enter, Esc oder Klick daneben übernimmt</value>
   </data>
   <data name="ToolHighlight" xml:space="preserve">
     <value>Textmarker (H)</value>
@@ -301,7 +301,7 @@ Details stehen in {1}.</value>
     <value>Nummer erhöhen (+)</value>
   </data>
   <data name="OptionStampNumberNext" xml:space="preserve">
-    <value>Nummer des nächsten Stempels (−/+ ändern einen ausgewählten Stempel)</value>
+    <value>Nummer des nächsten Stempels (−/+ ändern sie; bei ausgewähltem Stempel dessen Nummer)</value>
   </data>
   <data name="OptionCursorKind" xml:space="preserve">
     <value>Zeigerart</value>
@@ -1026,7 +1026,13 @@ Mit dieser Einstellung setzt ScreenKeeper seinen Tastatur-Hook beim Aktivieren d
     <value>Alt+Rad: Zoom {0}×   +/-: Größe {1} px</value>
   </data>
   <data name="SettingsMagnifierKeyHints" xml:space="preserve">
-    <value>Tastenhilfe unter der Lupe anzeigen</value>
+    <value>Tastenhilfe unter der Lupe und am Nummern-Stempel anzeigen</value>
+  </data>
+  <data name="StampPreviewKeyHint" xml:space="preserve">
+    <value>+/-: Nummer</value>
+  </data>
+  <data name="StampPreviewKeyHintNumber" xml:space="preserve">
+    <value>+/-: Nummer {0}</value>
   </data>
   <data name="SettingsMagnifierKeyHintsTooltip" xml:space="preserve">
     <value>Zoom und Größe der Lupe lassen sich auch direkt im Editor ändern: Mausrad (im Fenstermodus Alt+Mausrad) bzw. + und -</value>

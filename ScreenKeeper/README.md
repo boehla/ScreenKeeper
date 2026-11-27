@@ -143,7 +143,8 @@ Entwicklungsstand (aus `bin\`) öffnet stattdessen die Release-Seite im Browser.
 
 ### Bearbeiten
 
-Nach der Aufnahme wird das eingefrorene Bild 1:1 über alle Monitore angezeigt.
+Nach der Aufnahme wird das eingefrorene Bild 1:1 über alle Monitore angezeigt. Solange kein Bereich gewählt ist, zeigt
+ein blauer Rahmen innen an jedem Monitor, dass der Editor offen ist (nur im Vollbild, nie im Bild).
 
 **Bereich wählen**
 
@@ -176,7 +177,7 @@ die Maus über der Leiste ist, bleibt sie stehen. Alle Zeichnungen bleiben einze
 
 | Werkzeug | Taste | Bedienung |
 |---|---|---|
-| Bereich | (Leertaste/Enter: Tastatur-Auswahl) | Bereich aufziehen; Klick auf ein Objekt wählt es aus |
+| Bereich | (Leertaste/Enter: Tastatur-Auswahl) | Bereich aufziehen; Klick auf ein Objekt wählt es aus; **Rechtsklick** bricht ein laufendes Aufziehen/Ziehen ab, sonst wechselt er zu „Auswahl“ |
 | Auswahl / Verschieben | S | Objekt anklicken, ziehen, an den Anfassern Größe ändern |
 | Rechteck, Ellipse | R, E | aufziehen (Shift: Quadrat/Kreis); Rahmenfarbe, Strichstärke, Füllfarbe |
 | Linie, Pfeil | L, A | vom Anfang zum Ende ziehen (Shift: 45°-Raster); Farbe, Strichstärke, Anfang, Ende |
@@ -185,9 +186,9 @@ die Maus über der Leiste ist, bleibt sie stehen. Alle Zeichnungen bleiben einze
 | Textmarker | H | Rechteck aufziehen (Standard Gelb); färbt wie ein echter Marker: Text darunter bleibt dunkel |
 | Verpixeln | P | Rechteck aufziehen; Blockgröße |
 | Weichzeichnen | B | Rechteck aufziehen; Stärke |
-| Nummern-Stempel | N | klicken: 1, 2, 3 … (nächste Nummer = höchste + 1); Farbe, Größe; ausgewählter Stempel: Nummer mit „−“/„+“ bzw. Tasten **-**/**+** ändern (1–999) |
+| Nummern-Stempel | N | klicken: 1, 2, 3 … (nächste Nummer = höchste + 1); der nächste Stempel läuft halbtransparent am Zeiger mit; Farbe, Größe; Nummer mit „−“/„+“ bzw. Tasten **-**/**+** ändern (1–999): die des ausgewählten Stempels, ohne Auswahl die des nächsten (Vorschau); danach wird von dort weitergezählt |
 | Virtuelle Maus | M | klicken setzt einen Mauszeiger; Zeigerart wählbar |
-| Text auswählen | I | erkannten Text (OCR) markieren: ziehen (auch über Zeilen), Doppelklick = Wort, Strg+A = alles; **Strg+C** kopiert den markierten Text (Editor bleibt offen), ohne Markierung wie sonst das Bild; Esc hebt die Markierung auf. Nur Ansicht – kein Objekt, nicht im Export |
+| Text auswählen | I | erkannten Text (OCR) markieren: ziehen (auch über Zeilen), Doppelklick = Wort, Strg+A = alles; **Strg+C** kopiert den markierten Text (Editor bleibt offen), ohne Markierung wie sonst das Bild; Esc hebt zuerst die Markierung auf, das nächste Esc wechselt zu „Auswahl“. Nur Ansicht – kein Objekt, nicht im Export |
 
 - **Linienenden (Anfang, Ende):** Linie, Pfeil und Freihand können an jedem Ende ein Symbol tragen: ohne, Pfeil,
   Punkt, Quadrat oder Dreieck – gefüllt in der Strichfarbe, Größe passend zur Strichstärke, ausgerichtet an der
@@ -196,7 +197,8 @@ die Maus über der Leiste ist, bleibt sie stehen. Alle Zeichnungen bleiben einze
   ohne Spitze oder mit Spitzen an beiden Enden ist er genauso einstellbar. Gemerkt wird getrennt je Werkzeug.
 - **Füllfarbe (Rechteck, Ellipse):** eigene Farbe unabhängig vom Rahmen – keine, eine Farbe der Palette oder dieselbe
   halbtransparent (50 %). Der Rahmen liegt über der Füllung; gefüllte Objekte lassen sich auch innen anklicken.
-- **Text:** Enter übernimmt, Shift+Enter beginnt eine neue Zeile, Esc verwirft, Klick daneben übernimmt.
+- **Text:** Enter übernimmt, Shift+Enter beginnt eine neue Zeile, Esc übernimmt ebenfalls und wechselt zu „Auswahl“ (ab 0.16), Klick
+  daneben übernimmt.
   Doppelklick auf einen vorhandenen Text (oder Klick mit dem Text-Werkzeug) bearbeitet ihn; leerer Text löscht ihn.
   Ein **festes Textfeld** wird wie ein Rechteck aufgezogen, verschoben und an allen Anfassern in Breite und Höhe
   geändert (die Schriftgröße bleibt); beim Bearbeiten zeigt ein schwarz-weiß gestrichelter Rahmen die Feldgrenzen. Der
@@ -206,8 +208,11 @@ die Maus über der Leiste ist, bleibt sie stehen. Alle Zeichnungen bleiben einze
   im Menü (6–400 px, auch Kommazahlen, Enter übernimmt). **Ausrichtung:** 3×3-Raster – horizontal die
   Zeilenausrichtung, vertikal die Lage des Texts im Feld. Ein einfacher Klick ergibt wie bisher freien Text, der mit
   dem Inhalt wächst (feste Schriftgröße, nur horizontale Ausrichtung).
-- **Ausgewähltes Objekt:** Entf löscht, Strg+D dupliziert, Esc hebt die Auswahl auf. Farbe, Strichstärke usw. aus der
+- **Ausgewähltes Objekt:** Entf löscht, Strg+D dupliziert. Farbe, Strichstärke usw. aus der
   Werkzeugleiste wirken auf das ausgewählte Objekt (rückgängig machbar).
+- **Esc in Stufen:** Verschieben der Ansicht bzw. laufenden Vorgang abbrechen → Textmarkierung
+  aufheben → bei einem Zeichenwerkzeug (oder „Text auswählen“) zu „Auswahl“ wechseln (ein gerade gezeichnetes Objekt
+  bleibt ausgewählt) → bei „Auswahl“ oder „Bereich“ den Editor schließen.
 - **Verpixeln/Weichzeichnen** werden bei Anzeige und Export aus dem Original berechnet; im Export sind die
   ursprünglichen Pixel nicht enthalten.
 - **Virtuelle Maus:** Der aufgenommene Mauszeiger erscheint als Objekt an seiner Originalposition. Er lässt sich
@@ -233,7 +238,7 @@ die Maus über der Leiste ist, bleibt sie stehen. Alle Zeichnungen bleiben einze
 | Kommentar (Sprechblase) | – | öffnet einen kleinen Dialog für freien, mehrzeiligen Text (Strg+Enter übernimmt, Esc bricht ab, leer = entfernen); blau hinterlegt, wenn ein Kommentar vorhanden ist, der Tooltip zeigt ihn. Ein Rückgängig-Schritt; gespeichert wird mit dem Dokument |
 | Rückgängig / Wiederholen | Strg+Z / Strg+Y | Bereich, Zeichnungen und Maus |
 | Aufnahme verwerfen (roter Mülleimer mit X) | – | schließt den Editor und speichert nichts: PNG, JSON, Vorschaubild und Zuschnitt kommen ohne Rückfrage in den Papierkorb, die Aufnahme verschwindet aus der History |
-| Abbrechen | Esc | kein Export (bricht zuerst ein laufendes Aufziehen ab) |
+| Abbrechen | Esc | kein Export (bricht zuerst ein laufendes Aufziehen ab, hebt eine Textmarkierung auf und wechselt von anderen Werkzeugen zu „Auswahl“; geschlossen wird erst bei „Auswahl“ oder „Bereich“) |
 
 Ohne Bereich sind die Bereich-Knöpfe deaktiviert. Die Zwischenablage erhält das Bild als Bitmap und als PNG.
 Knöpfe, die den Editor schließen (Ausgabe und Abbrechen), haben ein hellblaues Symbol, „Aufnahme verwerfen“ ein

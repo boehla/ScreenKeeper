@@ -35,7 +35,10 @@ public partial class EditorWindow {
         viewport.MouseUp += onViewportMouseUp;
         viewport.MouseMove += onViewportMouseMove;
         viewport.MouseWheel += onViewportMouseWheel;
-        viewport.MouseLeave += (s, e) => updateMagnifier();
+        viewport.MouseLeave += (s, e) => {
+            updateMagnifier();
+            updateStampPreview();
+        };
         viewport.LostMouseCapture += onViewportLostMouseCapture;
         PreviewKeyDown += onPreviewKeyDown;
         PreviewKeyUp += onPreviewKeyUp;
@@ -87,9 +90,30 @@ public partial class EditorWindow {
     }
 
     private void onViewportMouseDown(object sender, MouseButtonEventArgs e) {
+        if(e.ChangedButton == MouseButton.Right) {
+            e.Handled = true;
+            onViewportRightButtonDown();
+            return;
+        }
         if(e.ChangedButton != MouseButton.Middle) return;
         e.Handled = true;
         if(mode == EditorMode.Windowed && !pointerCaptured && !isPanning) startPan(e.GetPosition(viewport), MouseButton.Middle);
+    }
+
+    /// <summary>
+    /// Rechtsklick (nur beim Werkzeug „Bereich“, siehe <see cref="EditorViewModel.RightClick"/>): laufenden Vorgang
+    /// abbrechen, sonst zu „Auswahl“ wechseln. Während die Ansicht verschoben wird, passiert nichts.
+    /// </summary>
+    private void onViewportRightButtonDown() {
+        if(isPanning) return;
+        switch(viewModel.RightClick(pointerCaptured)) {
+            case RightClickResult.Cancelled:
+                releasePointer();
+                break;
+            case RightClickResult.SwitchedToSelect:
+                updateCursorAtMouse();
+                break;
+        }
     }
 
     private void onViewportMouseUp(object sender, MouseButtonEventArgs e) {
@@ -174,6 +198,7 @@ public partial class EditorWindow {
         viewport.CaptureMouse();
         viewport.Cursor = Cursors.ScrollAll;
         updateMagnifier();
+        updateStampPreview();
     }
 
     private void endPan() {
@@ -210,17 +235,22 @@ public partial class EditorWindow {
         switch(key) {
             case Key.Escape:
                 e.Handled = true;
+                // Stufen: Verschieben beenden, Vorgang abbrechen, Textmarkierung aufheben, zu „Auswahl“ wechseln –
+                // bei „Auswahl“/„Bereich“ schließen (auch mit ausgewähltem Objekt)
                 if(isPanning) {
                     endPan();
-                } else if(viewModel.IsGestureActive) {
-                    cancelGesture();
-                } else if(viewModel.HasSelectedAnnotation && viewModel.IsSelectingToolActive) {
-                    viewModel.SelectAnnotation(null);
-                    updateCursorAtMouse();
-                } else if(ReferenceEquals(viewModel.ActiveTool, viewModel.TextSelectTool) && viewModel.TextSelectTool.ClearSelection()) {
-                    // zuerst die Textmarkierung aufheben, erst das nächste Esc schließt
-                } else {
-                    Close();
+                    return;
+                }
+                switch(viewModel.Escape()) {
+                    case EscapeResult.Cancelled:
+                        releasePointer();
+                        break;
+                    case EscapeResult.SwitchedToSelect:
+                        updateCursorAtMouse();
+                        break;
+                    case EscapeResult.Close:
+                        Close();
+                        break;
                 }
                 return;
             case Key.Delete:
@@ -259,13 +289,13 @@ public partial class EditorWindow {
             case Key.Add:
             case Key.OemMinus:
             case Key.Subtract:
-                // +/-: Nummer des ausgewählten Stempels, sonst Lupengröße (nur solange die Lupe zu sehen ist)
+                // +/-: Nummer des ausgewählten bzw. (Stempel-Werkzeug ohne Auswahl) des nächsten Stempels, sonst Lupengröße (nur solange die Lupe zu sehen ist)
                 if(control) return;
                 int delta = key == Key.OemPlus || key == Key.Add ? 1 : -1;
-                if(viewModel.CanChangeStampNumber) {
+                if(viewModel.CanChangeStampNumber || viewModel.CanChangeNextStampNumber) {
                     e.Handled = true;
                     if(pointerCaptured) return;
-                    viewModel.ChangeSelectedStampNumber(delta);
+                    viewModel.ChangeStampNumber(delta);
                     return;
                 }
                 if(!isMagnifierShown) return;
@@ -353,8 +383,11 @@ public partial class EditorWindow {
         updateCursorAtMouse();
     }
 
-    private void cancelGesture() {
-        viewModel.CancelGesture();
+    /// <summary>
+    /// Nach einem abgebrochenen Vorgang (Esc, Rechtsklick; abgebrochen hat das ViewModel): Mausfang freigeben und den
+    /// Zeiger neu bestimmen.
+    /// </summary>
+    private void releasePointer() {
         if(pointerCaptured) {
             pointerCaptured = false;
             viewport.ReleaseMouseCapture();
@@ -421,6 +454,9 @@ public partial class EditorWindow {
     }
 
     private void updateCursor(PointerInput input) {
+        // die Stempel-Vorschau richtet sich nach derselben Eingabe wie der Zeiger (Fadenkreuz = Klick setzt einen Stempel)
+        stampPreviewInput = input;
+        updateStampPreview();
         if(isPanning) {
             viewport.Cursor = Cursors.ScrollAll;
             return;

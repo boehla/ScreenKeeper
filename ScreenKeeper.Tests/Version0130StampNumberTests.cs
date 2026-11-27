@@ -116,14 +116,14 @@ public class StampNumberTests {
             EditorViewModel vm = create();
             Assert.True(vm.SelectToolByKey(NumberStampTool.ToolKey));
             Assert.True(vm.ShowStampSizeOption);
-            // beim Werkzeug allein: Knöpfe sichtbar, aber ausgegraut; die Anzeige zeigt die nächste Nummer
+            // beim Werkzeug allein: Knöpfe sichtbar; die Anzeige zeigt die nächste Nummer, die −/+ ab 0.16 ändern
             Assert.True(vm.ShowStampNumberOption);
             Assert.False(vm.CanChangeStampNumber);
-            Assert.False(vm.IncreaseStampNumberCommand.CanExecute(null));
-            Assert.False(vm.DecreaseStampNumberCommand.CanExecute(null));
+            Assert.True(vm.IncreaseStampNumberCommand.CanExecute(null));
+            Assert.True(vm.DecreaseStampNumberCommand.CanExecute(null));
             Assert.Equal("1", vm.CurrentStampNumberText);
             Assert.Equal(Strings.OptionStampNumberNext, vm.StampNumberToolTip);
-            // ohne ausgewählten Stempel ändert sich nichts (die Tasten gehen dann an die Lupe)
+            // ohne ausgewählten Stempel ändert sich an vorhandenen Stempeln nichts
             Assert.False(vm.ChangeSelectedStampNumber(1));
 
             click(vm, "", 50, 50);

@@ -79,6 +79,8 @@ public sealed partial class EditorViewModel {
     private ICommand? deleteSelectedCommand;
     private ICommand? increaseStampNumberCommand;
     private ICommand? decreaseStampNumberCommand;
+    // vom Standard (größte vorhandene + 1) abweichende Nummer des nächsten Stempels; nicht Teil von Rückgängig
+    private int? nextStampNumber;
 
     /// <summary>Aktuelle Werkzeug-Optionen (zuletzt verwendete Werte).</summary>
     public ToolOptions Options { get; }
@@ -369,9 +371,9 @@ public sealed partial class EditorViewModel {
     public ICommand DeleteSelectedCommand => deleteSelectedCommand ??= new RelayCommand(DeleteSelectedAnnotation, () => HasSelectedAnnotation);
 
     /// <summary>„+“ am Nummern-Stempel; ohne ausgewählten Stempel deaktiviert (ausgegraut).</summary>
-    public ICommand IncreaseStampNumberCommand => increaseStampNumberCommand ??= new RelayCommand(() => ChangeSelectedStampNumber(1), () => CanChangeStampNumber);
+    public ICommand IncreaseStampNumberCommand => increaseStampNumberCommand ??= new RelayCommand(() => ChangeStampNumber(1), () => CanChangeStampNumber || CanChangeNextStampNumber);
 
-    public ICommand DecreaseStampNumberCommand => decreaseStampNumberCommand ??= new RelayCommand(() => ChangeSelectedStampNumber(-1), () => CanChangeStampNumber);
+    public ICommand DecreaseStampNumberCommand => decreaseStampNumberCommand ??= new RelayCommand(() => ChangeStampNumber(-1), () => CanChangeStampNumber || CanChangeNextStampNumber);
 
     public bool ShowColorOption => isTarget(AnnotationTypes.Rectangle, AnnotationTypes.Ellipse, AnnotationTypes.Line, AnnotationTypes.Arrow,
         AnnotationTypes.Freehand, AnnotationTypes.Text, AnnotationTypes.Highlight, AnnotationTypes.NumberStamp);
@@ -399,13 +401,26 @@ public sealed partial class EditorViewModel {
 
     /// <summary>
     /// „−“ Nummer „+“ stehen immer zusammen mit den Stempel-Optionen (Werkzeug oder ausgewählter Stempel), damit sich die
-    /// Werkzeugleiste beim Stempeln nicht ändert; wirksam sind sie nur bei einem ausgewählten Stempel
-    /// (<see cref="CanChangeStampNumber"/>).
+    /// Werkzeugleiste beim Stempeln nicht ändert; sie ändern die Nummer des ausgewählten Stempels
+    /// (<see cref="CanChangeStampNumber"/>) bzw. beim Stempel-Werkzeug ohne Auswahl die Nummer des nächsten Stempels
+    /// (<see cref="CanChangeNextStampNumber"/>, ab 0.16).
     /// </summary>
     public bool ShowStampNumberOption => isTarget(AnnotationTypes.NumberStamp);
 
     /// <summary>Ist ein Nummern-Stempel ausgewählt, dessen Nummer „−“/„+“ (Knöpfe bzw. Tasten) ändern?</summary>
     public bool CanChangeStampNumber => editingText == null && SelectedAnnotation is NumberStampAnnotation;
+
+    /// <summary>
+    /// Stempel-Werkzeug ohne ausgewählten Stempel: „−“/„+“ ändern die Nummer des nächsten Stempels, also die Vorschau am
+    /// Zeiger (ab 0.16).
+    /// </summary>
+    public bool CanChangeNextStampNumber => editingText == null && activeTool is NumberStampTool && SelectedAnnotation is not NumberStampAnnotation;
+
+    /// <summary>
+    /// Nummer des nächsten Stempels: die mit „−“/„+“ gewählte bzw. die auf den zuletzt gesetzten Stempel folgende
+    /// (<see cref="nextStampNumber"/>), sonst größte vorhandene + 1.
+    /// </summary>
+    public int NextStampNumber => nextStampNumber ?? NumberStampTool.GetNextNumber(Document.Annotations);
 
     public bool ShowCursorKindOption => isTarget(AnnotationTypes.Cursor);
 
@@ -517,7 +532,7 @@ public sealed partial class EditorViewModel {
     public string CurrentStampNumberText {
         get {
             if(CanChangeStampNumber && SelectedAnnotation is NumberStampAnnotation stamp) return stamp.Number.ToString(CultureInfo.CurrentCulture);
-            if(ShowStampNumberOption) return NumberStampTool.GetNextNumber(Document.Annotations).ToString(CultureInfo.CurrentCulture);
+            if(ShowStampNumberOption) return NextStampNumber.ToString(CultureInfo.CurrentCulture);
             return "";
         }
     }
@@ -675,7 +690,32 @@ public sealed partial class EditorViewModel {
         changeTarget(a => {
             if(a is NumberStampAnnotation stamp) stamp.Number = value;
         });
+        // beim Stempeln ist der ausgewählte Stempel der zuletzt gesetzte: die Vorschau zählt von ihm aus weiter
+        if(activeTool is NumberStampTool) ContinueStampNumbersAfter(value);
         return true;
+    }
+
+    /// <summary>
+    /// „−“/„+“ (Knöpfe bzw. Tasten): Nummer des ausgewählten Stempels ändern, beim Stempel-Werkzeug ohne Auswahl die des
+    /// nächsten Stempels (<see cref="MinStampNumber"/> bis <see cref="MaxStampNumber"/>). False: nichts zu ändern.
+    /// </summary>
+    public bool ChangeStampNumber(int delta) {
+        if(CanChangeStampNumber) return ChangeSelectedStampNumber(delta);
+        if(!CanChangeNextStampNumber) return false;
+        setNextStampNumber(Math.Clamp(NextStampNumber + delta, MinStampNumber, MaxStampNumber));
+        return true;
+    }
+
+    /// <summary>Nach dem Stempel mit dieser Nummer geht es mit der folgenden weiter (auch unterhalb der größten vorhandenen).</summary>
+    public void ContinueStampNumbersAfter(int number) {
+        setNextStampNumber(Math.Min(number + 1, MaxStampNumber));
+    }
+
+    private void setNextStampNumber(int number) {
+        // entspricht die Nummer ohnehin „größte + 1“, gilt wieder die Automatik
+        nextStampNumber = number == NumberStampTool.GetNextNumber(Document.Annotations) ? null : number;
+        refreshOptions();
+        NotifyOverlayChanged();
     }
 
     public void SetCursorKind(string kind) {

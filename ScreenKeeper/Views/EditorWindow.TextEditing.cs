@@ -12,7 +12,7 @@ namespace ScreenKeeper.Views;
 /// Ausrichtung und Farbe des Objekts. Ein festes Textfeld zeigt seine Feldgröße mit gestricheltem Rahmen, die
 /// vertikale Ausrichtung (über den oberen Innenabstand) und bei automatischer Schriftgröße die laufend neu berechnete
 /// Größe – alles aus <see cref="TextLayout.Arrange"/>, wie beim Zeichnen.
-/// Enter fügt eine Zeile ein, Strg+Enter übernimmt, Esc verwirft; ein Klick daneben übernimmt.
+/// Enter fügt eine Zeile ein, Strg+Enter übernimmt, Esc übernimmt und wechselt zu „Auswahl“; ein Klick daneben übernimmt.
 /// </summary>
 public partial class EditorWindow {
     // Innenabstand des TextBox-Inhalts (Rahmen 1 + Textansicht 2 DIP), damit der Text an derselben Stelle steht wie gezeichnet
@@ -135,8 +135,10 @@ public partial class EditorWindow {
 
     private void onTextEditorPreviewKeyDown(object sender, KeyEventArgs e) {
         if(e.Key == Key.Escape) {
+            // Text übernehmen und direkt zu „Auswahl“ (ab 0.16; bis 0.15 verwarf Esc die Eingabe)
             e.Handled = true;
-            viewModel.CancelTextEdit();
+            viewModel.CommitTextEditAndSelect();
+            updateCursorAtMouse();
             return;
         }
         // Enter fügt eine neue Zeile ein (AcceptsReturn); Strg+Enter übernimmt den Text

@@ -20,11 +20,15 @@
                 </Grid.RenderTransform>
                 <Image x:Name="originalImage" Stretch="Fill" />
                 <views:DrawingHost x:Name="annotationHost" />
+                <!-- halbtransparente Vorschau des nächsten Nummern-Stempels am Zeiger (zoomt mit, nie im Export) -->
+                <views:DrawingHost x:Name="stampPreviewHost" IsHitTestVisible="False" Opacity="0.5" Visibility="Collapsed" />
             </Grid>
         </Canvas>
         <!-- Overlay in Ansichts-DIPs (nicht gezoomt): konstante Gerätepixel-Größe; ohne Hintergrund → Klicks gehen durch -->
         <Canvas x:Name="overlay" ClipToBounds="True">
             <views:SelectionOverlay x:Name="selectionOverlay" />
+            <!-- Vollbild ohne Bereich: blauer Rahmen innen an jedem Monitor -->
+            <views:MonitorFrameOverlay x:Name="monitorFrameOverlay" />
             <!-- Hilfslinien durch den Zielpixel beim Wählen des Bereichs (über die ganze Fläche) -->
             <views:CrosshairOverlay x:Name="crosshairOverlay" />
             <!-- Inline-Bearbeitung von Text (Position, Schrift und Farbe setzt EditorWindow.TextEditing.cs) -->
@@ -34,6 +38,11 @@
                      UndoLimit="100" Cursor="IBeam" />
             <!-- über dem Textfeld, damit die Anfasser des bearbeiteten Felds ganz sichtbar sind (fängt keine Klicks ab) -->
             <views:AnnotationOverlay x:Name="annotationOverlay" />
+            <!-- Tastenhinweis unter dem ausgewählten Stempel bzw. der Stempel-Vorschau (wie die Tastenhilfe der Lupe; fängt keine Klicks ab) -->
+            <Border x:Name="stampHint" Visibility="Collapsed" IsHitTestVisible="False" Background="#F0202020" BorderBrush="#FFE0E0E0"
+                    BorderThickness="1" Padding="6,2,6,3" UseLayoutRounding="True" SnapsToDevicePixels="True">
+                <TextBlock x:Name="stampHintText" Foreground="#FFE0E0E0" FontFamily="Consolas" FontSize="11" />
+            </Border>
             <views:Magnifier x:Name="magnifier" Visibility="Collapsed" />
             <views:EditorToolbar x:Name="toolbar" Visibility="Hidden" />
         </Canvas>

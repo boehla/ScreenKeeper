@@ -350,4 +350,6 @@ public static class Strings {
     public static string MagnifierKeyHintsWindowed => Get(nameof(MagnifierKeyHintsWindowed));
     public static string SettingsMagnifierKeyHints => Get(nameof(SettingsMagnifierKeyHints));
     public static string SettingsMagnifierKeyHintsTooltip => Get(nameof(SettingsMagnifierKeyHintsTooltip));
+    public static string StampPreviewKeyHint => Get(nameof(StampPreviewKeyHint));
+    public static string StampPreviewKeyHintNumber => Get(nameof(StampPreviewKeyHintNumber));
 }

@@ -1,4 +1,29 @@
-﻿# Changelog
+# Changelog
+
+## 0.16.0
+
+- **Stempel-Vorschau:** Beim Werkzeug „Nummern-Stempel“ läuft der nächste Stempel (Nummer, Farbe und Größe wie beim
+  Setzen) halbtransparent am Zeiger mit – genau dort, wo ein Klick ihn setzen würde (am Bildrand begrenzt wie der echte
+  Stempel). Die Vorschau zoomt im Fenster-Modus mit und ist nie im Export. Sie verschwindet, solange die Ansicht
+  verschoben wird, die Maus die Fläche verlässt (auch über der Werkzeugleiste) und über dem ausgewählten Stempel (dort
+  verschiebt man ihn). Der Systemzeiger bleibt das Fadenkreuz. Ohne ausgewählten Stempel ändern „−“/„+“ in der
+  Werkzeugleiste und die Tasten **-**/**+** jetzt die Nummer des nächsten Stempels (1–999), die Vorschau zeigt sie
+  sofort; nach jedem gesetzten oder geänderten Stempel wird von dessen Nummer weitergezählt. Der Tastenhinweis
+  „+/-: Nummer“ steht immer an dem Stempel, den die Tasten gerade ändern: unter der Vorschau (dort mit der Nummer, z. B.
+  „+/-: Nummer 3“, weil sie halbtransparent schlecht zu lesen ist), nach dem Setzen unter dem
+  ausgewählten Stempel (abschaltbar über die Einstellung „Tastenhilfe“, wie bei der Lupe).
+- **Rechtsklick beim Werkzeug „Bereich“:** bricht ein laufendes Aufziehen, Ziehen an Anfassern, Verschieben oder eine
+  Tastatur-Auswahl ab; sonst wechselt er zu „Auswahl“ (auch mit vorhandenem Bereich). Bei allen anderen Werkzeugen
+  bleibt der Rechtsklick wirkungslos. Der Tooltip von „Bereich“ nennt den Rechtsklick.
+- **Monitor-Rahmen:** Im Vollbild-Editor zeigt ein deckend blauer Rahmen (3 Gerätepixel, innen an der Kante) jeden
+  Monitor, solange kein Bereich angezeigt wird – auch beim Aufziehen ist er weg. Nur Anzeige, nie im Bild; im
+  Fenster-Modus gibt es ihn nicht.
+- **Esc in Stufen:** Esc beendet wie bisher zuerst das Verschieben der Ansicht bzw. bricht einen Vorgang ab und hebt
+  dann eine Textmarkierung auf. Ein ausgewähltes Objekt hält Esc nicht mehr auf (bisher hob Esc erst die Auswahl auf).
+  Neu: Ist danach ein anderes Werkzeug als „Auswahl“ oder „Bereich“ aktiv,
+  wechselt Esc zu „Auswahl“ (ein gerade gezeichnetes Objekt bleibt ausgewählt) statt den Editor zu schließen; erst bei
+  „Auswahl“ oder „Bereich“ schließt Esc. Esc während der Texteingabe übernimmt den Text jetzt (bisher: verworfen) und
+  wechselt zugleich zu „Auswahl“; Strg+Z nimmt ihn zurück.
 
 ## 0.15.0
 

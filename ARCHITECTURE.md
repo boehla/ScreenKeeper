@@ -121,6 +121,12 @@ Alle Services als Klassen mit Interface (`ICaptureService` usw.), ohne DI-Framew
 - Reiner Ansichtszustand wie die Textmarkierung des Werkzeugs „Text auswählen“ (`TextSelectTool`, Logik in
   `OcrTextSelection`) läuft **nicht** über den `UndoStack` und landet nicht im Dokument; ebenso wenig das OCR-Ergebnis
   (aus dem Bild abgeleitet, `EditorViewModel.ApplyOcrResult`).
+- Ab 0.16 (`EditorViewModel.Gestures.cs`): Entscheidungen für Rechtsklick (`RightClick` → `RightClickResult`) und
+  Esc-Stufen (`Escape` → `EscapeResult`) liegen im ViewModel; das Fenster beendet vorher nur das Verschieben der Ansicht,
+  gibt den Mausfang frei und schließt bei `EscapeResult.Close`. Die Stempel-Vorschau (`GetStampPreview`) zeichnet ein
+  zweiter `DrawingHost` in der Zeichenfläche (`IsHitTestVisible=False`, 50 % Deckkraft, Lage per `TranslateTransform`)
+  mit `RenderService.DrawNumberStamp` – derselben Funktion wie der Export. Die Monitor-Rahmen berechnet
+  `MonitorFramePlacement` (UI-frei), gezeichnet von `Views\MonitorFrameOverlay` im Overlay unter Lupe und Werkzeugleiste.
 
 ## Kommandozeile (für automatisierte Tests, nicht in der README bewerben)
 

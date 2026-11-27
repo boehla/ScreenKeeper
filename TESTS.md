@@ -19,7 +19,7 @@ Erwartet: `0 Warning(s)`, `0 Error(s)` (bzw. `0 Warnung(en)`, `0 Fehler` bei deu
 dotnet test ScreenKeeper.Tests\ScreenKeeper.Tests.csproj
 ```
 
-Erwartet: `Passed!  - Failed: 0, Passed: 476, Skipped: 0, Total: 476` (Stand 0.15.0). In einer getrennten
+Erwartet: `Passed!  - Failed: 0, Passed: 497, Skipped: 0, Total: 497` (Stand 0.16.0). In einer getrennten
 Remotedesktop-Sitzung scheitern die drei `RenderServiceTests` `Render_FullImageIsIdentical`,
 `Render_DrawsCapturedCursorAtHotspot` und `Render_CutsRegionExactly` (kein Rendern ohne Bildschirm), ebenso
 `Version0150OcrTests.Storage_SaveNewCapture_WritesCrop_AndUpdateThumbnailRewritesIt` (rendert den Zuschnitt). Die
@@ -202,7 +202,8 @@ Nicht automatisierbar (braucht eine echte Remotedesktop-Verbindung bzw. Fokus un
    Dieselbe Aufnahme aus der History öffnen: wieder `Texterkennung (…)` im Protokoll, „Text auswählen“ funktioniert.
 3. Werkzeug I (Mauszeiger = Textcursor): über Text ziehen → Wörter blau hinterlegt, auch über mehrere Zeilen;
    Doppelklick markiert ein Wort; Strg+A alles. Strg+C → Text in der Zwischenablage (Zeilenumbrüche), Editor bleibt
-   offen. Esc hebt die Markierung auf, das nächste Esc schließt. Ohne Markierung kopiert Strg+C das Bild und schließt.
+   offen. Esc hebt die Markierung auf, das nächste Esc wechselt (ab 0.16) zu „Auswahl“, erst das dritte schließt. Ohne
+   Markierung kopiert Strg+C das Bild und schließt.
    Rückgängig ist durch das Markieren nicht aktiv geworden; die Werkzeugleiste ändert ihre Breite nicht.
 4. History: Suche nach einem Wort aus dem Bild findet die Aufnahme. Löschen/Verwerfen/Kopie anlegen: `.crop.png`
    wandert mit bzw. wird mitkopiert; die History zeigt keinen zusätzlichen Eintrag für `.crop.png`.
@@ -211,6 +212,30 @@ Nicht automatisierbar (braucht eine echte Remotedesktop-Verbindung bzw. Fokus un
 6. Erkennung aus, eine Aufnahme **mit** `ocrText` öffnen und den Bereich ändern: trotzdem `Texterkennung (…)` im
    Protokoll, `ocrText` passt danach zum neuen Bereich. Sofort nach der Änderung mit Esc schließen: die JSON hat
    zunächst `ocrText: null`, kurz danach den neuen Text. Ohne installierte OCR-Sprache bleibt `ocrText: null`.
+
+**Stempel-Vorschau, Rechtsklick, Monitor-Rahmen, Esc-Stufen** (ab 0.16, frische Aufnahme per Druck):
+
+1. Gleich nach dem Öffnen: blauer Rahmen (3 Gerätepixel, deckend) innen an jedem Monitor. Bereich aufziehen: schon beim
+   Ziehen ist der Rahmen weg; Strg+Z (kein Bereich mehr) → wieder da. Fenster-Editor (andere Anordnung): kein Rahmen.
+   Strg+C/Export enthält den Rahmen nie.
+2. N (Nummern-Stempel): halbtransparenter Stempel „1“ in aktueller Farbe/Größe läuft mit der Maus mit, der Zeiger bleibt
+   das Fadenkreuz. Klick: der Stempel landet genau an der Vorschau-Stelle. Über dem gerade gesetzten (ausgewählten)
+   Stempel keine Vorschau (Zeiger zum Verschieben), daneben „2“. Farbe/Größe ändern → Vorschau folgt; +/− am
+   ausgewählten Stempel → nächste Nummer der Vorschau folgt. Pfeiltasten: Vorschau springt pixelweise mit. Maus auf die
+   Werkzeugleiste: Vorschau weg. Am Bildrand bleibt die Vorschau auf dem Rand stehen wie der echte Stempel.
+   Vor dem ersten Stempel (nichts ausgewählt) **+** drücken: Vorschau und Anzeige in der Leiste zählen hoch, **-** wieder
+   herunter (nicht unter 1); der Klick setzt die gewählte Nummer, die Vorschau zeigt danach die folgende.
+   Unter der Vorschau steht „+/-: Nummer 1“ (mit der aktuellen Nummer), nach dem Klick „+/-: Nummer“ unter dem gesetzten (ausgewählten) Stempel statt an der
+   Vorschau, am unteren Monitorrand darüber; Einstellung „Tastenhilfe“ aus → kein Hinweis.
+3. Fenster-Editor: mit Strg+Rad zoomen – die Vorschau zoomt mit; Leertaste halten bzw. mittlere Taste ziehen: Vorschau
+   weg, nach dem Loslassen wieder da.
+4. Werkzeug „Bereich“: beim Aufziehen (linke Taste gedrückt) Rechtsklick → Aufziehen abgebrochen, kein Bereich, Loslassen
+   setzt nichts; ebenso bei einer Tastatur-Auswahl (Leertaste gesetzt). Ohne laufenden Vorgang Rechtsklick → Werkzeug
+   „Auswahl“ (auch mit vorhandenem Bereich, der bleibt). Bei anderen Werkzeugen tut Rechtsklick nichts. Tooltip von
+   „Bereich“ nennt den Rechtsklick.
+5. Rechteck zeichnen, Esc → Werkzeug „Auswahl“, Rechteck noch ausgewählt; Esc → Editor zu.
+   Mit „Bereich“ aktiv schließt Esc sofort, auch mit ausgewähltem Objekt.
+6. T, klicken, etwas tippen, Esc → Text bleibt stehen und ist ausgewählt, Werkzeug „Auswahl“ aktiv; Esc → Editor zu.
 
 ## 6. Kodierung
 

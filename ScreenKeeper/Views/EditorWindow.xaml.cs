@@ -13,6 +13,7 @@ using ScreenKeeper.Resources;
 using ScreenKeeper.Services;
 using ScreenKeeper.Services.Native;
 using ScreenKeeper.ViewModels;
+using ScreenKeeper.ViewModels.Tools;
 using ScreenKeeper.ViewModels.Undo;
 
 namespace ScreenKeeper.Views;
@@ -52,6 +53,12 @@ public partial class EditorWindow : Window, IEditorHost {
     private bool discarded;
     // Werkzeugleiste steht unten statt oben (dem Zeiger ausgewichen, siehe ToolbarPlacement.UpdateFlipped)
     private bool toolbarFlipped;
+    // Stempel-Vorschau: zuletzt an updateCursor übergebene Eingabe, Aussehen der aktuellen Zeichnung (Mitte 0,0) und ihre Lage
+    private PointerInput? stampPreviewInput;
+    private StampPreview? stampPreviewLook;
+    private readonly TranslateTransform stampPreviewTransform = new TranslateTransform();
+    // Abstand des Tastenhinweises zum Rand des Stempels (DIPs; lässt Platz für den Auswahlrahmen)
+    private const double stampHintGap = 10;
 
     public EditorWindow(CaptureDocument doc, BitmapSource original, string jsonPath, EditorMode mode, long startTimestamp = 0) {
         InitializeComponent();
@@ -73,6 +80,7 @@ public partial class EditorWindow : Window, IEditorHost {
         originalImage.Height = original.PixelHeight;
         annotationHost.Width = original.PixelWidth;
         annotationHost.Height = original.PixelHeight;
+        stampPreviewHost.RenderTransform = stampPreviewTransform;
         RefreshAnnotations();
 
         if(mode == EditorMode.Fullscreen) {
@@ -259,6 +267,8 @@ public partial class EditorWindow : Window, IEditorHost {
         crosshairOverlay.Height = root.ActualHeight;
         annotationOverlay.Width = root.ActualWidth;
         annotationOverlay.Height = root.ActualHeight;
+        monitorFrameOverlay.Width = root.ActualWidth;
+        monitorFrameOverlay.Height = root.ActualHeight;
         if(!viewInitialized) initializeView();
         updateOverlay();
     }
@@ -408,7 +418,8 @@ public partial class EditorWindow : Window, IEditorHost {
     }
 
     /// <summary>
-    /// Overlay (Abdunkelung, Rahmen, Anfasser, Größe), Werkzeugleiste, Lupe und Hilfslinien an den aktuellen Zustand anpassen.
+    /// Overlay (Abdunkelung, Rahmen, Anfasser, Größe), Monitor-Rahmen, Werkzeugleiste, Lupe, Hilfslinien und
+    /// Stempel-Vorschau an den aktuellen Zustand anpassen.
     /// </summary>
     private void updateOverlay() {
         if(!IsLoaded || !viewInitialized) return;
@@ -416,6 +427,8 @@ public partial class EditorWindow : Window, IEditorHost {
         Rect imageArea = transform.ToView(viewModel.ImageBounds);
         Rect? selectionView = displayed.HasValue ? transform.ToView(displayed.Value) : null;
         selectionOverlay.Update(imageArea, selectionView, displayed, deviceScale, displayed.HasValue);
+        updateMonitorFrames(displayed);
+        updateStampPreview();
         annotationOverlay.Update(transform, deviceScale, viewModel.GetSelectionVisual(), viewModel.GetHiddenCursorBounds(), viewModel.ToolPreviewRect, viewModel.GetTextHighlights());
         updateTextEditorLayout();
         updateToolbar(displayed, selectionView);
@@ -493,6 +506,68 @@ public partial class EditorWindow : Window, IEditorHost {
         int monitor = SelectionGeometry.FindMonitorIndex(document.Monitors, viewModel.CursorPixel);
         Point position = MagnifierPlacement.Place(getMouseInViewport(), magnifier.DesiredSize, getMonitorView(monitor), magnifierGap);
         setOverlayPosition(magnifier, position);
+    }
+
+    /// <summary>
+    /// Vollbild ohne angezeigten Bereich (also auch nicht beim Aufziehen): blauer Rahmen innen an jedem Monitor.
+    /// </summary>
+    private void updateMonitorFrames(PixelRect? displayed) {
+        if(mode != EditorMode.Fullscreen || displayed.HasValue) {
+            monitorFrameOverlay.Update(Array.Empty<Rect>());
+            return;
+        }
+        IEnumerable<Rect> monitors = document.Monitors.Select(m => transform.ToView(m.Bounds));
+        monitorFrameOverlay.Update(MonitorFramePlacement.GetBars(monitors, deviceScale));
+    }
+
+    /// <summary>
+    /// Vorschau des nächsten Nummern-Stempels am Zeiger (halbtransparent, in <c>surface</c>: zoomt mit, nie im Export).
+    /// Die Zeichnung wird nur bei geänderter Nummer, Farbe oder Größe neu gebaut; die Lage folgt per Transform.
+    /// </summary>
+    private void updateStampPreview() {
+        if(!IsLoaded) return;
+        bool pointerFree = viewport.IsMouseOver && !isPanning && !(spaceHeld && mode == EditorMode.Windowed);
+        PointerInput input = stampPreviewInput ?? PointerInput.AtPixel(viewModel.CursorPixel, Keyboard.Modifiers);
+        StampPreview? preview = viewModel.GetStampPreview(input, pointerFree);
+        updateStampHint(preview);
+        if(preview == null) {
+            stampPreviewHost.Visibility = Visibility.Collapsed;
+            return;
+        }
+        StampPreview look = preview with { Center = new PixelPoint(0, 0) };
+        if(look != stampPreviewLook) {
+            stampPreviewLook = look;
+            DrawingGroup group = new DrawingGroup();
+            using (DrawingContext dc = group.Open()) {
+                RenderService.DrawNumberStamp(dc, new NumberStampAnnotation { Number = look.Number, Color = look.Color, Size = look.Size });
+            }
+            group.Freeze();
+            stampPreviewHost.Drawing = group;
+        }
+        stampPreviewTransform.X = preview.Center.X;
+        stampPreviewTransform.Y = preview.Center.Y;
+        stampPreviewHost.Visibility = Visibility.Visible;
+    }
+
+    /// <summary>
+    /// Tastenhinweis „+/-: Nummer“ unter dem Stempel, den die Tasten gerade ändern: der ausgewählte (z. B. der gerade
+    /// gesetzte), sonst die Vorschau am Zeiger. Über dem Stempel, wenn unten kein Platz ist. Gehört zur Tastenhilfe und
+    /// ist mit ihr in den Einstellungen abschaltbar.
+    /// </summary>
+    private void updateStampHint(StampPreview? preview) {
+        StampHintTarget? target = AppServices.Settings.Settings.ShowMagnifierKeyHints && !isPanning ? viewModel.GetStampHintTarget(preview) : null;
+        if(target == null) {
+            stampHint.Visibility = Visibility.Collapsed;
+            return;
+        }
+        // an der halbtransparenten Vorschau ist die Nummer schlecht zu lesen: der Hinweis nennt sie
+        stampHintText.Text = target.Number.HasValue ? Strings.Format(Strings.StampPreviewKeyHintNumber, target.Number.Value) : Strings.StampPreviewKeyHint;
+        stampHint.Visibility = Visibility.Visible;
+        stampHint.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        Point center = transform.ToView(target.X, target.Y);
+        double radius = Math.Max(4, target.Size) / 2 * transform.Zoom;
+        int monitor = SelectionGeometry.FindMonitorIndex(document.Monitors, new PixelPoint((int)Math.Floor(target.X), (int)Math.Floor(target.Y)));
+        setOverlayPosition(stampHint, StampHintPlacement.Place(center, radius, stampHint.DesiredSize, getMonitorView(monitor), stampHintGap));
     }
 
     /// <summary>

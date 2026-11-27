@@ -28,7 +28,8 @@ public interface IRenderService {
 
 /// <summary>
 /// Der eine Render-Pfad für Anzeige und Export: der Editor zeigt dasselbe Drawing an, das hier exportiert wird.
-/// Je Annotation-Typ gibt es eine private draw…-Methode.
+/// Je Annotation-Typ gibt es eine private draw…-Methode (der Nummern-Stempel öffentlich, siehe
+/// <see cref="DrawNumberStamp"/> – die Stempel-Vorschau im Editor nutzt sie mit).
 /// </summary>
 public sealed class RenderService : IRenderService {
     /// <summary>Farbe des Textmarkers, wenn die gespeicherte Farbe nicht lesbar ist (Gelb, deckend).</summary>
@@ -138,7 +139,7 @@ public sealed class RenderService : IRenderService {
             case HighlightAnnotation highlight: drawHighlight(dc, original, highlight, below); break;
             case PixelateAnnotation pixelate: drawPixelate(dc, original, pixelate); break;
             case BlurAnnotation blur: drawBlur(dc, original, blur); break;
-            case NumberStampAnnotation stamp: drawNumberStamp(dc, stamp); break;
+            case NumberStampAnnotation stamp: DrawNumberStamp(dc, stamp); break;
             case CursorAnnotation cursor: drawCursor(dc, document, cursor); break;
             case UnknownAnnotation: break;
         }
@@ -340,7 +341,11 @@ public sealed class RenderService : IRenderService {
         drawEffect(dc, original, annotation.Id, annotation.Rect, true, Math.Max(1, annotation.Radius));
     }
 
-    private void drawNumberStamp(DrawingContext dc, NumberStampAnnotation annotation) {
+    /// <summary>
+    /// Nummern-Stempel zeichnen (Kreis mit Nummer, Mittelpunkt bei X/Y in Bildpixeln). Gemeinsamer Weg für Anzeige,
+    /// Export und die halbtransparente Vorschau am Zeiger im Editor (ab 0.16).
+    /// </summary>
+    public static void DrawNumberStamp(DrawingContext dc, NumberStampAnnotation annotation) {
         double size = Math.Max(4, annotation.Size);
         Point center = new Point(annotation.X, annotation.Y);
         Pen outline = new Pen(outlineBrush, Math.Max(1, size / 24));

@@ -187,8 +187,9 @@ public class ToolbarLayoutTests {
             Views.EditorToolbar toolbar = new Views.EditorToolbar { DataContext = vm };
             Assert.True(vm.SelectToolByKey(NumberStampTool.ToolKey));
             double width = optionsWidth(toolbar);
-            Assert.False(vm.IncreaseStampNumberCommand.CanExecute(null));
-            Assert.False(vm.DecreaseStampNumberCommand.CanExecute(null));
+            // ab 0.16 ändern −/+ ohne ausgewählten Stempel die nächste Nummer
+            Assert.True(vm.IncreaseStampNumberCommand.CanExecute(null));
+            Assert.True(vm.DecreaseStampNumberCommand.CanExecute(null));
 
             // stempeln (der neue Stempel ist ausgewählt), dann Nummer 1 → 10 → 100 → 999 und Stempelgrößen
             click(vm, NumberStampTool.ToolKey, 50, 50);
@@ -204,11 +205,11 @@ public class ToolbarLayoutTests {
                 Assert.Equal(width, optionsWidth(toolbar));
             }
 
-            // Auswahl aufheben (Werkzeug bleibt): gleiche Breite, −/+ wieder ausgegraut, Anzeige = nächste Nummer
+            // Auswahl aufheben (Werkzeug bleibt): gleiche Breite, −/+ gelten der nächsten Nummer (ab 0.16), Anzeige = nächste Nummer
             Assert.True(vm.ChangeSelectedStampNumber(-1));
             vm.SelectAnnotation(null);
             Assert.Equal(width, optionsWidth(toolbar));
-            Assert.False(vm.IncreaseStampNumberCommand.CanExecute(null));
+            Assert.True(vm.IncreaseStampNumberCommand.CanExecute(null));
             Assert.Equal("999", vm.CurrentStampNumberText);
         });
     }

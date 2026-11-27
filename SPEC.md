@@ -82,10 +82,12 @@ Ein Screenshot-Tool für Windows als Ersatz für Greenshot. Kernidee:
 **Darstellung**
 - Ein rahmenloses, oberstes Fenster über den **gesamten virtuellen Bildschirm** zeigt das eingefrorene Bild 1:1. (Bei gleicher Skalierung funktioniert ein einziges Fenster zuverlässig; für gemischte Skalierung siehe Abschnitt 8.)
 - Außerhalb des gewählten Bereichs wird das Bild abgedunkelt (ca. 50 %).
+- Monitor-Rahmen (ab 0.16): Solange kein Bereich angezeigt wird (auch nicht als Vorschau beim Aufziehen), liegt innen an jedem Monitor ein deckend blauer Rahmen (#1E88E5, 3 Gerätepixel). Nur Anzeige, nie im Export, nur im Vollbild; keine Einstellung.
 - Eine Werkzeugleiste schwebt am Bereich (unter- oder oberhalb, je nach Platz); vor der ersten Bereichswahl am oberen Rand des primären Monitors. Knöpfe werden höchstens ausgegraut, nie ausgeblendet; die Optionen des Werkzeugs bzw. Objekts (je Typ immer dieselben Knöpfe, nur bei Auswahl wirksame ausgegraut) liegen neben „Objekt löschen“ in einem Platz fester Breite. Die Leiste ist dadurch immer gleich breit und bleibt stehen, solange die Maus über ihr ist – beim Wechsel von Werkzeug, Auswahl oder Optionswert rutscht nichts unter der Maus weg (ab 0.13).
 
 **Bereich wählen**
 - Bereich mit der Maus aufziehen. Danach jederzeit änderbar: 8 Anfasser, Verschieben per Ziehen im Bereich, neues Aufziehen außerhalb.
+- Rechtsklick (ab 0.16, nur beim Werkzeug „Bereich“): bricht einen laufenden Vorgang (Aufziehen, Anfasser, Verschieben, Tastatur-Auswahl) ab, sonst Wechsel zu „Auswahl“ (auch mit vorhandenem Bereich); während die Ansicht verschoben wird, wirkungslos. Bei anderen Werkzeugen tut der Rechtsklick nichts.
 - **Lupe** (wie Greenshot), sichtbar während des Aufziehens und beim Ziehen der Anfasser:
   - Vergrößerung standardmäßig 8-fach (einstellbar 4–16), Pixelraster, Fadenkreuz
   - Anzeige: Position (x, y), Bereichsgröße (B × H), Farbwert des Pixels unter dem Fadenkreuz (Hex)
@@ -113,9 +115,9 @@ Ein Screenshot-Tool für Windows als Ersatz für Greenshot. Kernidee:
 | Highlight (Textmarker) | Rechteck im Modus „Multiplizieren“ (Text darunter bleibt dunkel, Weiß wird zur Markerfarbe), Farbe (Standard Gelb) |
 | Verpixeln | Rechteck, Blockgröße einstellbar |
 | Weichzeichnen | Rechteck, Stärke einstellbar |
-| Nummern-Stempel | fortlaufend 1, 2, 3 … (nächste = höchste + 1), Farbe, Größe; Nummer des ausgewählten Stempels mit „−“/„+“ bzw. Tasten -/+ ändern (1–999, Rückgängig-Schritt, Vorrang vor der Lupengröße) (ab 0.12) |
+| Nummern-Stempel | fortlaufend 1, 2, 3 … (nächste = höchste + 1), Farbe, Größe; Nummer des ausgewählten Stempels mit „−“/„+“ bzw. Tasten -/+ ändern (1–999, Rückgängig-Schritt, Vorrang vor der Lupengröße) (ab 0.12); Vorschau des nächsten Stempels mit 50 % Deckkraft am Zeiger, Mitte wie beim Setzen auf das Bild begrenzt, zoomt mit, nie im Export; ausgeblendet beim Verschieben der Ansicht, außerhalb der Fläche und über dem greifbaren ausgewählten Stempel (ab 0.16); beim Stempel-Werkzeug ohne ausgewählten Stempel ändern „−“/„+“ bzw. -/+ die Nummer des nächsten Stempels (1–999, kein Rückgängig-Schritt), nach jedem gesetzten oder per −/+ geänderten Stempel ist die nächste Nummer dessen Nummer + 1; der Tastenhinweis „+/-: Nummer“ steht unter dem Stempel, den die Tasten ändern – dem ausgewählten, sonst der Vorschau, dort mit der Nummer: „+/-: Nummer 3“ (über dem Stempel, wenn unten im Monitor kein Platz ist; mit der Einstellung „Tastenhilfe“ abschaltbar) (ab 0.16) |
 | **Virtuelle Maus** | siehe unten |
-| Text auswählen (ab 0.15, Taste I) | Textcursor; markiert erkannten Text (OCR) wie in einem Dokument: Ziehen = Wörter in Lesereihenfolge vom Start- bis zum Endpunkt (zeilenübergreifend), Doppelklick = Wort, Strg+A = alles; Strg+C kopiert den markierten Text (Zeilen durch Zeilenumbruch), ohne Markierung wie bisher den Bereich als Bild; Esc hebt zuerst die Markierung auf. Reine Ansicht (kein Objekt, kein Export, kein Rückgängig-Schritt); ohne Erkennungsergebnis wirkungslos |
+| Text auswählen (ab 0.15, Taste I) | Textcursor; markiert erkannten Text (OCR) wie in einem Dokument: Ziehen = Wörter in Lesereihenfolge vom Start- bis zum Endpunkt (zeilenübergreifend), Doppelklick = Wort, Strg+A = alles; Strg+C kopiert den markierten Text (Zeilen durch Zeilenumbruch), ohne Markierung wie bisher den Bereich als Bild; Esc hebt zuerst die Markierung auf (ab 0.16 wechselt das nächste Esc zu „Auswahl“). Reine Ansicht (kein Objekt, kein Export, kein Rückgängig-Schritt); ohne Erkennungsergebnis wirkungslos |
 
 - Farbe und Strichstärke über die Werkzeugleiste; zuletzt verwendete Werte werden gemerkt (beim Text auch
   Auto/feste Schriftgröße und Ausrichtung, auch wenn sie an einem vorhandenen Text geändert wurden).
@@ -139,6 +141,7 @@ Ein Screenshot-Tool für Windows als Ersatz für Greenshot. Kernidee:
 | Aktueller Monitor → Zwischenablage | – | Monitor, auf dem sich die Maus befindet |
 | Abbrechen | Esc | kein Export |
 
+- Esc in Stufen (ab 0.16): (1) Verschieben der Ansicht beenden bzw. laufenden Vorgang abbrechen, (2) Textmarkierung aufheben, (3) ist ein anderes Werkzeug als „Auswahl“ und „Bereich“ aktiv: zu „Auswahl“ wechseln (ein ausgewähltes Objekt bleibt ausgewählt), (4) bei „Auswahl“ oder „Bereich“ schließen, auch mit ausgewähltem Objekt (bis 0.15 hob Esc erst die Objektauswahl auf). Esc während der Texteingabe übernimmt den Text (bis 0.15: verworfen) und wechselt direkt zu „Auswahl“; der Text bleibt ausgewählt.
 - **Bei jedem Beenden, auch bei Esc,** wird der Bearbeitungsstand in die JSON-Datei geschrieben und das Vorschaubild aktualisiert.
 - Ohne gewählten Bereich sind die Bereich-Knöpfe deaktiviert.
 - Zwischenablage: Bild als Bitmap **und** als PNG-Format einstellen (damit Transparenz und Qualität in Outlook, Teams usw. passen).
